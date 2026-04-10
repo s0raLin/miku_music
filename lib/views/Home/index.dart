@@ -10,8 +10,19 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      body: Center(child: Text("Home"),),
+      backgroundColor: colorScheme.surface,
+      body: Center(
+        child: Text(
+          "Home",
+          style: TextStyle(
+            color: colorScheme.onSurface.withValues(alpha: 0.8),
+            fontSize: 24,
+          ),
+        ),
+      ),
     );
   }
 }

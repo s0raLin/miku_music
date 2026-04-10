@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/router/IndexRouter/index.dart';
@@ -20,24 +18,32 @@ class _HeaderState extends State<Header> {
   Widget build(BuildContext context) {
     final router = context.read<GoRouter>();
     final routeName = router.state.name ?? "未知";
+    final colorScheme = Theme.of(context).colorScheme;
 
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surface,
       centerTitle: true,
-      leading: IconButton(onPressed: () {}, icon: Icon(Icons.menu)),
-      title: Title(
-        color: Colors.black,
-        child: Text(
-          // routes[widget.navigationShell.currentIndex],
-          routeName,
-          style: const TextStyle(fontSize: 30),
+      elevation: 0,
+      leading: IconButton(
+        onPressed: () {},
+        icon: Icon(Icons.menu, color: colorScheme.onSurface),
+      ),
+      title: Text(
+        routeName,
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
         ),
       ),
       actions: [
-        IconButton(onPressed: () => print("search"), icon: Icon(Icons.search)),
         IconButton(
-          onPressed: () => {context.toSettings()},
-          icon: Icon(Icons.settings),
+          onPressed: () {},
+          icon: Icon(Icons.search, color: colorScheme.onSurface),
+        ),
+        IconButton(
+          onPressed: () => context.toSettings(),
+          icon: Icon(Icons.settings, color: colorScheme.onSurface),
         ),
       ],
     );

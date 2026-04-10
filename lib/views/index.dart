@@ -15,20 +15,21 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  var currentIndex = 0;
-
+  var _currentIndex = 0;
   void onTabChanged(int idx) {
-    setState(() {
-      context.go(customNavItems[idx].path);
-      currentIndex = idx;
-    });
+    _currentIndex = idx;
+    context.go(customNavItems[idx].path);
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     const maxWidth = 800;
+    final colorScheme = Theme.of(context).colorScheme;
+    // final currentIndex = widget.navigationShell.currentIndex;
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final bool isLargeScreen = constraints.maxWidth >= maxWidth;
@@ -36,9 +37,13 @@ class _MainPageState extends State<MainPage> {
           return Row(
             children: [
               if (isLargeScreen)
-                Sidebar(currentIndex: currentIndex, onTap: onTabChanged),
+                Sidebar(currentIndex: _currentIndex, onTap: onTabChanged),
               Expanded(
-                child: Scaffold(appBar: Header(), body: widget.navigationShell),
+                child: Scaffold(
+                  backgroundColor: colorScheme.surface,
+                  appBar: Header(),
+                  body: widget.navigationShell,
+                ),
               ),
             ],
           );
@@ -49,7 +54,7 @@ class _MainPageState extends State<MainPage> {
           if (constraints.maxWidth >= maxWidth) {
             return const SizedBox.shrink();
           }
-          return BottomBar(currentIndex: currentIndex, onTap: onTabChanged);
+          return BottomBar(currentIndex: _currentIndex, onTap: onTabChanged);
         },
       ),
     );

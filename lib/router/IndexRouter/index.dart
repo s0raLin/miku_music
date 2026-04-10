@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/views/Home/index.dart';
+import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/Settings/index.dart';
 import 'package:myapp/views/Splash/index.dart';
 import 'package:myapp/views/index.dart';
@@ -9,6 +11,7 @@ import 'package:provider/provider.dart';
 extension RouterCtx on BuildContext {
   void toSettings() => this.go('/settings');
   void toHome() => this.go('/home');
+  void toMusic() => this.go('/music');
 }
 
 class IndexRouter extends StatefulWidget {
@@ -43,6 +46,11 @@ class _IndexRouterState extends State<IndexRouter> {
                 path: "/settings",
                 builder: (context, state) => SettingsPage(),
               ),
+              GoRoute(
+                name: "music",
+                path: "/music",
+                builder: (context, state) => MusicPage(),
+              ),
             ],
           ),
         ],
@@ -52,11 +60,20 @@ class _IndexRouterState extends State<IndexRouter> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: router,
-      builder: (context, child) {
-        return Provider.value(value: router, child: child!);
-      },
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
+            theme: themeProvider.themeData,
+            themeMode: themeProvider.themeMode,
+            routerConfig: router,
+            builder: (context, child) {
+              return Provider.value(value: router, child: child!);
+            },
+          );
+        },
+      ),
     );
   }
 }

@@ -1,40 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:myapp/contants/Routes/index.dart';
 
-class Sidebar extends StatefulWidget {
+class Sidebar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
+
   const Sidebar({super.key, required this.currentIndex, required this.onTap});
 
   @override
-  State<Sidebar> createState() => _SidebarState();
-}
-
-class _SidebarState extends State<Sidebar> {
-  // var currentIndex = 0;
-  @override
   Widget build(BuildContext context) {
-    // final currentName = router.state.name;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      width: 100,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 7, 0, 17),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: NavigationRail(
-        backgroundColor: Colors.transparent,
-        selectedIndex: widget.currentIndex,
-        onDestinationSelected: widget.onTap,
-        destinations: customNavItems.map((item) {
-          return NavigationRailDestination(
-            icon: Icon(item.icon),
-            label: Text(item.label),
-          );
-        }).toList(),
-      ),
+    return NavigationRail(
+      backgroundColor: colorScheme.surfaceContainerLow,
+      selectedIndex: currentIndex,
+      onDestinationSelected: onTap,
+      labelType: NavigationRailLabelType.selected,
+      minWidth: 80,
+      indicatorColor: colorScheme.secondaryContainer,
+      destinations: customNavItems.map((item) {
+        return NavigationRailDestination(
+          icon: Icon(item.icon),
+          selectedIcon: Icon(item.icon),
+          label: Text(item.label),
+        );
+      }).toList(),
     );
   }
 }

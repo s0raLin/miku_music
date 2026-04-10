@@ -18,11 +18,11 @@ class BottomBar extends StatelessWidget {
       indicatorColor: colorScheme.secondaryContainer,
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
       destinations: customNavItems.map((item) {
         return NavigationDestination(
-          icon: Icon(item.icon),
-          selectedIcon: Icon(item.icon),
+          icon: Icon(item.icon, size: 36),
+          selectedIcon: Icon(item.icon, size: 36),
           label: item.label,
         );
       }).toList(),

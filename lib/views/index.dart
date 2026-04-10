@@ -15,6 +15,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   var _currentIndex = 0;
   void onTabChanged(int idx) {
     _currentIndex = idx;
@@ -26,10 +28,45 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     const maxWidth = 800;
     final colorScheme = Theme.of(context).colorScheme;
-    // final currentIndex = widget.navigationShell.currentIndex;
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: colorScheme.surface,
+      drawer: Drawer(
+        child: Container(
+          color: colorScheme.surfaceContainerLow,
+          width: 280,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(color: colorScheme.primaryContainer),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Icon(
+                      Icons.music_note,
+                      size: 48,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '音乐播放器',
+                      style: TextStyle(
+                        color: colorScheme.onPrimaryContainer,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+            ],
+          ),
+        ),
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final bool isLargeScreen = constraints.maxWidth >= maxWidth;
@@ -41,7 +78,7 @@ class _MainPageState extends State<MainPage> {
               Expanded(
                 child: Scaffold(
                   backgroundColor: colorScheme.surface,
-                  appBar: Header(),
+                  appBar: Header(scaffoldKey: _scaffoldKey),
                   body: widget.navigationShell,
                 ),
               ),

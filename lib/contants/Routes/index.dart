@@ -15,5 +15,6 @@ class NavItem {
 
 final customNavItems = [
   NavItem(path: "/home", label: "home", icon: Icons.home),
-  NavItem(path: "/settings", label: "settings", icon: Icons.settings),
+  NavItem(path: "/music", label: "music", icon: Icons.audiotrack),
+  NavItem(path: "/files", label: "files", icon: Icons.snippet_folder),
 ];

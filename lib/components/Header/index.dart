@@ -4,7 +4,9 @@ import 'package:myapp/router/IndexRouter/index.dart';
 import 'package:provider/provider.dart';
 
 class Header extends StatefulWidget implements PreferredSizeWidget {
-  const Header({super.key});
+  final GlobalKey<ScaffoldState>? scaffoldKey;
+
+  const Header({super.key, this.scaffoldKey});
 
   @override
   State<Header> createState() => _HeaderState();
@@ -25,7 +27,9 @@ class _HeaderState extends State<Header> {
       centerTitle: true,
       elevation: 0,
       leading: IconButton(
-        onPressed: () {},
+        onPressed: () {
+          widget.scaffoldKey?.currentState?.openDrawer();
+        },
         icon: Icon(Icons.menu, color: colorScheme.onSurface),
       ),
       title: Text(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
+import 'package:myapp/views/Files/index.dart';
 import 'package:myapp/views/Home/index.dart';
 import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/Settings/index.dart';
@@ -50,6 +51,11 @@ class _IndexRouterState extends State<IndexRouter> {
                 name: "music",
                 path: "/music",
                 builder: (context, state) => MusicPage(),
+              ),
+              GoRoute(
+                name: "files",
+                path: "/files",
+                builder: (context, state) => FilesPage(),
               ),
             ],
           ),

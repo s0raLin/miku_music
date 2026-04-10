@@ -20,8 +20,8 @@ class Sidebar extends StatelessWidget {
       indicatorColor: colorScheme.secondaryContainer,
       destinations: customNavItems.map((item) {
         return NavigationRailDestination(
-          icon: Icon(item.icon),
-          selectedIcon: Icon(item.icon),
+          icon: Icon(item.icon, size: 36),
+          selectedIcon: Icon(item.icon, size: 36),
           label: Text(item.label),
         );
       }).toList(),

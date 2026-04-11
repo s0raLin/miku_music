@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:myapp/contants/Assets/index.dart';
+import 'package:myapp/router/Extensions/router.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -36,7 +37,8 @@ class _SplashPageState extends State<SplashPage>
   Future<void> _startInitialization() async {
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) {
-      context.go('/home');
+      // context.go('/home');
+      context.toHome();
     }
   }
 
@@ -77,10 +79,13 @@ class _SplashPageState extends State<SplashPage>
                           ),
                         ],
                       ),
-                      child: Icon(
-                        Icons.music_note,
-                        size: 60,
-                        color: colorScheme.primary,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          MyAssets.mikulogo,
+                          width: 40,
+                          height: 40,
+                        ),
                       ),
                     ),
                   ),
@@ -91,7 +96,7 @@ class _SplashPageState extends State<SplashPage>
             FadeTransition(
               opacity: _fadeAnimation,
               child: Text(
-                '音乐播放器',
+                'MikuMusic',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,

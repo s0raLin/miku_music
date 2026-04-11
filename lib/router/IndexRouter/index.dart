@@ -9,60 +9,58 @@ import 'package:myapp/views/Splash/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:provider/provider.dart';
 
-extension RouterCtx on BuildContext {
-  void toSettings() => this.go('/settings');
-  void toHome() => this.go('/home');
-  void toMusic() => this.go('/music');
-}
-
-class IndexRouter extends StatefulWidget {
-  const IndexRouter({super.key});
-
-  @override
-  State<IndexRouter> createState() => _IndexRouterState();
-}
-
-class _IndexRouterState extends State<IndexRouter> {
-  final router = GoRouter(
-    initialLocation: "/splash",
+final _shellBranches = [
+  StatefulShellBranch(
     routes: [
-      GoRoute(path: "/splash", builder: (context, state) => SplashPage()),
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return Provider.value(
-            value: navigationShell,
-            child: MainPage(navigationShell: navigationShell),
-          );
-        },
-        branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                name: "home",
-                path: "/home",
-                builder: (context, state) => HomePage(),
-              ),
-              GoRoute(
-                name: "settings",
-                path: "/settings",
-                builder: (context, state) => SettingsPage(),
-              ),
-              GoRoute(
-                name: "music",
-                path: "/music",
-                builder: (context, state) => MusicPage(),
-              ),
-              GoRoute(
-                name: "files",
-                path: "/files",
-                builder: (context, state) => FilesPage(),
-              ),
-            ],
-          ),
-        ],
+      GoRoute(
+        name: "home",
+        path: "/home",
+        builder: (context, state) => HomePage(),
       ),
     ],
-  );
+  ),
+  StatefulShellBranch(
+    routes: [
+      GoRoute(
+        name: "music",
+        path: "/music",
+        builder: (context, state) => MusicPage(),
+      ),
+    ],
+  ),
+  StatefulShellBranch(
+    routes: [
+      GoRoute(
+        name: "files",
+        path: "/files",
+        builder: (context, state) => FilesPage(),
+      ),
+    ],
+  ),
+];
+
+final _routes = [
+  GoRoute(path: "/splash", builder: (context, state) => SplashPage()),
+  ShellRoute(
+    builder: (context, state, child) => MainPage(content: child),
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => navigationShell,
+        branches: _shellBranches,
+      ),
+      GoRoute(
+        name: "settings",
+        path: "/settings",
+        builder: (context, state) => SettingsPage(),
+      ),
+    ],
+  ),
+];
+
+final _router = GoRouter(initialLocation: "/splash", routes: _routes);
+
+class IndexRouter extends StatelessWidget {
+  const IndexRouter({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +71,7 @@ class _IndexRouterState extends State<IndexRouter> {
           return MaterialApp.router(
             theme: themeProvider.themeData,
             themeMode: themeProvider.themeMode,
-            routerConfig: router,
-            builder: (context, child) {
-              return Provider.value(value: router, child: child!);
-            },
+            routerConfig: _router,
           );
         },
       ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.dark;
-  Color _seedColor = Colors.deepPurple;
+  ThemeMode _themeMode = ThemeMode.light;
+  // Color _seedColor = Colors.deepPurple;
+  Color _seedColor = Colors.teal;
 
   ThemeMode get themeMode => _themeMode;
   Color get seedColor => _seedColor;

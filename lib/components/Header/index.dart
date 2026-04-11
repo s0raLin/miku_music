@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/router/IndexRouter/index.dart';
-import 'package:provider/provider.dart';
+import 'package:myapp/router/Extensions/router.dart';
 
 class Header extends StatefulWidget implements PreferredSizeWidget {
   final GlobalKey<ScaffoldState>? scaffoldKey;
@@ -16,10 +15,13 @@ class Header extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _HeaderState extends State<Header> {
+
   @override
   Widget build(BuildContext context) {
-    final router = context.read<GoRouter>();
-    final routeName = router.state.name ?? "未知";
+    final router = GoRouter.of(context);
+    // final path = router.routerDelegate.currentConfiguration.uri.path;
+    final title = router.state.name ?? "title";
+    // final title = _getTitle(path);
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppBar(
@@ -33,7 +35,8 @@ class _HeaderState extends State<Header> {
         icon: Icon(Icons.menu, color: colorScheme.onSurface),
       ),
       title: Text(
-        routeName,
+        title,
+
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,
@@ -46,7 +49,9 @@ class _HeaderState extends State<Header> {
           icon: Icon(Icons.search, color: colorScheme.onSurface),
         ),
         IconButton(
-          onPressed: () => context.toSettings(),
+          onPressed: () {
+            context.toSettings();
+          },
           icon: Icon(Icons.settings, color: colorScheme.onSurface),
         ),
       ],

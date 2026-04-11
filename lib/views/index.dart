@@ -4,11 +4,12 @@ import 'package:myapp/components/BottomBar/index.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Sidebar/index.dart';
 import 'package:myapp/contants/Routes/index.dart';
+import 'package:myapp/router/IndexRouter/index.dart';
 
 class MainPage extends StatefulWidget {
-  final StatefulNavigationShell navigationShell;
+  final Widget content;
 
-  const MainPage({super.key, required this.navigationShell});
+  const MainPage({super.key, required this.content});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -62,7 +63,6 @@ class _MainPageState extends State<MainPage> {
                   ],
                 ),
               ),
-              
             ],
           ),
         ),
@@ -79,7 +79,7 @@ class _MainPageState extends State<MainPage> {
                 child: Scaffold(
                   backgroundColor: colorScheme.surface,
                   appBar: Header(scaffoldKey: _scaffoldKey),
-                  body: widget.navigationShell,
+                  body: widget.content,
                 ),
               ),
             ],

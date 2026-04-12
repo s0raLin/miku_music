@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/BottomBar/index.dart';
 import 'package:myapp/components/Drawer/index.dart';
 import 'package:myapp/components/Header/index.dart';
+import 'package:myapp/components/NowPlayingBar/index.dart';
 import 'package:myapp/components/Sidebar/index.dart';
 
 class MainPage extends StatefulWidget {
@@ -26,32 +27,41 @@ class _MainPageState extends State<MainPage> {
     const maxWidth = 800;
     final colorScheme = Theme.of(context).colorScheme;
     final currentIndex = widget.navigationShell.currentIndex;
-    final contentBackground = colorScheme.surfaceContainerLow;
+    final backgroundColor = colorScheme.surfaceContainerLow;
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: contentBackground,
+      backgroundColor: backgroundColor,
       drawer: const MainDrawer(),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final bool isLargeScreen = constraints.maxWidth >= maxWidth;
 
-          return Row(
+          return Column(
             children: [
-              if (isLargeScreen)
-                SizedBox(
-                  width: 168,
-                  child: Sidebar(
-                    currentIndex: currentIndex,
-                    onTap: onTabChanged,
-                  ),
-                ),
               Expanded(
-                child: Scaffold(
-                  backgroundColor: contentBackground,
-                  appBar: Header(scaffoldKey: _scaffoldKey),
-                  body: widget.navigationShell,
+                child: Row(
+                  children: [
+                    if (isLargeScreen)
+                      Sidebar(currentIndex: currentIndex, onTap: onTabChanged),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Header(scaffoldKey: _scaffoldKey),
+                          Expanded(child: widget.navigationShell),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              NowPlayingBar(
+                onTap: () {},
+                onPlayPause: () {},
+                onNext: () {},
+                songId: '',
+                onPrevious: () {},
+                onQueue: () {},
               ),
             ],
           );
@@ -60,7 +70,7 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= maxWidth) {
-            return SizedBox.shrink();
+            return const SizedBox.shrink();
           }
           return BottomBar(currentIndex: currentIndex, onTap: onTabChanged);
         },

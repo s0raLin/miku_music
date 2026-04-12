@@ -1,11 +1,8 @@
 import 'dart:io';
 
-
-import 'package:audiotags/audiotags.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:mime/mime.dart';
-import 'package:path/path.dart' as p;
+import 'package:myapp/service/Files/index.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -15,134 +12,170 @@ class FilesPage extends StatefulWidget {
 }
 
 class _FilesPageState extends State<FilesPage> {
+  List<FileSystemEntity> musicFiles = [];
   var _isLoading = false;
-  List<File> _musicFiles = [];
 
-  Future pickDirectory() async {
-    //弹窗
-    final selectedDirectory = await FilePicker.getDirectoryPath();
-    if (selectedDirectory != null) {
-      setState(() {
-        _isLoading = true;
-      });
+  @override
+  void initState() {
+    super.initState();
+  }
 
-      //遍历选中的目录
-      final directory = Directory(selectedDirectory);
-      final List<FileSystemEntity> entities = await directory
-          .list(recursive: false)
-          .toList();
+  void _showPickDirectoryDialog(BuildContext context) {
+    String? _tmpPath; //用于弹窗临时选中
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("选择扫描目录"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      String? path = await FilePicker.getDirectoryPath();
+                      if (path != null) {
+                        setDialogState(() {
+                          _tmpPath = path;
+                        });
+                      }
+                    },
+                    label: const Text("选择目录"),
+                  ),
 
-      final List<File> files = entities.whereType<File>().where((file) {
-        final mimeType = lookupMimeType(file.path);
-        return mimeType != null && mimeType.startsWith("audio/");
-      }).toList();
+                  const SizedBox(height: 15),
+                  Text(_tmpPath ?? ""),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () {}, child: const Text("取消")),
+                ElevatedButton(
+                  onPressed: _tmpPath == null
+                      ? null
+                      : () async {
+                          setState(() {
+                            _isLoading = true;
+                          });
+                          Navigator.of(context).pop(); //关闭弹窗
 
-      setState(() {
-        _musicFiles = files;
+                          musicFiles = await MusicScanner.scanDirectory(
+                            _tmpPath!,
+                          );
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        },
+                  child: const Text("确认"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
-        _isLoading = false;
-      });
-    }
+  Widget _buildLoadingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(), //进度条
+          Text("正在全力加载中..."),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyView() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [Icon(Icons.library_music_outlined), Text("文件夹列表为空")],
+      ),
+    );
+  }
+
+  Widget _buildListView() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListView.builder(
+      itemCount: musicFiles.length,
+      itemBuilder: (context, index) {
+        final path = musicFiles[index].path;
+        return Material(
+          color: colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: () {},
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: ListTile(
+                leading: Text(path, style: TextStyle(fontSize: 20)),
+              ),
+            ),
+          ),
+        );
+        
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      body: Stack(
-        children: [
-          if (_isLoading) const Center(child: CircularProgressIndicator()),
-          if (_musicFiles.isEmpty)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.library_music_outlined,
-                    size: 64,
-                    color: colorScheme.primary,
-                  ),
-                  Text("文件夹为空"),
-                ],
-              ),
-            ),
-          GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.8,
-            ),
-            itemCount: _musicFiles.length,
-            itemBuilder: (context, index) {
-              final file = _musicFiles[index];
+      body: _isLoading
+          ? _buildLoadingView()
+          : (musicFiles.isEmpty ? _buildEmptyView() : _buildListView()),
 
-              //提取文件名
-              final fileName = p.basename(file.path);
-
-              return FutureBuilder(
-                future: AudioTags.read(file.path),
-                builder: (context, snapshot) {
-                  final tag = snapshot.data;
-                  final bytes = (tag?.pictures.isNotEmpty ?? false)
-                      ? tag!.pictures.first.bytes
-                      : null;
-                  return Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () {},
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              color: colorScheme.primary.withOpacity(0.1),
-
-                              child: bytes != null
-                                  ? Image.memory(
-                                      bytes,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                    )
-                                  : const Icon(Icons.music_note, size: 50),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              tag?.title ?? fileName, //有标题显示标题,没有标题显示文件名
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton(
-              
-              onPressed: pickDirectory,
-              backgroundColor: colorScheme.primary,
-              child: const Icon(Icons.add, color: Colors.white, size: 30),
-            ),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showPickDirectoryDialog(context),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        icon: const Icon(Icons.folder_open_rounded),
+        label: const Text('选择目录'),
       ),
     );
   }
 }
+
+  // Future<void> pickDirectory() async {
+  //   final selectedDirectory = await FilePicker.getDirectoryPath();
+  //   if (selectedDirectory != null) {
+  //     setState(() => _isLoading = true);
+
+  //     try {
+  //       final directory = Directory(selectedDirectory);
+  //       final List<FileSystemEntity> entities = await directory
+  //           .list(recursive: false)
+  //           .toList();
+
+  //       final List<File> files = entities.whereType<File>().where((file) {
+  //         final mimeType = lookupMimeType(file.path);
+  //         return mimeType != null && mimeType.startsWith("audio/");
+  //       }).toList();
+
+  //       setState(() {
+  //         _musicFiles = files;
+  //         _isLoading = false;
+  //       });
+  //     } catch (e) {
+  //       setState(() => _isLoading = false);
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(
+  //           context,
+  //         ).showSnackBar(SnackBar(content: Text('读取目录失败: $e')));
+  //       }
+  //     }
+  //   }
+  // }
+
+// floatingActionButton: FloatingActionButton.extended(
+//         onPressed: pickDirectory,
+//         backgroundColor: colorScheme.primary,
+//         foregroundColor: colorScheme.onPrimary,
+//         icon: const Icon(Icons.folder_open_rounded),
+//         label: const Text('选择目录'),
+//       ),

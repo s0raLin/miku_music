@@ -15,11 +15,10 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppBar(
-      
-      backgroundColor: backgroundColor ?? Colors.transparent,
+      backgroundColor: backgroundColor ?? colorScheme.surface,
       centerTitle: true,
       elevation: 0,
-      surfaceTintColor: Colors.transparent,
+      surfaceTintColor: colorScheme.surface,
       leading: IconButton(
         onPressed: () {
           scaffoldKey?.currentState?.openDrawer();

@@ -12,7 +12,6 @@ Future<void> main() async {
   final initialColor = await SettingService.loadColor();
   final initialThemeMode = await SettingService.loadThemeMode();
 
-  // runApp(IndexRouter());
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(

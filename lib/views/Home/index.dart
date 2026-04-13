@@ -22,15 +22,8 @@ class _HomePageState extends State<HomePage> {
     {'title': '电台精选', 'sub': '陪你度过每一天'},
   ];
 
-  static const List<Map<String, dynamic>> _songs = [
-    {'title': '夜曲', 'artist': '周杰伦', 'album': '十一月的萧邦'},
-    {'title': '晴天', 'artist': '周杰伦', 'album': '叶惠美'},
-    {'title': '稻香', 'artist': '周杰伦', 'album': '魔杰座'},
-    {'title': '七里香', 'artist': '周杰伦', 'album': '七里香'},
-    {'title': '告白气球', 'artist': '周杰伦', 'album': '周杰伦的床边故事'},
-    {'title': '青花瓷', 'artist': '周杰伦', 'album': '我很忙'},
-    {'title': '简单爱', 'artist': '周杰伦', 'album': '范特西'},
-    {'title': '双截棍', 'artist': '周杰伦', 'album': '范特西'},
+  static const List<Map<String, String>> _songs = [
+    {'title': "1", 'artist': "1", 'album': '1'},
   ];
 
   @override
@@ -164,110 +157,40 @@ class _HomePageState extends State<HomePage> {
           // ── 歌曲列表 ─────────────────────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            sliver: SliverList.separated(
-              itemCount: _songs.length,
-              itemBuilder: (context, index) {
-                final song = _songs[index];
-                return _SongTile(
-                  index: index,
-                  title: song['title']!,
-                  artist: song['artist']!,
-                  album: song['album']!,
-                  onTap: () => context.push('/music/$index'),
-                );
-              },
-              separatorBuilder: (_, __) => const SizedBox(height: 6),
+            sliver: ListTileTheme(
+              data: ListTileThemeData(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                iconColor: colorScheme.primary,
+                textColor: colorScheme.onSurface,
+
+                tileColor: colorScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ), //外轮廓
+              ),
+              child: SliverList.separated(
+                itemCount: _songs.length,
+                itemBuilder: (context, index) {
+                  final song = _songs[index];
+                  return ListTile(
+                    onTap: () {
+                      context.push("/music/$index");
+                    },
+                    leading: Icon(Icons.library_music, size: 42),
+                    title: Text(song["title"] ?? "未知"),
+                    subtitle: Text('${song["artist"]} · ${song["album"]}'),
+                    horizontalTitleGap: 4,
+                    trailing: Icon(Icons.chevron_right),
+                  );
+                },
+                separatorBuilder: (_, __) => const SizedBox(height: 6),
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SongTile extends StatelessWidget {
-  final int index;
-  final String title;
-  final String artist;
-  final String album;
-  final VoidCallback onTap;
-
-  const _SongTile({
-    required this.index,
-    required this.title,
-    required this.artist,
-    required this.album,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Material(
-      color: colorScheme.surfaceContainer,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              // 序号 / 封面占位
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: colorScheme.primaryContainer,
-                ),
-                child: Center(
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // 标题 + 艺术家
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$artist · $album',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.outlineVariant,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

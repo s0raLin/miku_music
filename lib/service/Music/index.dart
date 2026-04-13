@@ -5,7 +5,22 @@ import 'package:audiotags/audiotags.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
 
-class MusicScanner {
+class MusicService {
+  static Future<MusicInfo> getSongById(String id) async {
+    //模拟本地延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    return MusicInfo(
+      title: '千本桜',
+      artist: '黒うさP / 初音ミク',
+      album: 'ALL THAT 千本桜',
+      duration: const Duration(seconds: 245),
+      coverBytes: null, // 实际开发中通过文件读取或网络获取
+      lyrics:
+          "[00:00.00]千本桜 夜ニ紛レ\n[00:05.00]君ノ声モ届カナイヨ\n[00:10.00]此処は宴 鋼の檻\n[00:15.00]その断頭台で見下ろして",
+    );
+  }
+
   static Future<MusicInfo> parse(String path) async {
     final Tag? tag = await AudioTags.read(path);
 
@@ -19,9 +34,10 @@ class MusicScanner {
     return MusicInfo(
       title: tag?.title ?? "未知标题",
       artist: artist,
+      album: tag?.album ?? "未知",
 
       duration: Duration(milliseconds: tag?.duration ?? 0),
-      cover: coverBytes,
+      coverBytes: coverBytes,
       lyrics: lyrics,
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:myapp/service/Settings/index.dart';
 
 class ThemeProvider extends ChangeNotifier {
@@ -38,13 +39,30 @@ class ThemeProvider extends ChangeNotifier {
     SettingService.setColor(color);
   }
 
-  ThemeData get themeData => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: _themeMode == ThemeMode.dark
-          ? Brightness.dark
-          : Brightness.light,
-    ),
-  );
+  // ThemeData get themeData => ThemeData(
+  //   useMaterial3: true,
+  //   fontFamily: "NiShiKiFont",
+  //   colorScheme: ColorScheme.fromSeed(
+  //     seedColor: _seedColor,
+  //     brightness: _themeMode == ThemeMode.dark
+  //         ? Brightness.dark
+  //         : Brightness.light,
+  //   ),
+  // );
+
+  ThemeData get themeData {
+    final baseTheme = ThemeData(
+      useMaterial3: true,
+      fontFamily: "NiShiKiFont",
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _seedColor,
+        brightness: _themeMode == ThemeMode.dark
+            ? Brightness.dark
+            : Brightness.light,
+      ),
+    );
+    return baseTheme.copyWith(
+      textTheme: GoogleFonts.dotGothic16TextTheme(baseTheme.textTheme),
+    );
+  }
 }

@@ -36,7 +36,7 @@ class _FilesPageState extends State<FilesPage> {
     });
 
     //像"接水"一样监听数据流
-    _scanSub = MusicScanner.scanMusic(path).listen(
+    _scanSub = MusicService.scanMusic(path).listen(
       (music) {
         //每当冒出一首歌,我们把它加进UI
         setState(() {
@@ -132,14 +132,16 @@ class _FilesPageState extends State<FilesPage> {
   Widget _buildListView() {
     final colorScheme = Theme.of(context).colorScheme;
     return ListTileTheme(
-      // 在这里统一配置样式
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      iconColor: colorScheme.primary,
-      textColor: colorScheme.onSurface,
+      data: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        iconColor: colorScheme.primary,
+        textColor: colorScheme.onSurface,
 
-      tileColor: colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), //外轮廓
-
+        tileColor: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ), //外轮廓
+      ),
       child: ListView.separated(
         padding: const EdgeInsets.all(12), // 列表整体内边距
         itemCount: _playList.length,
@@ -154,8 +156,8 @@ class _FilesPageState extends State<FilesPage> {
               height: 50,
               clipBehavior: Clip.antiAlias, //抗锯齿
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-              child: item.cover != null
-                  ? Image.memory(item.cover!, fit: BoxFit.cover)
+              child: item.coverBytes != null
+                  ? Image.memory(item.coverBytes!, fit: BoxFit.cover)
                   : const Icon(Icons.music_note),
             ),
             title: Text(item.title),

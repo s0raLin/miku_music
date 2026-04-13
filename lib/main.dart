@@ -17,6 +17,7 @@ Future<void> main() async {
       create: (_) => ThemeProvider(
         initialColor: initialColor,
         initialMode: initialThemeMode,
+        
       ),
       child: const IndexRouter(),
     ),

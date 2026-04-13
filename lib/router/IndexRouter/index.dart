@@ -73,13 +73,49 @@ final _routes = [
   GoRoute(path: "/register", builder: (context, state) => RegisterPage()),
   GoRoute(
     path: "/music/:songId",
-    builder: (context, state) =>
-        MusicDetailPage(id: state.pathParameters["songId"]),
+    pageBuilder: (context, state) {
+      final id = state.pathParameters["songId"];
+      return CustomTransitionPage(
+        child: MusicDetailPage(id: id),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position:
+                Tween<Offset>(
+                  // Offset(1, 0) 表示屏幕右侧边缘外
+                  // Offset(0, 0) 表示屏幕中心位置
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutExpo),
+                ),
+            child: child,
+          );
+        },
+      );
+    },
   ),
   GoRoute(
     name: "settings",
     path: "/settings",
-    builder: (context, state) => SettingsPage(),
+    pageBuilder: (context, state) {
+      return CustomTransitionPage(
+        child: const SettingsPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position:
+                Tween<Offset>(
+                  // Offset(1, 0) 表示屏幕右侧边缘外
+                  // Offset(0, 0) 表示屏幕中心位置
+                  begin: const Offset(1, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutExpo),
+                ),
+            child: child,
+          );
+        },
+      );
+    },
   ),
   StatefulShellRoute.indexedStack(
     builder: (context, state, navigationShell) =>

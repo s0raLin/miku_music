@@ -18,6 +18,7 @@ dependencies:
   carousel_slider: ^5.1.2
   lrc_parser: ^0.0.1
   audiotags: ^1.4.5
+  google_fonts: ^8.0.2
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +30,7 @@ flutter:
   assets:
     - lib/assets/
     - lib/assets/images/
+  fonts:
+    - family: NiShiKiFont
+      fonts:
+        - asset: lib/assets/fonts/nishiki-teki.ttf

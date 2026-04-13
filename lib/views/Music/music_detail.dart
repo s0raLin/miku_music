@@ -1,45 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/service/Music/index.dart';
 
 class MusicDetailPage extends StatefulWidget {
   final String? id;
 
-  const MusicDetailPage({super.key, required this.id});
+  const MusicDetailPage({super.key, this.id});
 
   @override
   State<MusicDetailPage> createState() => _MusicDetailPageState();
 }
 
 class _MusicDetailPageState extends State<MusicDetailPage> {
+  // 定义 Future 变量，避免 build 时重复请求
+  late Future<MusicInfo> _musicFuture;
+
   bool _isPlaying = true;
   bool _isLiked = false;
   double _progress = 0.38;
 
   // 模拟歌词
-  static const List<Map<String, dynamic>> _lyrics = [
-    {'time': 0, 'text': '夜曲'},
-    {'time': 8, 'text': '周杰伦'},
-    {'time': 16, 'text': ''},
-    {'time': 20, 'text': '为你弹奏肖邦的夜曲'},
-    {'time': 26, 'text': '纪念我死去的爱情'},
-    {'time': 32, 'text': '你的泪光 柔弱中带伤'},
-    {'time': 38, 'text': '惨白的月弯弯勾住过往'},
-    {'time': 44, 'text': '夜太漫长 凝结成了霜'},
-    {'time': 50, 'text': '是谁在阁楼上冰冷地弹奏着哀伤'},
-    {'time': 56, 'text': '夜曲的离开'},
-    {'time': 62, 'text': '是你没有回答的答案'},
-  ];
+  static const List<Map<String, dynamic>> _lyrics = [];
 
   void _togglePlay() {
     setState(() => _isPlaying = !_isPlaying);
   }
 
-  String _formatDuration(double progress, {bool total = false}) {
-    final totalSec = 252; // 4:12
-    final sec = total ? totalSec : (progress * totalSec).round();
-    final m = sec ~/ 60;
-    final s = sec % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  @override
+  void initState() {
+    super.initState();
+    // 初始化时加载数据
+    _musicFuture = MusicService.getSongById(widget.id ?? '0');
   }
 
   @override
@@ -48,58 +40,99 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 700;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
-          onPressed: () => context.pop(),
-        ),
-        title: Column(
-          children: [
-            Text(
-              '正在播放',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
+    return FutureBuilder<MusicInfo>(
+      future: _musicFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
+                onPressed: () => context.pop(),
               ),
             ),
-            const Text(
-              '夜曲',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            body: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [CircularProgressIndicator(), Text("加载中...")],
+              ),
             ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-        ],
-      ),
-      body: isWide
-          ? _WideLayout(
-              progress: _progress,
-              isPlaying: _isPlaying,
-              isLiked: _isLiked,
-              lyrics: _lyrics,
-              colorScheme: colorScheme,
-              onTogglePlay: _togglePlay,
-              onToggleLike: () => setState(() => _isLiked = !_isLiked),
-              onProgressChanged: (v) => setState(() => _progress = v),
-              formatDuration: _formatDuration,
-            )
-          : _NarrowLayout(
-              progress: _progress,
-              isPlaying: _isPlaying,
-              isLiked: _isLiked,
-              lyrics: _lyrics,
-              colorScheme: colorScheme,
-              onTogglePlay: _togglePlay,
-              onToggleLike: () => setState(() => _isLiked = !_isLiked),
-              onProgressChanged: (v) => setState(() => _progress = v),
-              formatDuration: _formatDuration,
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
+                onPressed: () => context.pop(),
+              ),
             ),
+            body: const Center(child: Text("数据加载失败")),
+          );
+        }
+
+        //拿到数据实体
+        final music = snapshot.data!;
+
+        return Scaffold(
+          backgroundColor: colorScheme.surface,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
+              onPressed: () => context.pop(),
+            ),
+            title: Column(
+              children: [
+                Text(
+                  '正在播放',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  music.title,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            centerTitle: true,
+            actions: [
+              IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+            ],
+          ),
+          body: isWide
+              ? _WideLayout(
+                  progress: _progress,
+                  isPlaying: _isPlaying,
+                  isLiked: _isLiked,
+                  lyrics: _lyrics,
+                  colorScheme: colorScheme,
+                  onTogglePlay: _togglePlay,
+                  onToggleLike: () => setState(() => _isLiked = !_isLiked),
+                  onProgressChanged: (v) => setState(() => _progress = v),
+                  music: music,
+                )
+              : _NarrowLayout(
+                  progress: _progress,
+                  isPlaying: _isPlaying,
+                  isLiked: _isLiked,
+                  lyrics: _lyrics,
+                  colorScheme: colorScheme,
+                  onTogglePlay: _togglePlay,
+                  onToggleLike: () => setState(() => _isLiked = !_isLiked),
+                  onProgressChanged: (v) => setState(() => _progress = v),
+                  music: music,
+                ),
+        );
+      },
     );
   }
 }
@@ -107,6 +140,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
 // ─── 窄屏布局 ─────────────────────────────────────────────────────────
 
 class _NarrowLayout extends StatelessWidget {
+  final MusicInfo music;
   final double progress;
   final bool isPlaying;
   final bool isLiked;
@@ -115,7 +149,6 @@ class _NarrowLayout extends StatelessWidget {
   final VoidCallback onTogglePlay;
   final VoidCallback onToggleLike;
   final ValueChanged<double> onProgressChanged;
-  final String Function(double, {bool total}) formatDuration;
 
   const _NarrowLayout({
     required this.progress,
@@ -126,7 +159,7 @@ class _NarrowLayout extends StatelessWidget {
     required this.onTogglePlay,
     required this.onToggleLike,
     required this.onProgressChanged,
-    required this.formatDuration,
+    required this.music,
   });
 
   @override
@@ -142,13 +175,14 @@ class _NarrowLayout extends StatelessWidget {
             isLiked: isLiked,
             colorScheme: colorScheme,
             onToggleLike: onToggleLike,
+            music: music,
           ),
           const SizedBox(height: 24),
           _ProgressSection(
             progress: progress,
             colorScheme: colorScheme,
             onChanged: onProgressChanged,
-            formatDuration: formatDuration,
+            totalDuration: music.duration,
           ),
           const SizedBox(height: 16),
           _ControlButtons(
@@ -168,6 +202,7 @@ class _NarrowLayout extends StatelessWidget {
 // ─── 宽屏布局 ────────────────────────────────────────────────────
 
 class _WideLayout extends StatelessWidget {
+  final MusicInfo music;
   final double progress;
   final bool isPlaying;
   final bool isLiked;
@@ -176,7 +211,6 @@ class _WideLayout extends StatelessWidget {
   final VoidCallback onTogglePlay;
   final VoidCallback onToggleLike;
   final ValueChanged<double> onProgressChanged;
-  final String Function(double, {bool total}) formatDuration;
 
   const _WideLayout({
     required this.progress,
@@ -187,7 +221,7 @@ class _WideLayout extends StatelessWidget {
     required this.onTogglePlay,
     required this.onToggleLike,
     required this.onProgressChanged,
-    required this.formatDuration,
+    required this.music,
   });
 
   @override
@@ -207,13 +241,14 @@ class _WideLayout extends StatelessWidget {
                   isLiked: isLiked,
                   colorScheme: colorScheme,
                   onToggleLike: onToggleLike,
+                  music: music,
                 ),
                 const SizedBox(height: 24),
                 _ProgressSection(
                   progress: progress,
                   colorScheme: colorScheme,
                   onChanged: onProgressChanged,
-                  formatDuration: formatDuration,
+                  totalDuration: music.duration,
                 ),
                 const SizedBox(height: 16),
                 _ControlButtons(
@@ -271,6 +306,7 @@ class _AlbumCover extends StatelessWidget {
 }
 
 class _SongMeta extends StatelessWidget {
+  final MusicInfo music;
   final bool isLiked;
   final ColorScheme colorScheme;
   final VoidCallback onToggleLike;
@@ -279,6 +315,7 @@ class _SongMeta extends StatelessWidget {
     required this.isLiked,
     required this.colorScheme,
     required this.onToggleLike,
+    required this.music,
   });
 
   @override
@@ -290,7 +327,7 @@ class _SongMeta extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '夜曲',
+                music.title,
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -300,7 +337,7 @@ class _SongMeta extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                '周杰伦 · 十一月的萧邦',
+                '${music.artist} · ${music.album}',
                 style: TextStyle(
                   fontSize: 16,
                   color: colorScheme.onSurfaceVariant,
@@ -324,16 +361,26 @@ class _SongMeta extends StatelessWidget {
 
 class _ProgressSection extends StatelessWidget {
   final double progress;
+  final Duration totalDuration; //总时长
   final ColorScheme colorScheme;
   final ValueChanged<double> onChanged;
-  final String Function(double, {bool total}) formatDuration;
+  // final String Function(double, Duration totalDuration) formatDuration;
 
   const _ProgressSection({
     required this.progress,
     required this.colorScheme,
     required this.onChanged,
-    required this.formatDuration,
+    required this.totalDuration,
+    // required this.formatDuration,
   });
+
+  String _formatTime(double p) {
+    final totalSec = totalDuration.inSeconds;
+    final sec = (p * totalSec).round();
+    final m = sec ~/ 60;
+    final s = sec % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -361,7 +408,7 @@ class _ProgressSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                formatDuration(progress),
+                _formatTime(progress),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -369,7 +416,7 @@ class _ProgressSection extends StatelessWidget {
                 ),
               ),
               Text(
-                formatDuration(1.0, total: true),
+                _formatTime(1.0),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -464,11 +511,73 @@ class _LyricsSection extends StatelessWidget {
     this.scrollable = false,
   });
 
+  Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 1. 使用 Squircle (超圆角矩形) 代替圆形，更有 Android 16 的精致感
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHigh, // 更具深度的容器色
+              borderRadius: BorderRadius.circular(28), // 类似应用图标的超圆角
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 背景微弱扩散效果
+                Icon(
+                  Icons.music_note_outlined,
+                  color: colorScheme.primary.withOpacity(0.1),
+                  size: 48,
+                ),
+                // 主图标：使用更具现代感的 Outlined 风格
+                Icon(
+                  Icons.speaker_notes_off_outlined,
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                  size: 32,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // 2. 标题文字：加大字重，间距微调
+          Text(
+            '歌詞が見つかりません', // 考虑到你的日系风格，可以微调文案
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 3. 描述文字：更柔和的对比度
+          Text(
+            'この曲の歌詞データはまだ登録されていません。',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        if (lyrics.isEmpty) _buildEmptyState(context),
         ...lyrics.map(
           (line) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),

@@ -1,23 +1,16 @@
-// import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// import 'package:mime/mime.dart';
+class FileService {
+  static Future savePaths(List<String> newPaths) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getStringList("folder_path") ?? [];
+    // 合并去重
+    final merged = {...existing, ...newPaths}.toList();
+    await prefs.setStringList("folder_paths", merged);
+  }
 
-// class MusicScanner {
-//   static Future<List<FileSystemEntity>> scanDirectory(String selectedDirectory) async {
-
-//     // 遍历文件夹
-//     final dir = Directory(selectedDirectory);
-
-//     try {
-//       List<FileSystemEntity> entities = dir.listSync(recursive: true);
-
-//       final List<File> musicFiles = entities.whereType<File>().where((file) {
-//         final mimeType = lookupMimeType(file.path);
-//         return mimeType != null && mimeType.startsWith("audio/");
-//       }).toList();
-//       return musicFiles;
-//     } catch (e) {
-//       return [];
-//     }
-//   }
-// }
+  static Future<List<String>> loadPaths() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList("folder_paths") ?? [];
+  }
+}

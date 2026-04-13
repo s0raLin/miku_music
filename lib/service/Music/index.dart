@@ -45,8 +45,7 @@ class MusicService {
   }
 
   static Future<List<FileSystemEntity>> scanDirectory(
-    String selectedDirectory,
-  ) async {
+    String selectedDirectory) async {
     // 遍历文件夹
     final dir = Directory(selectedDirectory);
 
@@ -63,18 +62,19 @@ class MusicService {
     }
   }
 
-  static Stream<MusicInfo> scanMusic(String selectedDirectory) async* {
-    final musicFiles = await scanDirectory(selectedDirectory);
+  static Stream<MusicInfo> scanDirectories(
+    List<String> selectedDirectories,
+  ) async* {
+    for (final directory in selectedDirectories) {
+      final musicFiles = await scanDirectory(directory); // 拿到真正的文件列表
+      for (final file in musicFiles) {
+        try {
+          final music = await parse(file.path);
 
-    for (var file in musicFiles) {
-      try {
-        //逐个解析
-        final music = await parse(file.path);
-        //解析完一个立即投递出去
-        yield music;
-      } catch (e) {
-        //解析失败继续下一个
-        continue;
+          yield music;
+        } catch (e) {
+          continue;
+        }
       }
     }
   }

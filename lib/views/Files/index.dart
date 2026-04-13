@@ -4,7 +4,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:provider/provider.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -17,27 +20,21 @@ class _FilesPageState extends State<FilesPage> {
   List<MusicInfo> _playList = [];
   bool _isScanning = false; //是否正在扫描
   StreamSubscription? _scanSub; //扫描任务遥控器
-  String? _currentPath; //当前扫描路径
+  List<String> paths = [];
 
   // 开始扫描
-  void _startScan(String path) {
-    if (path == _currentPath) return; //路径没变就不用重新扫描
-    //准备工作: 清空旧数据,开启加载动画
-    setState(() {
-      _playList = [];
-      _isScanning = true;
-    });
+  void _startScan(List<String> paths) {
+    if (paths.isEmpty) return;
 
     // 如果有正在扫描的任务,关闭它
     _scanSub?.cancel();
     setState(() {
-      _currentPath = path;
       _playList.clear(); //确保为新扫描,清空旧的
       _isScanning = true;
     });
 
     //像"接水"一样监听数据流
-    _scanSub = MusicService.scanMusic(path).listen(
+    _scanSub = MusicService.scanDirectories(paths).listen(
       (music) {
         //每当冒出一首歌,我们把它加进UI
         setState(() {
@@ -61,13 +58,25 @@ class _FilesPageState extends State<FilesPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _initScan();
+  }
+
+  Future<void> _initScan() async {
+    paths = await FileService.loadPaths();
+    if (paths.isNotEmpty) {
+      _startScan(paths);
+    }
+  }
+
+  @override
   void dispose() {
     _scanSub?.cancel(); //页面关掉时停止扫描任务,防止内存泄漏
     super.dispose();
   }
 
   void _showPickDirectoryDialog(BuildContext context) {
-    String? tmpPath; //用于弹窗临时选中
     showDialog(
       context: context,
       builder: (context) {
@@ -75,24 +84,39 @@ class _FilesPageState extends State<FilesPage> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text("选择扫描目录"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final path = await FilePicker.getDirectoryPath();
-                      if (path != null) {
-                        setDialogState(() {
-                          tmpPath = path;
-                        });
-                      }
-                    },
-                    label: const Text("选择目录"),
-                  ),
+              content: SizedBox(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final path = await FilePicker.getDirectoryPath();
+                          if (path != null) {
+                            setDialogState(() {
+                              paths.add(path);
+                            });
+                          }
+                        },
+                        label: const Text("选择目录"),
+                      ),
 
-                  const SizedBox(height: 15),
-                  Text(tmpPath ?? ""),
-                ],
+                      const SizedBox(height: 15),
+                      ...List.generate(paths.length, (index) {
+                        return ListTile(
+                          leading: Text(paths[index]),
+                          trailing: IconButton(
+                            onPressed: () {
+                              setDialogState(() {
+                                paths.removeAt(index);
+                              });
+                            },
+                            icon: Icon(Icons.close),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
               ),
               actions: [
                 TextButton(
@@ -102,15 +126,12 @@ class _FilesPageState extends State<FilesPage> {
                   child: const Text("取消"),
                 ),
                 ElevatedButton(
-                  onPressed: tmpPath == null
-                      ? null
-                      : () async {
-                          setState(() {
-                            _startScan(tmpPath!);
-                            _playList.clear(); //清空旧数据
-                          });
-                          Navigator.of(context).pop(); //关闭弹窗
-                        },
+                  onPressed: () async {
+                    //持久化路径
+                    FileService.savePaths(paths);
+                    _startScan(paths);
+                    Navigator.of(context).pop(); //关闭弹窗
+                  },
                   child: const Text("确认"),
                 ),
               ],
@@ -130,8 +151,10 @@ class _FilesPageState extends State<FilesPage> {
     );
   }
 
-  Widget _buildListView() {
+  Widget _buildListView(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final musicProvider = context.watch<MusicProvider>();
+
     return ListTileTheme(
       data: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -152,6 +175,7 @@ class _FilesPageState extends State<FilesPage> {
           return ListTile(
             // 这里的 ListTile 会自动继承上方 ListTileTheme 的样式
             onTap: () {
+              musicProvider.playFromLibrary(item);
               final filePath = item.id;
 
               context.push("/music-detail", extra: filePath);
@@ -178,7 +202,7 @@ class _FilesPageState extends State<FilesPage> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: _playList.isNotEmpty
-          ? _buildListView()
+          ? _buildListView(context)
           : (_isScanning
                 ? const Center(child: CircularProgressIndicator())
                 : _buildEmptyView()),

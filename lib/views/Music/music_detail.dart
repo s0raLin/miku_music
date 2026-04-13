@@ -45,6 +45,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     //监听Provider状态
     final musicProvider = context.watch<MusicProvider>();
     final music = musicProvider.currentMusic;
+    
 
     // 如果 Provider 还没拿到数据，显示加载中
     if (music == null) {

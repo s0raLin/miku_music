@@ -38,10 +38,13 @@ class _FilesPageState extends State<FilesPage> {
 
     //像"接水"一样监听数据流
     _scanSub = MusicService.scanDirectories(paths).listen(
-      (music) {
+      (scan) {
         //每当冒出一首歌,我们把它加进UI
         setState(() {
-          _playList.add(music);
+          final music = scan.music;
+          if (music != null) {
+            _playList.add(music);
+          }
           _isScanning = false; //只要有一首歌了,就不必显示大转圈
         });
       },
@@ -85,6 +88,7 @@ class _FilesPageState extends State<FilesPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final List<String> tmpPaths = [];
             return AlertDialog(
               title: const Text("选择扫描目录"),
               content: SizedBox(
@@ -96,7 +100,7 @@ class _FilesPageState extends State<FilesPage> {
                           final path = await FilePicker.getDirectoryPath();
                           if (path != null) {
                             setDialogState(() {
-                              paths.add(path);
+                              tmpPaths.add(path);
                             });
                           }
                         },
@@ -104,13 +108,13 @@ class _FilesPageState extends State<FilesPage> {
                       ),
 
                       const SizedBox(height: 15),
-                      ...List.generate(paths.length, (index) {
+                      ...List.generate(tmpPaths.length, (index) {
                         return ListTile(
-                          leading: Text(paths[index]),
+                          leading: Text(tmpPaths[index]),
                           trailing: IconButton(
                             onPressed: () {
                               setDialogState(() {
-                                paths.removeAt(index);
+                                tmpPaths.removeAt(index);
                               });
                             },
                             icon: Icon(Icons.close),
@@ -130,6 +134,7 @@ class _FilesPageState extends State<FilesPage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    paths = tmpPaths;
                     //持久化路径
                     FileService.savePaths(paths);
                     _startScan(paths);

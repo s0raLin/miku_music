@@ -5,6 +5,13 @@ import 'package:audiotags/audiotags.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
 
+class ScanProgress {
+  final String currentPath; //正在处理的路径
+  final MusicInfo? music; //如果解析了音乐,则返回对象
+
+  ScanProgress({required this.currentPath, this.music});
+}
+
 class MusicService {
   static Future<MusicInfo> getSongById(String id) async {
     //模拟本地延迟
@@ -45,7 +52,8 @@ class MusicService {
   }
 
   static Future<List<FileSystemEntity>> scanDirectory(
-    String selectedDirectory) async {
+    String selectedDirectory,
+  ) async {
     // 遍历文件夹
     final dir = Directory(selectedDirectory);
 
@@ -62,18 +70,29 @@ class MusicService {
     }
   }
 
-  static Stream<MusicInfo> scanDirectories(
+  static Stream<ScanProgress> scanDirectories(
     List<String> selectedDirectories,
   ) async* {
-    for (final directory in selectedDirectories) {
-      final musicFiles = await scanDirectory(directory); // 拿到真正的文件列表
-      for (final file in musicFiles) {
-        try {
-          final music = await parse(file.path);
+    for (final directoryPath in selectedDirectories) {
+      final dir = Directory(directoryPath);
 
-          yield music;
-        } catch (e) {
-          continue;
+      await for (final entity in dir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        yield ScanProgress(currentPath: entity.path);
+        if (entity is File) {
+          final mimeType = lookupMimeType(entity.path);
+          if (mimeType != null && mimeType.startsWith("audio/")) {
+            try {
+              final music = await parse(entity.path);
+
+              //汇报解析成功的音乐数据
+              yield ScanProgress(currentPath: entity.path, music: music);
+            } catch (e) {
+              continue;
+            }
+          }
         }
       }
     }

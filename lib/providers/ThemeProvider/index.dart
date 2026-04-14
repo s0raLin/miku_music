@@ -61,7 +61,7 @@ class ThemeProvider extends ChangeNotifier {
       ),
     );
     return baseTheme.copyWith(
-      textTheme: GoogleFonts.dotGothic16TextTheme(baseTheme.textTheme),
+      textTheme: GoogleFonts.notoSansScTextTheme(baseTheme.textTheme),
     );
   }
 }

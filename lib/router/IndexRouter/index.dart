@@ -9,6 +9,7 @@ import 'package:myapp/views/Login/register.dart';
 import 'package:myapp/views/Music/album_detail.dart';
 import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/Music/music_detail.dart';
+import 'package:myapp/views/NotFound/index.dart';
 import 'package:myapp/views/Settings/index.dart';
 import 'package:myapp/views/Splash/index.dart';
 import 'package:myapp/views/index.dart';
@@ -137,7 +138,11 @@ final _routes = [
   ),
 ];
 
-final _router = GoRouter(initialLocation: "/splash", routes: _routes);
+final _router = GoRouter(
+  initialLocation: "/splash",
+  routes: _routes,
+  errorBuilder: (context, state) => const NotFoundPage(),
+);
 
 class IndexRouter extends StatelessWidget {
   const IndexRouter({super.key});

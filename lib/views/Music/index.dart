@@ -41,6 +41,8 @@ class _MusicPageState extends State<MusicPage> {
               // 这里的 ListTile 会自动继承上方 ListTileTheme 的样式
               onTap: () {
                 final music = item;
+                final musicProvider = context.read<MusicProvider>();
+                musicProvider.playFromLibrary(music);
                 context.push("/music-detail", extra: music);
               },
               leading: Container(
@@ -56,9 +58,12 @@ class _MusicPageState extends State<MusicPage> {
               ),
               title: Text(item.title),
               subtitle: Text(item.artist),
-              trailing: IconButton(onPressed: () {
-                context.read<MusicProvider>().remoteFromQueue(index);
-              }, icon: Icon(Icons.close)),
+              trailing: IconButton(
+                onPressed: () {
+                  context.read<MusicProvider>().remoteFromQueue(index);
+                },
+                icon: Icon(Icons.close),
+              ),
             );
           },
         ),

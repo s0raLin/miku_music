@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/contants/Assets/index.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/router/Extensions/router.dart';
+import 'package:myapp/service/Music/index.dart';
+import 'package:provider/provider.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -53,6 +56,7 @@ class _SplashPageState extends State<SplashPage>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final musicProvider = context.watch<MusicProvider>();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,

@@ -26,6 +26,7 @@ class MusicProvider extends ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   StreamSubscription? _stateSubscription; //持有的监听器句柄
 
+
   // 歌曲库
   List<MusicInfo> _library = [];
   List<MusicInfo> get library => _library;
@@ -76,6 +77,7 @@ class MusicProvider extends ChangeNotifier {
         .toList();
     notifyListeners();
   }
+
 
   bool isInQueue(String id) => _queue.any((m) => m.id == id);
   //添加到队尾

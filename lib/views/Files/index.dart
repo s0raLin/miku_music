@@ -6,11 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
 
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
-import 'package:provider/provider.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -86,9 +84,9 @@ class _FilesPageState extends State<FilesPage> {
     showDialog(
       context: context,
       builder: (context) {
+        final List<String> tmpPaths = [...paths];
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final List<String> tmpPaths = [];
             return AlertDialog(
               title: const Text("选择扫描目录"),
               content: SizedBox(
@@ -136,7 +134,8 @@ class _FilesPageState extends State<FilesPage> {
                   onPressed: () async {
                     paths = tmpPaths;
                     //持久化路径
-                    FileService.savePaths(paths);
+                    await FileService.savePaths(paths);
+
                     _startScan(paths);
                     Navigator.of(context).pop(); //关闭弹窗
                   },
@@ -147,15 +146,6 @@ class _FilesPageState extends State<FilesPage> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildEmptyView() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [Icon(Icons.library_music_outlined), Text("文件夹列表为空")],
-      ),
     );
   }
 
@@ -195,56 +185,6 @@ class _FilesPageState extends State<FilesPage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildListView(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    // final musicProvider = context.watch<MusicProvider>();
-
-    return ListTileTheme(
-      data: ListTileThemeData(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        iconColor: colorScheme.primary,
-        textColor: colorScheme.onSurface,
-
-        tileColor: colorScheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ), //外轮廓
-      ),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(12), // 列表整体内边距
-        itemCount: _playList.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 6),
-        itemBuilder: (context, index) {
-          final item = _playList[index];
-          return ListTile(
-            // 这里的 ListTile 会自动继承上方 ListTileTheme 的样式
-            onTap: () {
-              final MusicInfo music = item;
-              // 执行清理操作
-              // context.read<MusicProvider>().playFromLibrary(music);
-              final musicProvider = context.read<MusicProvider>();
-              // musicProvider.addToQueue(music);
-              // musicProvider.playMusic(music.id, shouldPlay: false);
-              musicProvider.playFromLibrary(music);
-              context.push("/music-detail", extra: music);
-            },
-            leading: Container(
-              width: 50,
-              height: 50,
-              clipBehavior: Clip.antiAlias, //抗锯齿
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-              child: item.coverBytes != null
-                  ? Image.memory(item.coverBytes!, fit: BoxFit.cover)
-                  : const Icon(Icons.music_note),
-            ),
-            title: Text(item.title),
-            subtitle: Text(item.artist),
-          );
-        },
-      ),
     );
   }
 

@@ -9,7 +9,7 @@ import 'package:myapp/service/Settings/index.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
-  //确保与原生层通信准备就绪
+  //确保与原生层通信准备就绪flu
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isLinux || Platform.isWindows) {

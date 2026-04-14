@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:provider/provider.dart';
@@ -151,9 +154,48 @@ class _FilesPageState extends State<FilesPage> {
     );
   }
 
+  Widget _buildGridView(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    var albumMap = groupBy(_playList, (MusicInfo music) => music.album);
+    var albumNames = albumMap.keys.toList();
+
+    return GridView.builder(
+      itemCount: albumMap.length, //总条目数
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3, // 三列
+        mainAxisSpacing: 16, // 行间距
+        crossAxisSpacing: 16, // 列间距
+        childAspectRatio: 1, // 子项宽高比 (宽/高)
+      ),
+      itemBuilder: (context, index) {
+        final albumName = albumNames[index];
+        final songsInAlbum = albumMap[albumName] ?? [];
+
+        final coverBytes = songsInAlbum[0].coverBytes;
+
+        return Card(
+          clipBehavior: Clip.antiAlias, // 裁剪水波纹
+          color: colorScheme.surfaceContainer,
+          child: InkWell(
+            onTap: () {
+              context.push(
+                "/album-detail",
+                extra: {"albumName": albumName, "songs": songsInAlbum},
+              );
+            },
+            child: coverBytes != null && coverBytes.isNotEmpty
+                ? Image.memory(coverBytes)
+                : ImageIcon(AssetImage(MyAssets.music_note)),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildListView(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final musicProvider = context.watch<MusicProvider>();
+    // final musicProvider = context.watch<MusicProvider>();
 
     return ListTileTheme(
       data: ListTileThemeData(
@@ -175,10 +217,14 @@ class _FilesPageState extends State<FilesPage> {
           return ListTile(
             // 这里的 ListTile 会自动继承上方 ListTileTheme 的样式
             onTap: () {
-              musicProvider.playFromLibrary(item);
-              final filePath = item.id;
-
-              context.push("/music-detail", extra: filePath);
+              final MusicInfo music = item;
+              // 执行清理操作
+              // context.read<MusicProvider>().playFromLibrary(music);
+              final musicProvider = context.read<MusicProvider>();
+              // musicProvider.addToQueue(music);
+              // musicProvider.playMusic(music.id, shouldPlay: false);
+              musicProvider.playFromLibrary(music);
+              context.push("/music-detail", extra: music);
             },
             leading: Container(
               width: 50,
@@ -201,11 +247,12 @@ class _FilesPageState extends State<FilesPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: _playList.isNotEmpty
-          ? _buildListView(context)
-          : (_isScanning
-                ? const Center(child: CircularProgressIndicator())
-                : _buildEmptyView()),
+      // body: _playList.isNotEmpty
+      //     ? _buildListView(context)
+      //     : (_isScanning
+      //           ? const Center(child: CircularProgressIndicator())
+      //           : _buildEmptyView()),
+      body: _buildGridView(context),
 
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showPickDirectoryDialog(context),

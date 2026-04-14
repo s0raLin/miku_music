@@ -1,0 +1,37 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:provider/provider.dart';
+
+class AlbumDetailPage extends StatelessWidget {
+  final String albumName;
+  final List<MusicInfo> songs;
+  const AlbumDetailPage({
+    super.key,
+    required this.albumName,
+    required this.songs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(albumName)),
+      body: ListView.builder(
+        itemCount: songs.length,
+        itemBuilder: (context, index) {
+          final music = songs[index];
+          return ListTile(
+            leading: Icon(Icons.music_note),
+            title: Text(music.title),
+            subtitle: Text(music.artist),
+            onTap: () {
+              context.read<MusicProvider>().playFromLibrary(music);
+              context.push("/music-detail", extra: music);
+            },
+          );
+        },
+      ),
+    );
+  }
+}

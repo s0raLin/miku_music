@@ -9,9 +9,9 @@ import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
 
 class MusicDetailPage extends StatefulWidget {
-  final String? id;
+  final MusicInfo? music;
 
-  const MusicDetailPage({super.key, this.id});
+  const MusicDetailPage({super.key, required this.music});
 
   @override
   State<MusicDetailPage> createState() => _MusicDetailPageState();
@@ -24,28 +24,12 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   static const List<Map<String, dynamic>> _lyrics = [];
 
   @override
-  void initState() {
-    super.initState();
-    // 初始化时加载数据
-    //等当前这一帧画面彻底画完了，再去执行下面
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.id != null) {
-        // 核心：设置 shouldPlay 为 false
-        context.read<MusicProvider>().playMusic(widget.id!, shouldPlay: false);
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 700;
 
-    //监听Provider状态
-    final musicProvider = context.watch<MusicProvider>();
-    final music = musicProvider.currentMusic;
-    
+    final music = widget.music;
 
     // 如果 Provider 还没拿到数据，显示加载中
     if (music == null) {
@@ -148,7 +132,7 @@ class _NarrowLayout extends StatelessWidget {
             music: music,
           ),
           const SizedBox(height: 24),
-          _PlayerConsole(),
+          _PlayerConsole(music: music),
           const SizedBox(height: 40),
           _LyricsSection(lyrics: lyrics, colorScheme: colorScheme),
           const SizedBox(height: 32),
@@ -203,7 +187,7 @@ class _WideLayout extends StatelessWidget {
                   music: music,
                 ),
                 const SizedBox(height: 24),
-                _PlayerConsole(),
+                _PlayerConsole(music: music),
               ],
             ),
           ),
@@ -317,7 +301,8 @@ class _SongMeta extends StatelessWidget {
 }
 
 class _PlayerConsole extends StatelessWidget {
-  const _PlayerConsole();
+  final MusicInfo music;
+  const _PlayerConsole({required this.music});
 
   String _formatTime(Duration d) {
     final m = d.inMinutes;

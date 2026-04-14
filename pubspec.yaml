@@ -25,6 +25,7 @@ dependencies:
 
   media_kit_libs_linux: any
   media_kit_libs_windows_audio: any
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/views/Files/index.dart';
 import 'package:myapp/views/Home/index.dart';
 import 'package:myapp/views/Login/index.dart';
 import 'package:myapp/views/Login/register.dart';
+import 'package:myapp/views/Music/album_detail.dart';
 import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/Music/music_detail.dart';
 import 'package:myapp/views/Settings/index.dart';
@@ -73,13 +75,21 @@ final _routes = [
   GoRoute(path: "/login", builder: (context, state) => LoginPage()),
   GoRoute(path: "/register", builder: (context, state) => RegisterPage()),
   GoRoute(
+    path: "/album-detail",
+    builder: (context, state) {
+      final data = state.extra as Map<String, dynamic>;
+      final String albumName = data['albumName'] as String;
+      final List<MusicInfo> songs = data['songs'] as List<MusicInfo>;
+      return AlbumDetailPage(albumName: albumName, songs: songs);
+    },
+  ),
+  GoRoute(
     path: "/music-detail",
     pageBuilder: (context, state) {
-
-      final filePath = state.extra as String?;
+      final music = state.extra as MusicInfo?;
 
       return CustomTransitionPage(
-        child: MusicDetailPage(id: filePath),
+        child: MusicDetailPage(music: music),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position:

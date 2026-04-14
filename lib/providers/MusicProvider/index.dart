@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ enum PlayTrigger { user, auto }
 class MusicProvider extends ChangeNotifier {
   //私有播放器实例
   final AudioPlayer player = AudioPlayer();
+  StreamSubscription? _stateSubscription; //持有的监听器句柄
 
   // 歌曲库
   List<MusicInfo> _library = [];
@@ -32,6 +34,7 @@ class MusicProvider extends ChangeNotifier {
 
   List<MusicInfo> get queue => _queue;
 
+  bool isInQueue(String id) => _queue.any((m) => m.id == id);
   //添加到队尾
   void addToQueue(MusicInfo music) {
     _queue.add(music);
@@ -61,6 +64,7 @@ class MusicProvider extends ChangeNotifier {
     if (existingIndex != -1) {
       //已经在队列,直接跳过
       playByIndex(existingIndex);
+      return;
     } else {
       //不在队列,加入队尾再播放
       _queue.add(music);
@@ -70,8 +74,10 @@ class MusicProvider extends ChangeNotifier {
 
   Future<void> playMusic(String path, {shouldPlay = true}) async {
     try {
-      //停止当前播放,清理状态
-      await player.stop();
+      if (currentMusic?.id != path) {
+        //停止当前播放,清理状态
+        await player.stop();
+      }
 
       //加载新路径
       await player.setFilePath(path);
@@ -120,10 +126,13 @@ class MusicProvider extends ChangeNotifier {
 
   Future playByIndex(int index) async {
     if (index < 0 || index >= _queue.length) return;
+    if (index == _currentIndex && player.playing) return;
+
     _currentIndex = index;
     notifyListeners();
 
     final path = _queue[index].id;
+    await player.stop(); //* 停止当前播放,清理状态
     await player.setFilePath(path);
     player.play();
   }
@@ -176,9 +185,16 @@ class MusicProvider extends ChangeNotifier {
   }
 
   MusicProvider() {
-    player.processingStateStream.listen((state) {
+    _stateSubscription = player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) _playNext();
     });
+  }
+
+  @override
+  void dispose() {
+    _stateSubscription?.cancel(); //取消监听
+    player.dispose(); //销毁播放器释放的资源
+    super.dispose();
   }
 
   Stream<PositionData> get positionDataStream =>

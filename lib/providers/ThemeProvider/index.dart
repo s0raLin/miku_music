@@ -53,7 +53,6 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get themeData {
     final baseTheme = ThemeData(
       useMaterial3: true,
-      fontFamily: "NiShiKiFont",
       colorScheme: ColorScheme.fromSeed(
         seedColor: _seedColor,
         brightness: _themeMode == ThemeMode.dark

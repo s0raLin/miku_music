@@ -48,7 +48,7 @@ class Sidebar extends StatelessWidget {
         ),
         destinations: navItems.map((item) {
           return NavigationRailDestination(
-            icon: Icon(item.icon),
+            icon: item.i!,
             label: Text(item.label),
           );
         }).toList(),

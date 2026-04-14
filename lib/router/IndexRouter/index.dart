@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/views/Files/index.dart';
@@ -21,6 +22,7 @@ class AppNavItem {
 
   final Widget page;
   final IconData icon;
+  final ImageIcon? i;
   final String label;
   final List<RouteBase> routes;
 
@@ -28,6 +30,7 @@ class AppNavItem {
     required this.name,
     required this.path,
     required this.page,
+    this.i,
     required this.icon,
     required this.label,
     this.routes = const [],
@@ -39,6 +42,7 @@ final List<AppNavItem> navItems = [
     name: "home",
     path: "/home",
     page: HomePage(),
+    i: ImageIcon(AssetImage(MyAssets.home)),
     icon: Icons.home,
     label: "首页",
   ),
@@ -46,6 +50,7 @@ final List<AppNavItem> navItems = [
     name: "music",
     path: "/music",
     page: MusicPage(),
+    i: ImageIcon(AssetImage(MyAssets.music)),
     icon: Icons.music_note,
     label: "音乐",
   ),
@@ -53,6 +58,7 @@ final List<AppNavItem> navItems = [
     name: "files",
     path: "/files",
     page: FilesPage(),
+    i: ImageIcon(AssetImage(MyAssets.folder)),
     icon: Icons.folder,
     label: "文件",
   ),
@@ -87,10 +93,8 @@ final _routes = [
   GoRoute(
     path: "/music-detail",
     pageBuilder: (context, state) {
-      final music = state.extra as MusicInfo?;
-
       return CustomTransitionPage(
-        child: MusicDetailPage(music: music),
+        child: MusicDetailPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position:

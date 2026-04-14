@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:audiotags/audiotags.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:on_audio_query_forked/on_audio_query.dart';
+
 
 class ScanProgress {
   final String currentPath; //正在处理的路径
@@ -13,6 +15,38 @@ class ScanProgress {
 }
 
 class MusicService {
+  static final OnAudioQuery _audioQuery = OnAudioQuery();
+
+  static Future<bool> requestPermission() async {
+    if (!await _audioQuery.permissionsRequest()) {
+      return await _audioQuery.permissionsRequest();
+    }
+    return true;
+  }
+
+  static Future<List<MusicInfo>> getAllAndroidSongs() async {
+    final List<SongModel> songs = await _audioQuery.querySongs(
+      sortType: SongSortType.DISPLAY_NAME,
+      orderType: OrderType.ASC_OR_SMALLER,
+      uriType: UriType.EXTERNAL,
+    );
+
+    return songs
+        .map(
+          (song) => MusicInfo(
+            id: song.id.toString(),
+            title: song.title,
+            artist: song.artist ?? "未知歌手",
+            album: song.album ?? "未知专辑",
+            duration: Duration(milliseconds: song.duration ?? 0),
+            coverBytes: null,
+            lyrics: '',
+            // coverBytes: 可以后面用 queryArtwork 单独获取
+          ),
+        )
+        .toList();
+  }
+
   static Future<MusicInfo> getSongById(String id) async {
     //模拟本地延迟
     await Future.delayed(const Duration(milliseconds: 500));

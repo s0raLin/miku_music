@@ -55,14 +55,7 @@ class _MainPageState extends State<MainPage> {
                   ],
                 ),
               ),
-              NowPlayingBar(
-                onTap: () {},
-
-                onNext: () {},
-
-                onPrevious: () {},
-                onQueue: () {},
-              ),
+              NowPlayingBar(),
             ],
           );
         },

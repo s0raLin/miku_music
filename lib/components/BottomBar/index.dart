@@ -24,7 +24,7 @@ class BottomBar extends StatelessWidget {
         destinations: navItems.map((item) {
           return NavigationDestination(
             tooltip: item.label,
-            icon: Icon(item.icon),
+            icon: item.i!,
             selectedIcon: Icon(item.icon),
             label: item.label,
           );

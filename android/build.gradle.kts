@@ -1,9 +1,16 @@
+import com.android.build.gradle.internal.crash.afterEvaluate
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
+
+
+
 }
+
+
 
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory

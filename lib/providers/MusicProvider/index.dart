@@ -26,7 +26,6 @@ class MusicProvider extends ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   StreamSubscription? _stateSubscription; //持有的监听器句柄
 
-
   // 歌曲库
   List<MusicInfo> _library = [];
   List<MusicInfo> get library => _library;
@@ -77,7 +76,6 @@ class MusicProvider extends ChangeNotifier {
         .toList();
     notifyListeners();
   }
-
 
   bool isInQueue(String id) => _queue.any((m) => m.id == id);
   //添加到队尾
@@ -194,6 +192,8 @@ class MusicProvider extends ChangeNotifier {
     player.play();
   }
 
+  Future<void> playNext() => _playNext();
+  Future<void> playPrev() => _playPrev();
   Future<void> _playNext({PlayTrigger trigger = PlayTrigger.auto}) async {
     if (_queue.isEmpty) return;
 
@@ -234,11 +234,8 @@ class MusicProvider extends ChangeNotifier {
   Future<void> _playPrev() async {
     if (_queue.isEmpty) return;
 
-    if (_currentIndex > 0) {
-      await playByIndex(_currentIndex - 1);
-    } else {
-      await playByIndex(_queue.length - 1); //第一首跳到最后一首
-    }
+    final prevIndex = (_currentIndex - 1 + _queue.length) % _queue.length;
+    await playByIndex(prevIndex);
   }
 
   MusicProvider() {

@@ -36,11 +36,10 @@ class _MusicPageState extends State<MusicPage> {
           itemCount: queue.length,
           separatorBuilder: (context, index) => const SizedBox(height: 6),
           itemBuilder: (context, index) {
-            final item = queue[index];
+            final music = queue[index];
             return ListTile(
               // 这里的 ListTile 会自动继承上方 ListTileTheme 的样式
               onTap: () {
-                final music = item;
                 final musicProvider = context.read<MusicProvider>();
                 musicProvider.playFromLibrary(music);
                 context.push("/music-detail", extra: music);
@@ -52,12 +51,12 @@ class _MusicPageState extends State<MusicPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: item.coverBytes != null
-                    ? Image.memory(item.coverBytes!, fit: BoxFit.cover)
+                child: music.coverBytes != null
+                    ? Image.memory(music.coverBytes!, fit: BoxFit.cover)
                     : const Icon(Icons.music_note),
               ),
-              title: Text(item.title),
-              subtitle: Text(item.artist),
+              title: Text(music.title),
+              subtitle: Text(music.artist),
               trailing: IconButton(
                 onPressed: () {
                   context.read<MusicProvider>().remoteFromQueue(index);

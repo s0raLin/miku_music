@@ -16,17 +16,17 @@ class NowPlayingBar extends StatelessWidget {
   static const double _breakpoint    = 520.0;
   static const double _progressWidth = 280.0;
 
-  final VoidCallback onTap;
-  final VoidCallback onNext;
-  final VoidCallback onPrevious;
-  final VoidCallback onQueue;
+  // final VoidCallback onTap;
+  // final VoidCallback onNext;
+  // final VoidCallback onPrevious;
+  // final VoidCallback onQueue;
 
   const NowPlayingBar({
     super.key,
-    required this.onTap,
-    required this.onNext,
-    required this.onPrevious,
-    required this.onQueue,
+    // required this.onTap,
+    // required this.onNext,
+    // required this.onPrevious,
+    // required this.onQueue,
   });
 
   static String _fmt(Duration d) {
@@ -46,7 +46,7 @@ class NowPlayingBar extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {},
       child: Container(
         width: double.infinity,
         height: 80,
@@ -95,8 +95,8 @@ class NowPlayingBar extends StatelessWidget {
                             progressWidth: _progressWidth,
                             fmt:        _fmt,
                             onPlayPause:      mp.togglePlay,
-                            onNext:           onNext,
-                            onPrevious:       onPrevious,
+                            onNext:           () {},
+                            onPrevious:       () {},
                             onTogglePlayMode: mp.togglePlayMode,
                             onSeek: (v) => mp.player.seek(pos.duration * v),
                           ),
@@ -111,7 +111,7 @@ class NowPlayingBar extends StatelessWidget {
                               showCompactControls: !wide,
                               colorScheme:         colorScheme,
                               onPlayPause:         mp.togglePlay,
-                              onQueue:             onQueue,
+                              onQueue:             () {},
                             ),
                           ),
                         ),

@@ -27,7 +27,7 @@ class MusicProvider extends ChangeNotifier {
   StreamSubscription? _stateSubscription; //持有的监听器句柄
 
   // 歌曲库
-  List<MusicInfo> _library = [];
+  final List<MusicInfo> _library = [];
   List<MusicInfo> get library => _library;
   // 全局播放队列
   List<MusicInfo> _queue = [];
@@ -39,9 +39,28 @@ class MusicProvider extends ChangeNotifier {
   List<MusicInfo> _history = [];
   List<MusicInfo> get history => _history;
 
+  final List<MusicInfo> _favList = [];
+  List<MusicInfo> get favList => _favList;
+
+  Future<void> toggleFav(MusicInfo music) async {
+    final isExist = _favList.any((m) => m.id == music.id);
+    if (isExist) {
+      _favList.removeWhere((m) => music.id == m.id);
+    } else {
+      _favList.add(music);
+    }
+    _saveFavList();
+    notifyListeners();
+  }
+
+  Future<void> _saveFavList() async {
+    final pfs = await SharedPreferences.getInstance();
+    await pfs.setStringList("fav_list", _favList.map((m) => m.id).toList());
+  }
+
   Future<void> _saveHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_historyKey, _history.map((m) => m.id).toList());
+    final pfs = await SharedPreferences.getInstance();
+    await pfs.setStringList(_historyKey, _history.map((m) => m.id).toList());
   }
 
   Future<void> _addToHistory(MusicInfo music) async {
@@ -55,14 +74,14 @@ class MusicProvider extends ChangeNotifier {
   //清空历史
   Future<void> clearHistory() async {
     _history.clear();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_historyKey);
+    final pfs = await SharedPreferences.getInstance();
+    await pfs.remove(_historyKey);
     notifyListeners();
   }
 
   Future<void> _loadHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final ids = prefs.getStringList(_historyKey) ?? [];
+    final pfs = await SharedPreferences.getInstance();
+    final ids = pfs.getStringList(_historyKey) ?? [];
 
     _history = ids
         .map((id) {
@@ -85,7 +104,7 @@ class MusicProvider extends ChangeNotifier {
   }
 
   //从队尾移除
-  void remoteFromQueue(int index) {
+  void removeFromQueue(int index) {
     if (index == _currentIndex) return; //不能删除当前播放的
     _queue.removeAt(index);
     if (index < _currentIndex) _currentIndex--; //维护当前index
@@ -187,7 +206,9 @@ class MusicProvider extends ChangeNotifier {
 
     final music = _queue[index];
     _addToHistory(music); //添加到历史
-    await player.stop(); //* 停止当前播放,清理状态
+    // await player.stop(); //* 停止当前播放,清理状态
+    // 直接设置路径，不需要调用 stop()
+    // just_audio 会自动停止之前的播放并加载新的
     await player.setFilePath(music.id);
     player.play();
   }

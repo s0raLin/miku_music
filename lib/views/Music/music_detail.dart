@@ -14,15 +14,18 @@ class MusicDetailPage extends StatefulWidget {
 }
 
 class _MusicDetailPageState extends State<MusicDetailPage> {
-  bool _isLiked = false;
-
+  // bool _isLiked = false;
   @override
   Widget build(BuildContext context) {
-    final music = context.watch<MusicProvider>().currentMusic;
+    // final music = context.watch<MusicProvider>().currentMusic;
+    final musicProvider = context.watch<MusicProvider>();
+    final music = musicProvider.currentMusic;
+
     if (music == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final isLiked = musicProvider.favList.any((m) => m.id == music.id);
     final isWide = MediaQuery.of(context).size.width > 700;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -36,8 +39,8 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
         const SizedBox(height: 32),
         _SongMeta(
           music: music,
-          isLiked: _isLiked,
-          onToggleLike: () => setState(() => _isLiked = !_isLiked),
+          isLiked: isLiked,
+          onToggleLike: () => musicProvider.toggleFav(music),
         ),
         const SizedBox(height: 24),
         _PlayerConsole(music: music),

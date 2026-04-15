@@ -15,6 +15,7 @@ class AlbumDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final musicProvider = context.read<MusicProvider>();
     return Scaffold(
       appBar: AppBar(title: Text(albumName)),
       body: ListView.builder(
@@ -26,11 +27,9 @@ class AlbumDetailPage extends StatelessWidget {
             title: Text(music.title),
             subtitle: Text(music.artist),
             onTap: () {
-              context.read<MusicProvider>().replaceQueue(
-                songs,
-                startIndex: index,
-              );
-
+              if (musicProvider.currentMusic?.id != music.id) {
+                musicProvider.replaceQueue(songs, startIndex: index);
+              }
               context.push("/music-detail", extra: music);
             },
           );

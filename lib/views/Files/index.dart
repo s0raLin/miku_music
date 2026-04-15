@@ -5,11 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -55,7 +53,7 @@ class _FilesPageState extends State<FilesPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: () async {
                     final p = await FilePicker.getDirectoryPath();
                     if (p != null) setTileState(() => tmp.add(p));
@@ -81,7 +79,7 @@ class _FilesPageState extends State<FilesPage> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text("取消"),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () => Navigator.pop(ctx, tmp),
               child: const Text("确认"),
             ),
@@ -135,7 +133,6 @@ class _FilesPageState extends State<FilesPage> {
                   final album = albums[i].value;
                   context.push(
                     "/album-detail",
-
                     extra: {"albumName": albumName, "songs": album},
                   );
                 },
@@ -159,12 +156,12 @@ class _FilesPageState extends State<FilesPage> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showPickDialog,
-        elevation: 0, // 彻底干掉阴影，走极简风
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showPickDialog(),
+        elevation: 0,
         highlightElevation: 0,
-        icon: const Icon(Icons.folder_open),
-        label: const Text('选择目录'),
+        child: Icon(Icons.folder_open),
+        // label: const Text('选择目录'),
       ),
     );
   }

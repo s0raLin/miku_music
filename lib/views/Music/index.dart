@@ -43,6 +43,7 @@ class _MusicPageState extends State<MusicPage> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         iconColor: colorScheme.primary,
         textColor: colorScheme.onSurface,
+        selectedTileColor: colorScheme.surfaceContainer,
 
         tileColor: colorScheme.surface,
         shape: RoundedRectangleBorder(
@@ -57,6 +58,7 @@ class _MusicPageState extends State<MusicPage> {
           final music = queue[index];
           return ListTile(
             // 这里的 ListTile 会自动继承上方 ListTileTheme 的样式
+            selected: music.id == musicProvider.currentMusic?.id,
             onTap: () {
               final musicProvider = context.read<MusicProvider>();
               musicProvider.playFromLibrary(music);

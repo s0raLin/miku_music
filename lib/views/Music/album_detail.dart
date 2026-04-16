@@ -16,24 +16,31 @@ class AlbumDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final musicProvider = context.read<MusicProvider>();
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(albumName)),
-      body: ListView.builder(
-        itemCount: songs.length,
-        itemBuilder: (context, index) {
-          final music = songs[index];
-          return ListTile(
-            leading: Icon(Icons.music_note),
-            title: Text(music.title),
-            subtitle: Text(music.artist),
-            onTap: () {
-              if (musicProvider.currentMusic?.id != music.id) {
-                musicProvider.replaceQueue(songs, startIndex: index);
-              }
-              context.push("/music-detail", extra: music);
-            },
-          );
-        },
+      body: ListTileTheme(
+        data: ListTileThemeData(
+          selectedTileColor: colorScheme.surfaceContainer,
+        ),
+        child: ListView.builder(
+          itemCount: songs.length,
+          itemBuilder: (context, index) {
+            final music = songs[index];
+            return ListTile(
+              selected: music.id == musicProvider.currentMusic?.id,
+              leading: Icon(Icons.music_note),
+              title: Text(music.title),
+              subtitle: Text(music.artist),
+              onTap: () {
+                if (musicProvider.currentMusic?.id != music.id) {
+                  musicProvider.replaceQueue(songs, startIndex: index);
+                }
+                context.push("/music-detail", extra: music);
+              },
+            );
+          },
+        ),
       ),
     );
   }

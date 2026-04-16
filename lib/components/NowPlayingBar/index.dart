@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +48,9 @@ class NowPlayingBar extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        context.push("/music-detail");
+      },
       child: Container(
         width: double.infinity,
         height: 80,

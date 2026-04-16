@@ -42,6 +42,9 @@ class MusicProvider extends ChangeNotifier {
   final List<MusicInfo> _favList = [];
   List<MusicInfo> get favList => _favList;
 
+  final List<Map<String, dynamic>>? _currentLyrics = [];
+  List<Map<String, dynamic>>? get currentLyrics => _currentLyrics;
+
   Future<void> toggleFav(MusicInfo music) async {
     final isExist = _favList.any((m) => m.id == music.id);
     if (isExist) {
@@ -281,4 +284,6 @@ class MusicProvider extends ChangeNotifier {
         (position, bufferedPosition, duration) => // 输出
             PositionData(position, bufferedPosition, duration ?? Duration.zero),
       );
+
+
 }

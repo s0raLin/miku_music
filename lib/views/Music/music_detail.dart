@@ -5,48 +5,31 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
 
-class MusicDetailPage extends StatefulWidget {
-  // final MusicInfo? music;
+class MusicDetailPage extends StatelessWidget {
   const MusicDetailPage({super.key});
 
   @override
-  State<MusicDetailPage> createState() => _MusicDetailPageState();
-}
-
-class _MusicDetailPageState extends State<MusicDetailPage> {
-  // bool _isLiked = false;
-  @override
   Widget build(BuildContext context) {
-    // final music = context.watch<MusicProvider>().currentMusic;
-    final musicProvider = context.watch<MusicProvider>();
-    final music = musicProvider.currentMusic;
+    // 用 select 只监听必要字段，避免无关变化触发重建
+    final music = context.select<MusicProvider, MusicInfo?>(
+      (p) => p.currentMusic,
+    );
 
     if (music == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final isLiked = musicProvider.favList.any((m) => m.id == music.id);
-    final isWide = MediaQuery.of(context).size.width > 700;
+    final isLiked = context.select<MusicProvider, bool>(
+      (p) => p.favList.any((m) => m.id == music.id),
+    );
+    final lyrics = context.select<MusicProvider, List<Map<String, dynamic>>>(
+      (p) => p.currentLyrics ?? [],
+    );
+
+    final isWide = MediaQuery.sizeOf(context).width > 700;
     final colorScheme = Theme.of(context).colorScheme;
 
-    // 通用的主体 UI 组件
-    final mainContent = Column(
-      children: [
-        const SizedBox(height: 20),
-        Expanded(
-          child: _AlbumCover(title: music.title, coverBytes: music.coverBytes),
-        ),
-        const SizedBox(height: 32),
-        _SongMeta(
-          music: music,
-          isLiked: isLiked,
-          onToggleLike: () => musicProvider.toggleFav(music),
-        ),
-        const SizedBox(height: 24),
-        _PlayerConsole(music: music),
-        const SizedBox(height: 32),
-      ],
-    );
+    final mainContent = _MainContent(music: music, isLiked: isLiked);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -58,7 +41,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
                 children: [
                   Expanded(flex: 5, child: mainContent),
                   const VerticalDivider(width: 40, color: Colors.transparent),
-                  Expanded(flex: 4, child: const _LyricsSection(lyrics: [])),
+                  Expanded(flex: 4, child: _LyricsSection(lyrics: lyrics)),
                 ],
               )
             : mainContent,
@@ -95,11 +78,44 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   }
 }
 
-// ─── 抽取子组件 ─────────────────────────────────────────────────────────────────
+// ─── 主内容区（避免在顶层 watch 全量 provider） ─────────────────────────────────
+
+class _MainContent extends StatelessWidget {
+  final MusicInfo music;
+  final bool isLiked;
+
+  const _MainContent({required this.music, required this.isLiked});
+
+  @override
+  Widget build(BuildContext context) {
+    final musicProvider = context.read<MusicProvider>();
+
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Expanded(
+          child: _AlbumCover(title: music.title, coverBytes: music.coverBytes),
+        ),
+        const SizedBox(height: 32),
+        _SongMeta(
+          music: music,
+          isLiked: isLiked,
+          onToggleLike: () => musicProvider.toggleFav(music),
+        ),
+        const SizedBox(height: 24),
+        _PlayerConsole(music: music),
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+}
+
+// ─── 子组件 ─────────────────────────────────────────────────────────────────────
 
 class _AlbumCover extends StatelessWidget {
   final String title;
   final Uint8List? coverBytes;
+
   const _AlbumCover({required this.coverBytes, required this.title});
 
   @override
@@ -107,8 +123,8 @@ class _AlbumCover extends StatelessWidget {
     final theme = Theme.of(context);
 
     return LayoutBuilder(
-      builder: (context, c) {
-        final size = c.maxHeight.clamp(0.0, c.maxWidth);
+      builder: (context, constraints) {
+        final size = constraints.maxHeight.clamp(0.0, constraints.maxWidth);
         return Center(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(28),
@@ -121,7 +137,8 @@ class _AlbumCover extends StatelessWidget {
                   : Icon(
                       Icons.music_note_rounded,
                       size: size * 0.3,
-                      color: theme.colorScheme.primary.withOpacity(0.5),
+                      // withOpacity 已弃用，改用 withValues
+                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
                     ),
             ),
           ),
@@ -145,6 +162,7 @@ class _SongMeta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Expanded(
@@ -182,17 +200,18 @@ class _SongMeta extends StatelessWidget {
   }
 }
 
+// ─── 播放控制台 ──────────────────────────────────────────────────────────────────
+
 class _PlayerConsole extends StatelessWidget {
   final MusicInfo music;
+
   const _PlayerConsole({required this.music});
 
   @override
   Widget build(BuildContext context) {
-    final musicProvider = context.watch<MusicProvider>();
-    final colorScheme = Theme.of(context).colorScheme;
+    final musicProvider = context.read<MusicProvider>();
 
     return StreamBuilder<PositionData>(
-      // key: ValueKey(music.id), // 歌曲变了,StreamBuilder重新初始化
       stream: musicProvider.positionDataStream,
       builder: (context, snapshot) {
         final data =
@@ -206,72 +225,107 @@ class _PlayerConsole extends StatelessWidget {
 
         return Column(
           children: [
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 8,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-              ),
-              child: Slider(
-                max: total > 0 ? total : 1.0,
-                value: pos,
-                onChanged: (v) => musicProvider.player.seek(
-                  Duration(milliseconds: v.toInt()),
-                ),
-              ),
+            // Slider 单独提取避免整列重建
+            _ProgressSlider(
+              pos: pos,
+              total: total,
+              onChanged: (v) =>
+                  musicProvider.player.seek(Duration(milliseconds: v.toInt())),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _timeText(data.position, colorScheme),
-                _timeText(data.duration, colorScheme),
+                _durationText(data.position, Theme.of(context).colorScheme),
+                _durationText(data.duration, Theme.of(context).colorScheme),
               ],
             ),
             const SizedBox(height: 16),
-            _buildControls(musicProvider, colorScheme),
+            // 播放/暂停按钮单独 StreamBuilder，减少重建范围
+            _PlaybackControls(musicProvider: musicProvider),
           ],
         );
       },
     );
   }
 
-  Widget _timeText(Duration d, ColorScheme scheme) => Text(
+  static Widget _durationText(Duration d, ColorScheme scheme) => Text(
     '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}',
     style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
   );
+}
 
-  Widget _buildControls(MusicProvider mp, ColorScheme scheme) {
+class _ProgressSlider extends StatelessWidget {
+  final double pos;
+  final double total;
+  final ValueChanged<double> onChanged;
+
+  const _ProgressSlider({
+    required this.pos,
+    required this.total,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(
+        trackHeight: 8,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+      ),
+      child: Slider(
+        max: total > 0 ? total : 1.0,
+        value: pos,
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+// 仅监听 playingStream，不依赖 MusicProvider 其他状态
+class _PlaybackControls extends StatelessWidget {
+  final MusicProvider musicProvider;
+
+  const _PlaybackControls({required this.musicProvider});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return StreamBuilder<bool>(
-      stream: mp.player.playingStream,
+      stream: musicProvider.player.playingStream,
       builder: (context, snap) {
         final isPlaying = snap.data ?? false;
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            // TODO: 接入 shuffle 逻辑
             IconButton(
               onPressed: () {},
               icon: const Icon(Icons.shuffle_rounded),
             ),
             IconButton(
-              onPressed: () => mp.playPrev(),
+              onPressed: musicProvider.playPrev,
               icon: const Icon(Icons.skip_previous_rounded, size: 42),
             ),
             GestureDetector(
-              onTap: mp.togglePlay,
+              onTap: musicProvider.togglePlay,
               child: CircleAvatar(
                 radius: 36,
-                backgroundColor: scheme.primaryContainer,
+                backgroundColor: colorScheme.primaryContainer,
                 child: Icon(
                   isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                   size: 40,
-                  color: scheme.onPrimaryContainer,
+                  color: colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
             IconButton(
-              onPressed: () => mp.playNext(),
+              onPressed: musicProvider.playNext,
               icon: const Icon(Icons.skip_next_rounded, size: 42),
             ),
+            // TODO: 接入 repeat 逻辑
             IconButton(
               onPressed: () {},
               icon: const Icon(Icons.repeat_rounded),
@@ -283,8 +337,11 @@ class _PlayerConsole extends StatelessWidget {
   }
 }
 
+// ─── 歌词区 ──────────────────────────────────────────────────────────────────────
+
 class _LyricsSection extends StatelessWidget {
   final List<Map<String, dynamic>> lyrics;
+
   const _LyricsSection({required this.lyrics});
 
   @override
@@ -292,10 +349,10 @@ class _LyricsSection extends StatelessWidget {
     if (lyrics.isNotEmpty) {
       return ListView.builder(
         itemCount: lyrics.length,
-        itemBuilder: (c, i) => Padding(
+        itemBuilder: (context, i) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Text(
-            lyrics[i]['text'],
+            lyrics[i]['text'] as String,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
           ),

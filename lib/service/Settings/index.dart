@@ -3,19 +3,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingService {
   static Future setColor(Color color) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt("themeColor", color.toARGB32());
+    final pfs = await SharedPreferences.getInstance();
+    await pfs.setInt("themeColor", color.toARGB32());
   }
 
   static Future setThemeMode(ThemeMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
+    final pfs = await SharedPreferences.getInstance();
 
-    await prefs.setInt("modeIndex", mode.index);
+    await pfs.setInt("modeIndex", mode.index);
   }
 
   static Future<Color> loadColor() async {
-    final prefs = await SharedPreferences.getInstance();
-    final colorValue = prefs.getInt("themeColor");
+    final pfs = await SharedPreferences.getInstance();
+    final colorValue = pfs.getInt("themeColor");
 
     if (colorValue != null) {
       return Color(colorValue);
@@ -25,8 +25,8 @@ class SettingService {
   }
 
   static Future<ThemeMode> loadThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final modeIndex = prefs.getInt("modeIndex");
+    final pfs = await SharedPreferences.getInstance();
+    final modeIndex = pfs.getInt("modeIndex");
 
     if (modeIndex != null) {
       return ThemeMode.values[modeIndex];
@@ -35,13 +35,13 @@ class SettingService {
   }
 
   static Future setIsDark(bool isDark) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("isDark", isDark);
+    final pfs = await SharedPreferences.getInstance();
+    await pfs.setBool("isDark", isDark);
   }
 
   static Future loadIsDark() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isDark = prefs.getBool("isDark");
+    final pfs = await SharedPreferences.getInstance();
+    final isDark = pfs.getBool("isDark");
     if (isDark != null) {
       return isDark;
     }

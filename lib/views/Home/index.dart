@@ -35,6 +35,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final double height = MediaQuery.sizeOf(context).height;
+
     final colorScheme = Theme.of(context).colorScheme;
     final history = context.read<MusicProvider>().history;
 
@@ -45,8 +47,8 @@ class _HomePageState extends State<HomePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: SizedBox(
-                height: 360, // 必须指定高度，否则会导致 Sliver 布局断言错误
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: height / 2),
                 child: CarouselView.weighted(
                   itemSnapping: true,
                   controller: controller,

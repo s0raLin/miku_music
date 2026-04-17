@@ -23,7 +23,7 @@ class MusicDetailPage extends StatelessWidget {
       (p) => p.favList.any((m) => m.id == music.id),
     );
     final lyrics = context.select<MusicProvider, List<Map<String, dynamic>>>(
-      (p) => p.currentLyrics ?? [],
+      (p) => p.currentLyrics,
     );
 
     final isWide = MediaQuery.sizeOf(context).width > 700;

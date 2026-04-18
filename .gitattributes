@@ -1,5 +1,3 @@
 * linguist-documentation
-*.html linguist-vendored
-*.htm linguist-vendored
-web/index.html linguist-vendored
-android/build/reports/problems/problems-report.html linguist-vendored
+*.html linguist-ignored
+*.htm linguist-ignored

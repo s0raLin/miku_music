@@ -56,10 +56,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
+        leading: BackButton(onPressed: () => context.pop()),
       ),
       body: SafeArea(
         child: Center(
@@ -112,11 +109,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 32),
                     Text(
                       '注册',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 32),
                     TextFormField(
@@ -124,7 +117,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         labelText: '用户名',
                         prefixIcon: Icon(Icons.person),
-                        border: OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -139,7 +131,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: const InputDecoration(
                         labelText: '邮箱',
                         prefixIcon: Icon(Icons.email),
-                        border: OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -158,7 +149,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: InputDecoration(
                         labelText: '密码',
                         prefixIcon: const Icon(Icons.lock),
-                        border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -189,7 +179,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: InputDecoration(
                         labelText: '确认密码',
                         prefixIcon: const Icon(Icons.lock_outline),
-                        border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirmPassword
@@ -229,7 +218,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       children: [
                         Text(
                           '已有账号？',
-                          style: TextStyle(color: colorScheme.onSurface),
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
                           onPressed: () => context.pop(),

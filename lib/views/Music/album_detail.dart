@@ -16,14 +16,17 @@ class AlbumDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final musicProvider = context.read<MusicProvider>();
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(albumName)),
       body: ListTileTheme(
         data: ListTileThemeData(
-          selectedTileColor: colorScheme.surfaceContainer,
+          selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: ListView.builder(
+          padding: const EdgeInsets.all(12),
           itemCount: songs.length,
           itemBuilder: (context, index) {
             final music = songs[index];

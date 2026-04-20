@@ -104,11 +104,9 @@ class _FilesPageState extends State<FilesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text("库"),
-        backgroundColor: colorScheme.surfaceContainer,
       ),
       body: RefreshIndicator(
         edgeOffset: MediaQuery.of(context).padding.top + 56,
@@ -129,42 +127,51 @@ class _FilesPageState extends State<FilesPage> {
               (MusicInfo m) => m.album,
             ).entries.toList();
 
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: albums.length,
-              itemBuilder: (context, i) {
-                final cover = albums[i].value.first.coverBytes;
-                return Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () {
-                      final albumName = albums[i].key;
-                      final album = albums[i].value;
-                      context.push(
-                        "/album-detail",
-                        extra: {"albumName": albumName, "songs": album},
-                      );
-                    },
-                    child: cover != null && cover.isNotEmpty
-                        ? Image.memory(cover, fit: BoxFit.cover)
-                        : Container(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainer,
-                            child: Center(
-                              child: Image.asset(
-                                MyAssets.music_note,
-                                width: 40,
-                              ),
-                            ),
-                          ),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final maxExtent = constraints.maxWidth >= 1400
+                    ? 180.0
+                    : constraints.maxWidth >= 1000
+                    ? 200.0
+                    : 220.0;
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: maxExtent,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.0,
                   ),
+                  itemCount: albums.length,
+                  itemBuilder: (context, i) {
+                    final cover = albums[i].value.first.coverBytes;
+                    return Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () {
+                          final albumName = albums[i].key;
+                          final album = albums[i].value;
+                          context.push(
+                            "/album-detail",
+                            extra: {"albumName": albumName, "songs": album},
+                          );
+                        },
+                        child: cover != null && cover.isNotEmpty
+                            ? Image.memory(cover, fit: BoxFit.cover)
+                            : Container(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainer,
+                                child: Center(
+                                  child: Image.asset(
+                                    MyAssets.music_note,
+                                    width: 40,
+                                  ),
+                                ),
+                              ),
+                      ),
+                    );
+                  },
                 );
               },
             );
@@ -172,8 +179,6 @@ class _FilesPageState extends State<FilesPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        foregroundColor: colorScheme.onSecondaryContainer,
-        backgroundColor: colorScheme.secondaryContainer,
         onPressed: () => _showPickDialog(),
         child: const Icon(Icons.folder_open),
       ),

@@ -30,14 +30,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
+        leading: BackButton(onPressed: () => context.pop()),
       ),
       body: SafeArea(
         child: Center(
@@ -59,11 +54,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 32),
                     Text(
                       '登录',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 32),
                     TextFormField(
@@ -71,7 +62,6 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: const InputDecoration(
                         labelText: '用户名',
                         prefixIcon: Icon(Icons.person),
-                        border: OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -87,7 +77,6 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: InputDecoration(
                         labelText: '密码',
                         prefixIcon: const Icon(Icons.lock),
-                        border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -126,7 +115,7 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         Text(
                           '没有账号？',
-                          style: TextStyle(color: colorScheme.onSurface),
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
                           onPressed: () => context.push("/register"),
@@ -134,7 +123,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
-                    
                   ],
                 ),
               ),

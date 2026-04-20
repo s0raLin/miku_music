@@ -1,4 +1,3 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:myapp/service/Settings/index.dart';
@@ -10,7 +9,7 @@ class ThemeProvider extends ChangeNotifier {
   // 构造函数初始值
   ThemeProvider({
     ThemeMode initialMode = ThemeMode.light,
-    Color initialColor = Colors.deepPurple,
+    Color initialColor = const Color(0xFF6750A4),
   }) : _themeMode = initialMode,
        _seedColor = initialColor;
 
@@ -40,92 +39,74 @@ class ThemeProvider extends ChangeNotifier {
     SettingService.setColor(color);
   }
 
-  // ThemeData get themeData => ThemeData(
-  //   useMaterial3: true,
-  //   fontFamily: "NiShiKiFont",
-  //   colorScheme: ColorScheme.fromSeed(
-  //     seedColor: _seedColor,
-  //     brightness: _themeMode == ThemeMode.dark
-  //         ? Brightness.dark
-  //         : Brightness.light,
-  //   ),
-  // );
-
-  // 使用 FlexColorScheme 生成主题
-  ThemeData get lightTheme => FlexThemeData.light(
-    keyColors: const FlexKeyColors(useSecondary: true, useTertiary: true),
-    // 如果想用预设的主题颜色，可以使用 scheme: FlexScheme.materialBaseline
-    // 这里使用你的自定义 seedColor
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.light,
-    ),
-    surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-    blendLevel: 7,
-    subThemesData: const FlexSubThemesData(
-      interactionEffects: true,
-      useTextTheme: true,
-      // 1. 禁用滚动时的海拔（阴影）
-      appBarScrolledUnderElevation: 0,
-
-      useM2StyleDividerInM3: true,
-      adaptiveRemoveElevationTint: FlexAdaptive.all(),
-      adaptiveElevationShadowsBack: FlexAdaptive.all(),
-      adaptiveAppBarScrollUnderOff: FlexAdaptive.all(),
-      adaptiveRadius: FlexAdaptive.all(),
-      inputDecoratorIsFilled: true,
-      inputDecoratorBorderType: FlexInputBorderType.outline,
-      alignedDropdown: true,
-      navigationBarSelectedLabelSchemeColor: SchemeColor.primary,
-      navigationBarSelectedIconSchemeColor: SchemeColor.primary,
-    ),
-    visualDensity: FlexColorScheme.comfortablePlatformDensity,
-    useMaterial3: true,
-    fontFamily: GoogleFonts.notoSansSc().fontFamily,
-  );
-
-  ThemeData get darkTheme => FlexThemeData.dark(
-    keyColors: const FlexKeyColors(useSecondary: true, useTertiary: true),
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.dark,
-    ),
-    surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-    blendLevel: 13,
-    subThemesData: const FlexSubThemesData(
-      interactionEffects: true,
-      useTextTheme: true,
-      // 1. 禁用滚动时的海拔（阴影）
-      appBarScrolledUnderElevation: 0,
-
-      useM2StyleDividerInM3: true,
-      adaptiveRemoveElevationTint: FlexAdaptive.all(),
-      adaptiveElevationShadowsBack: FlexAdaptive.all(),
-      adaptiveAppBarScrollUnderOff: FlexAdaptive.all(),
-      adaptiveRadius: FlexAdaptive.all(),
-      inputDecoratorIsFilled: true,
-      inputDecoratorBorderType: FlexInputBorderType.outline,
-      alignedDropdown: true,
-      navigationBarSelectedLabelSchemeColor: SchemeColor.primary,
-      navigationBarSelectedIconSchemeColor: SchemeColor.primary,
-    ),
-    visualDensity: FlexColorScheme.comfortablePlatformDensity,
-    useMaterial3: true,
-    fontFamily: GoogleFonts.notoSansSc().fontFamily,
-  );
-
-  ThemeData get themeData {
+  ThemeData _buildTheme(Brightness brightness) {
     final baseTheme = ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
         seedColor: _seedColor,
-        brightness: _themeMode == ThemeMode.dark
-            ? Brightness.dark
-            : Brightness.light,
+        brightness: brightness,
+        dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
       ),
     );
+    final scheme = baseTheme.colorScheme;
     return baseTheme.copyWith(
       textTheme: GoogleFonts.notoSansScTextTheme(baseTheme.textTheme),
+      appBarTheme: AppBarTheme(
+        scrolledUnderElevation: 0,
+        backgroundColor: scheme.surfaceContainer,
+        foregroundColor: scheme.onSurface,
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: scheme.surfaceContainerLow,
+        surfaceTintColor: Colors.transparent,
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.secondaryContainer,
+        foregroundColor: scheme.onSecondaryContainer,
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: scheme.onSurfaceVariant,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 68,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        indicatorColor: scheme.secondaryContainer,
+      ),
+      navigationDrawerTheme: NavigationDrawerThemeData(
+        backgroundColor: scheme.surfaceContainerLow,
+        indicatorColor: scheme.secondaryContainer,
+      ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: Colors.transparent,
+        indicatorColor: scheme.primary,
+        labelColor: scheme.primary,
+        unselectedLabelColor: scheme.onSurfaceVariant,
+      ),
+      searchBarTheme: SearchBarThemeData(
+        backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHighest),
+        elevation: const WidgetStatePropertyAll(0),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: scheme.surfaceContainerHigh,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+      ),
+      cardTheme: const CardThemeData(
+        elevation: 0,
+        margin: EdgeInsets.zero,
+      ),
     );
   }
+
+  ThemeData get lightTheme => _buildTheme(Brightness.light);
+
+  ThemeData get darkTheme => _buildTheme(Brightness.dark);
 }

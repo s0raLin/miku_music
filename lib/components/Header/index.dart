@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class Header extends StatelessWidget implements PreferredSizeWidget {
+class Header extends StatefulWidget {
   final GlobalKey<ScaffoldState>? scaffoldKey;
   final Color? backgroundColor;
 
   const Header({super.key, this.scaffoldKey, this.backgroundColor});
 
+  @override
+  State<Header> createState() => _HeaderState();
+}
+
+class _HeaderState extends State<Header> {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
@@ -15,13 +20,13 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppBar(
-      backgroundColor: backgroundColor ?? colorScheme.surface,
+      backgroundColor: widget.backgroundColor ?? colorScheme.surface,
       centerTitle: true,
       elevation: 0,
       surfaceTintColor: colorScheme.surface,
       leading: IconButton(
         onPressed: () {
-          scaffoldKey?.currentState?.openDrawer();
+          widget.scaffoldKey?.currentState?.openDrawer();
         },
         icon: Icon(Icons.menu, color: colorScheme.onSurface),
       ),

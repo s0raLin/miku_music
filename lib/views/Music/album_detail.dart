@@ -27,17 +27,19 @@ class AlbumDetailPage extends StatelessWidget {
           itemCount: songs.length,
           itemBuilder: (context, index) {
             final music = songs[index];
-            return ListTile(
-              selected: music.id == musicProvider.currentMusic?.id,
-              leading: Icon(Icons.music_note),
-              title: Text(music.title),
-              subtitle: Text(music.artist),
-              onTap: () {
-                if (musicProvider.currentMusic?.id != music.id) {
-                  musicProvider.replaceQueue(songs, startIndex: index);
-                }
-                context.push("/music-detail", extra: music);
-              },
+            return Card(
+              child: ListTile(
+                selected: music.id == musicProvider.currentMusic?.id,
+                leading: Icon(Icons.music_note),
+                title: Text(music.title),
+                subtitle: Text(music.artist),
+                onTap: () {
+                  if (musicProvider.currentMusic?.id != music.id) {
+                    musicProvider.replaceQueue(songs, startIndex: index);
+                  }
+                  context.push("/music-detail", extra: music);
+                },
+              ),
             );
           },
         ),

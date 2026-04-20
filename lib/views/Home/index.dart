@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
             child: Padding(
               padding: const EdgeInsets.only(top: 16),
               child: AspectRatio(
-                aspectRatio: 16 / 9, 
+                aspectRatio: 16 / 9,
                 child: CarouselView.weighted(
                   itemSnapping: true,
                   controller: controller,
@@ -111,15 +111,17 @@ class _HomePageState extends State<HomePage> {
               child: SliverList.separated(
                 itemCount: history.length,
                 itemBuilder: (context, index) {
-                  return ListTile(
-                    onTap: () => context.push("/music/$index"),
-                    leading: const Icon(Icons.library_music, size: 42),
-                    title: Text(history[index].title),
-                    subtitle: Text(
-                      '${history[index].artist} · ${history[index].album}',
+                  return Card(
+                    child: ListTile(
+                      onTap: () => context.push("/music/$index"),
+                      leading: const Icon(Icons.library_music, size: 42),
+                      title: Text(history[index].title),
+                      subtitle: Text(
+                        '${history[index].artist} · ${history[index].album}',
+                      ),
+                      horizontalTitleGap: 4,
+                      trailing: const Icon(Icons.chevron_right),
                     ),
-                    horizontalTitleGap: 4,
-                    trailing: const Icon(Icons.chevron_right),
                   );
                 },
                 separatorBuilder: (_, _) => const SizedBox(height: 6),

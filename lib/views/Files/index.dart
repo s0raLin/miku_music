@@ -96,6 +96,7 @@ class _FilesPageState extends State<FilesPage> {
       await FileService.savePaths(result);
       setState(() {
         _paths = result;
+
         _startScan();
       });
     }
@@ -105,13 +106,17 @@ class _FilesPageState extends State<FilesPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text("库")),
+      appBar: AppBar(
+        title: const Text("库"),
+        backgroundColor: colorScheme.surfaceContainer,
+      ),
       body: RefreshIndicator(
         edgeOffset: MediaQuery.of(context).padding.top + 56,
         onRefresh: () async {
           _startScan();
         },
         child: StreamBuilder<List<MusicInfo>>(
+          key: ValueKey(_paths.toString()),
           stream: _musicStream,
           builder: (context, snapshot) {
             final list = snapshot.data ?? [];
@@ -135,21 +140,17 @@ class _FilesPageState extends State<FilesPage> {
               itemCount: albums.length,
               itemBuilder: (context, i) {
                 final cover = albums[i].value.first.coverBytes;
-                return InkWell(
-                  onTap: () {
-                    final albumName = albums[i].key;
-                    final album = albums[i].value;
-                    context.push(
-                      "/album-detail",
-                      extra: {"albumName": albumName, "songs": album},
-                    );
-                  },
-                  child: Card(
-                    elevation: 0, // 去掉卡片阴影，更简洁
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    clipBehavior: Clip.antiAlias,
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      final albumName = albums[i].key;
+                      final album = albums[i].value;
+                      context.push(
+                        "/album-detail",
+                        extra: {"albumName": albumName, "songs": album},
+                      );
+                    },
                     child: cover != null && cover.isNotEmpty
                         ? Image.memory(cover, fit: BoxFit.cover)
                         : Container(
@@ -176,14 +177,6 @@ class _FilesPageState extends State<FilesPage> {
         onPressed: () => _showPickDialog(),
         child: const Icon(Icons.folder_open),
       ),
-
-      //  FloatingActionButton(
-      //   onPressed:,
-      //   elevation: 0,
-      //   highlightElevation: 0,
-      //   child: Icon(Icons.folder_open),
-      //   // label: const Text('选择目录'),
-      // ),
     );
   }
 }

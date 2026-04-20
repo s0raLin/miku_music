@@ -4,7 +4,7 @@ import 'package:myapp/components/BottomBar/index.dart';
 import 'package:myapp/components/Drawer/index.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/NowPlayingBar/index.dart';
-import 'package:myapp/components/Sidebar/index.dart';
+import 'package:myapp/components/SideBar/index.dart';
 
 class MainPage extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -43,7 +43,7 @@ class _MainPageState extends State<MainPage> {
                 child: Row(
                   children: [
                     if (isLargeScreen)
-                      Sidebar(currentIndex: currentIndex, onTap: onTabChanged),
+                      SideBar(currentIndex: currentIndex, onTap: onTabChanged),
                     Expanded(
                       child: Column(
                         children: [

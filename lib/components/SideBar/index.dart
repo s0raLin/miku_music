@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:myapp/router/IndexRouter/index.dart';
 
-class Sidebar extends StatelessWidget {
+class SideBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const Sidebar({super.key, required this.currentIndex, required this.onTap});
+  const SideBar({super.key, required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +38,9 @@ class Sidebar extends StatelessWidget {
       child: NavigationRail(
         extended: true,
         selectedIndex: currentIndex,
+        backgroundColor: colorScheme.surface,
+        // 选中项的指示器颜色
+        indicatorColor: colorScheme.primaryContainer,
         onDestinationSelected: (index) => onTap(index),
         leading: const Padding(
           padding: EdgeInsets.only(top: 10, bottom: 10),

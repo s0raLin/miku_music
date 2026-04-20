@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/s0raLin/miku_music/compare/v1.1.0...v1.2.0) (2026-04-20)
+
+
+### Features
+
+* **ui:** replace NavigationRail with NavigationDrawer and implement responsive carousel ([2aa3364](https://github.com/s0raLin/miku_music/commit/2aa3364d9afc30d58f6f78aa051fa64b2058fef0))
+* **ui:** restructure navigation and enhance component styling ([1aac0c2](https://github.com/s0raLin/miku_music/commit/1aac0c23939cf5e68af516d289859666e4e77b67))
+
+
+### Bug Fixes
+
+* use linguist-ignored for HTML files ([fbe960e](https://github.com/s0raLin/miku_music/commit/fbe960ea5be6ea74fe957b7be62de60ef318faa7))
+
 ## [1.1.0](https://github.com/s0raLin/miku_music/compare/v1.0.0...v1.1.0) (2026-04-17)
 
 

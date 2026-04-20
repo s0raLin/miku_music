@@ -10,7 +10,7 @@ class ThemeProvider extends ChangeNotifier {
   // 构造函数初始值
   ThemeProvider({
     ThemeMode initialMode = ThemeMode.light,
-    Color initialColor = Colors.teal,
+    Color initialColor = Colors.deepPurple,
   }) : _themeMode = initialMode,
        _seedColor = initialColor;
 

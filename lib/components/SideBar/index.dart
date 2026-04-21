@@ -17,7 +17,6 @@ class _SideBarState extends State<SideBar> {
   @override
   Widget build(BuildContext context) {
     return NavigationRail(
-
       extended: false,
       selectedIndex: widget.currentIndex,
       onDestinationSelected: widget.onTap,
@@ -25,16 +24,18 @@ class _SideBarState extends State<SideBar> {
       // 顶部标题栏
       leading: FloatingActionButton(
         elevation: 0,
-        onPressed: () {},
-        child: const Icon(Icons.add),
+        onPressed: () {
+
+        },
+        child: const Icon(Icons.search),
       ),
 
       // 导航项转换
       destinations: navItems.map((item) {
         return NavigationRailDestination(
           // 选中时使用填色图标，未选中时使用描边图标
-          icon: Icon(item.icon),
-          selectedIcon: Icon(item.icon),
+          icon: item.i!,
+          selectedIcon: item.i,
           label: Text(item.label),
         );
       }).toList(),

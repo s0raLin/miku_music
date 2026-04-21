@@ -18,6 +18,7 @@ class FilesPage extends StatefulWidget {
 
 class _FilesPageState extends State<FilesPage> {
   List<String> _paths = [];
+
   Stream<List<MusicInfo>>? _musicStream;
 
   @override
@@ -106,7 +107,8 @@ class _FilesPageState extends State<FilesPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text("库")),
+      // appBar:
+      // AppBar(title: const Text("库")),
       body: RefreshIndicator(
         edgeOffset: MediaQuery.of(context).padding.top + 56,
         onRefresh: () async {
@@ -133,44 +135,54 @@ class _FilesPageState extends State<FilesPage> {
                     : constraints.maxWidth >= 1000
                     ? 200.0
                     : 220.0;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: maxExtent,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: albums.length,
-                  itemBuilder: (context, i) {
-                    final cover = albums[i].value.first.coverBytes;
-                    return Card(
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () {
-                          final albumName = albums[i].key;
-                          final album = albums[i].value;
-                          context.push(
-                            "/album-detail",
-                            extra: {"albumName": albumName, "songs": album},
-                          );
-                        },
-                        child: cover != null && cover.isNotEmpty
-                            ? Image.memory(cover, fit: BoxFit.cover)
-                            : Container(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainer,
-                                child: Center(
-                                  child: Image.asset(
-                                    MyAssets.music_note,
-                                    width: 40,
-                                  ),
-                                ),
-                              ),
+                return CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      pinned: false,
+                      snap: false,
+                      floating: false,
+                      expandedHeight: 80,
+                      flexibleSpace: const FlexibleSpaceBar(title: Text("库")),
+                    ),
+                    SliverGrid.builder(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: maxExtent,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 1.0,
                       ),
-                    );
-                  },
+                      itemCount: albums.length,
+                      itemBuilder: (context, i) {
+                        final cover = albums[i].value.first.coverBytes;
+                        return Card(
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () {
+                              final albumName = albums[i].key;
+                              final album = albums[i].value;
+                              context.push(
+                                "/album-detail",
+                                extra: {"albumName": albumName, "songs": album},
+                              );
+                            },
+                            child: cover != null && cover.isNotEmpty
+                                ? Image.memory(cover, fit: BoxFit.cover)
+                                : Container(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainer,
+                                    child: Center(
+                                      child: Image.asset(
+                                        MyAssets.music_note,
+                                        width: 40,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 );
               },
             );

@@ -10,6 +10,7 @@ class BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NavigationBar(
+      // labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
       destinations: navItems.map((item) {

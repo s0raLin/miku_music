@@ -42,8 +42,11 @@ class _MainPageState extends State<MainPage> {
               Expanded(
                 child: Row(
                   children: [
-                    if (isLargeScreen)
+                    if (isLargeScreen) ...[
                       SideBar(currentIndex: currentIndex, onTap: onTabChanged),
+                      const VerticalDivider(thickness: 1, width: 1),
+                    ],
+                    //主内容区
                     Expanded(
                       child: Column(
                         children: [

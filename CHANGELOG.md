@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/s0raLin/miku_music/compare/v1.2.0...v1.3.0) (2026-04-21)
+
+
+### Features
+
+* **ui:** implement functional playback queue menu in NowPlayingBar ([4a43b64](https://github.com/s0raLin/miku_music/commit/4a43b648c75cb5d2e6291c497b656bf72f99dc68))
+
 ## [1.2.0](https://github.com/s0raLin/miku_music/compare/v1.1.0...v1.2.0) (2026-04-20)
 
 

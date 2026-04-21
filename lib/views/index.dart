@@ -48,13 +48,12 @@ class _MainPageState extends State<MainPage> {
                     ],
                     //主内容区
                     Expanded(
-                      child: widget.navigationShell,
-                      // child: Column(
-                      //   children: [
-                      //     Header(scaffoldKey: _scaffoldKey),
-                      //     Expanded(child: widget.navigationShell),
-                      //   ],
-                      // ),
+                      child: Column(
+                        children: [
+                          Header(scaffoldKey: _scaffoldKey),
+                          Expanded(child: widget.navigationShell),
+                        ],
+                      ),
                     ),
                   ],
                 ),

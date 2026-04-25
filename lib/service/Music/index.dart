@@ -6,6 +6,7 @@ import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:on_audio_query_forked/on_audio_query.dart';
 
+import 'package:path/path.dart' as p; // 推荐使用 path 库处理后缀
 
 class ScanProgress {
   final String currentPath; //正在处理的路径
@@ -30,7 +31,7 @@ class MusicService {
       orderType: OrderType.ASC_OR_SMALLER,
       uriType: UriType.EXTERNAL,
     );
-    
+
     return songs
         .map(
           (song) => MusicInfo(

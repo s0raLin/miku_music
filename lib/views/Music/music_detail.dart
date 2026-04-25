@@ -335,6 +335,35 @@ class _PlaybackControls extends StatelessWidget {
 
 // ─── 歌词区 ──────────────────────────────────────────────────────────────────────
 
+// class _LyricsSection extends StatelessWidget {
+//   final List<Map<String, dynamic>> lyrics;
+
+//   const _LyricsSection({required this.lyrics});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     if (lyrics.isNotEmpty) {
+//       return ListView.builder(
+//         itemCount: lyrics.length,
+//         itemBuilder: (context, i) => Padding(
+//           padding: const EdgeInsets.symmetric(vertical: 10),
+//           child: Text(
+//             lyrics[i]['text'] as String,
+//             textAlign: TextAlign.center,
+//             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+//           ),
+//         ),
+//       );
+//     }
+//     return const Center(
+//       child: Text(
+//         '歌詞が見つかりません',
+//         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+//       ),
+//     );
+//   }
+// }
+
 class _LyricsSection extends StatelessWidget {
   final List<Map<String, dynamic>> lyrics;
 
@@ -342,24 +371,53 @@ class _LyricsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (lyrics.isNotEmpty) {
-      return ListView.builder(
-        itemCount: lyrics.length,
-        itemBuilder: (context, i) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(
-            lyrics[i]['text'] as String,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          ),
-        ),
-      );
-    }
-    return const Center(
-      child: Text(
-        '歌詞が見つかりません',
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-      ),
+    final musicProvider = context.read<MusicProvider>();
+
+    // 1. 使用 StreamBuilder 监听进度
+    return StreamBuilder<PositionData>(
+      stream: musicProvider.positionDataStream,
+      builder: (context, snapshot) {
+        final position = snapshot.data?.position ?? Duration.zero;
+
+        // 2. 找到当前应该高亮的歌词索引
+        int currentIndex =
+            lyrics.indexWhere((lyric) {
+              // 假设你的 map 里有 'time' 字段 (Duration 或 毫秒)
+              final startTime = lyric['time'] as Duration;
+              return startTime > position;
+            }) -
+            1;
+        if (currentIndex < 0) currentIndex = 0;
+
+        if (lyrics.isEmpty) {
+          return const Center(
+            child: Text(
+              '歌詞が見つかりません',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: lyrics.length,
+          // 这里的关键是：你需要根据 currentIndex 来控制高亮和自动滚动
+          itemBuilder: (context, i) {
+            final isCurrent = i == currentIndex;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                lyrics[i]['text'] as String,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isCurrent ? 22 : 18, // 高亮变大
+                  color: isCurrent ? Colors.blue : Colors.grey, // 高亮变色
+                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

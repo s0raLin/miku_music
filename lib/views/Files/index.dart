@@ -107,8 +107,6 @@ class _FilesPageState extends State<FilesPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      // appBar:
-      // AppBar(title: const Text("库")),
       body: RefreshIndicator(
         edgeOffset: MediaQuery.of(context).padding.top + 56,
         onRefresh: () async {

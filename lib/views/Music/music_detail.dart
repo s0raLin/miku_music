@@ -269,7 +269,7 @@ class _ProgressSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliderTheme(
-      data: SliderThemeData(year2023: false, overlayColor: Colors.transparent, ),
+      data: SliderThemeData(year2023: false, overlayColor: Colors.transparent),
       child: Slider(
         max: total > 0 ? total : 1.0,
         value: pos,
@@ -447,28 +447,36 @@ class _LyricsSectionState extends State<_LyricsSection> {
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, i) {
               final isCurrent = i == currentIndex;
-              return AnimatedScale(
-                scale: isCurrent ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 300),
-                child: AnimatedOpacity(
-                  opacity: isCurrent ? 1.0 : 0.3,
+              final lyric = widget.lyrics[i]; //获取当前歌词行数据
+              return GestureDetector(
+                onTap: () {
+                  final targetTime = lyric["time"] as Duration;
+                  musicProvider.player.seek(targetTime); //调用播放器跳转
+                },
+                behavior: HitTestBehavior.opaque, //确保空白区域也可点击
+                child: AnimatedScale(
+                  scale: isCurrent ? 1.1 : 1.0,
                   duration: const Duration(milliseconds: 300),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 24,
-                    ),
-                    child: Text(
-                      widget.lyrics[i]['text'] as String,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: isCurrent
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: isCurrent
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
+                  child: AnimatedOpacity(
+                    opacity: isCurrent ? 1.0 : 0.3,
+                    duration: const Duration(milliseconds: 300),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 24,
+                      ),
+                      child: Text(
+                        widget.lyrics[i]['text'] as String,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: isCurrent
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isCurrent
+                              ? colorScheme.primary
+                              : colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ),

@@ -67,11 +67,36 @@ class MusicService {
   static Future<MusicInfo> parse(String path) async {
     final Tag? tag = await AudioTags.read(path);
 
-    String? lyrics = tag?.lyrics;
+
     String? artist = tag?.trackArtist ?? tag?.albumArtist ?? "未知歌手";
     Uint8List? coverBytes;
     if (tag?.pictures.isNotEmpty ?? false) {
       coverBytes = tag?.pictures.first.bytes;
+    }
+
+    // 2. 手动寻找并读取外部 .lrc 文件
+    String? lyrics = tag?.lyrics;
+    // String lyrics = "";
+    try {
+      final baseName = p.withoutExtension(path);
+      final lrcFile = File("$baseName.lrc");
+
+      if (await lrcFile.exists()) {
+        // 关键点：使用 try-catch 包裹读取，防止编码错误导致崩溃
+        // 优先尝试 UTF-8
+        lyrics = await lrcFile.readAsString();
+      }
+    } catch (e) {
+      print("读取歌词文本失败，尝试强制解码: $e");
+      try {
+        // 如果报错（可能是 GBK 编码），转为字节流读取
+        final bytes = await File(
+          "${p.withoutExtension(path)}.lrc.txt",
+        ).readAsBytes();
+        lyrics = String.fromCharCodes(bytes);
+      } catch (_) {
+        lyrics = "歌词格式暂不支持";
+      }
     }
 
     return MusicInfo(

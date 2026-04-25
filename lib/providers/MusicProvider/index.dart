@@ -45,6 +45,33 @@ class MusicProvider extends ChangeNotifier {
   final List<Map<String, dynamic>> _currentLyrics = [];
   List<Map<String, dynamic>> get currentLyrics => _currentLyrics;
 
+  List<Map<String, dynamic>> _parseLrc(String? lrcContent) {
+    if (lrcContent == null || lrcContent.isEmpty) return [];
+
+    final List<Map<String, dynamic>> lyrics = [];
+    // 正则匹配 [00:00.00] 格式
+    final regExp = RegExp(r'\[(\d+):(\d+\.\d+)\](.*)');
+
+    for (var line in lrcContent.split('\n')) {
+      final match = regExp.firstMatch(line);
+      if (match != null) {
+        final min = int.parse(match.group(1)!);
+        final sec = double.parse(match.group(2)!);
+        final text = match.group(3)!.trim();
+
+        lyrics.add({
+          'time': Duration(milliseconds: (min * 60000 + sec * 1000).toInt()),
+          'text': text,
+        });
+      }
+    }
+    // 按时间排序，防止歌词文件乱序
+    lyrics.sort(
+      (a, b) => (a['time'] as Duration).compareTo(b['time'] as Duration),
+    );
+    return lyrics;
+  }
+
   Future<void> toggleFav(MusicInfo music) async {
     final isExist = _favList.any((m) => m.id == music.id);
     if (isExist) {
@@ -205,9 +232,14 @@ class MusicProvider extends ChangeNotifier {
     if (index == _currentIndex && player.playing) return;
 
     _currentIndex = index;
-    notifyListeners();
 
+    // 处理歌词逻辑
     final music = _queue[index];
+    _currentLyrics.clear(); //清空上一首
+    _currentLyrics.addAll(_parseLrc(music.lyrics));
+
+    notifyListeners(); //确保UI收到歌词更新通知
+
     _addToHistory(music); //添加到历史
     // await player.stop(); //* 停止当前播放,清理状态
     // 直接设置路径，不需要调用 stop()

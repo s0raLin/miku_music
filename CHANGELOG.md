@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0](https://github.com/s0raLin/miku_music/compare/v1.3.0...v1.4.0) (2026-04-25)
+
+
+### Features
+
+* **music:** add real-time lyric synchronization ([1c36d3b](https://github.com/s0raLin/miku_music/commit/1c36d3beb104aec6a4d7f83486044d549ed36fa7))
+* **music:** add seek functionality to lyric lines ([d2be4ba](https://github.com/s0raLin/miku_music/commit/d2be4ba569e1b8c2d08882c4dd7fee1d5b270fad))
+* **music:** implement lrc file parsing and external lyric loading ([e7a234e](https://github.com/s0raLin/miku_music/commit/e7a234eecd130355957f564437b08250169872eb))
+
 ## [1.3.0](https://github.com/s0raLin/miku_music/compare/v1.2.0...v1.3.0) (2026-04-21)
 
 

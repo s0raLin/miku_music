@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.5.0](https://github.com/s0raLin/miku_music/compare/v1.4.0...v1.5.0) (2026-04-27)
+
+
+### Features
+
+* **api:** add backend and api layer ([ebbaec9](https://github.com/s0raLin/miku_music/commit/ebbaec925212bdc6dab690f779e25472aa6cd642))
+* **auth:** add jwt authentication middleware and utility ([bd0dc47](https://github.com/s0raLin/miku_music/commit/bd0dc47977c49242956435b6095de159cb3b5ac4))
+* **auth:** expand user profile data in authentication response ([6b26559](https://github.com/s0raLin/miku_music/commit/6b26559096c50d382dc9cd374279493d7ff0f94b))
+* **auth:** implement login functionality and client-side integration ([032cf3c](https://github.com/s0raLin/miku_music/commit/032cf3c0a8947e0ecdc91e551288f0e4bbbda98f))
+* **auth:** implement user avatar upload during registration ([a3291ff](https://github.com/s0raLin/miku_music/commit/a3291ff745284ecff1868d3540cb161c867907de))
+* **auth:** implement user registration with avatar upload ([6eb12d7](https://github.com/s0raLin/miku_music/commit/6eb12d7d2334bbe0b8840c60926fb9dc3b536733))
+* **backend:** implement music upload to OSS and add email to user model ([da030ef](https://github.com/s0raLin/miku_music/commit/da030ef3e0ee2fd193454a87ff23d5d0c0e95d72))
+* **backend:** upgrade OSS SDK to v2 and implement UUID-based file naming ([7b70e20](https://github.com/s0raLin/miku_music/commit/7b70e20350abebbb8be77a0a967c5d7a797edf73))
+* **client:** add secure token storage and user state management ([6ba21e1](https://github.com/s0raLin/miku_music/commit/6ba21e1aebe733c7774e931b06ae88a13f372e5c))
+* **ui:** implement user profile page and navigation ([433b946](https://github.com/s0raLin/miku_music/commit/433b946feb468df15f4f61c5a74b56d3f6cc6091))
+
+
+### Bug Fixes
+
+* **auth:** improve login validation and error handling ([0fc107f](https://github.com/s0raLin/miku_music/commit/0fc107f2bc9ed1caa9c91343681ce8b68a39d42a))
+* **ui:** improve lyrics scrolling logic and index calculation ([4e504aa](https://github.com/s0raLin/miku_music/commit/4e504aa571692628aa358ef8a26e28f442985899))
+
 ## [1.4.0](https://github.com/s0raLin/miku_music/compare/v1.3.0...v1.4.0) (2026-04-25)
 
 

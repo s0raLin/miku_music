@@ -17,12 +17,7 @@ class _SideBarState extends State<SideBar> {
 
   @override
   Widget build(BuildContext context) {
-    // 获取当前路由路径
-    final String currentLocation = GoRouterState.of(context).uri.toString();
     // 判断是否在设置页面（根据你的路由路径调整）
-    final bool isSettingsPage =
-        currentLocation == '/settings' ||
-        currentLocation.startsWith('/settings');
     return NavigationRail(
       extended: false,
       selectedIndex: widget.currentIndex,

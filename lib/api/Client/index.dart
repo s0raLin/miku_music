@@ -2,7 +2,10 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:myapp/api/model/ApiResponse/index.dart';
+import 'package:myapp/api/model/User/index.dart';
+import 'package:myapp/providers/UserProvider/index.dart';
 
 class MusicApi {
   static final Dio _dio = Dio();
@@ -45,7 +48,7 @@ class UserApi {
     BaseOptions(baseUrl: "http://localhost:8080/api/auth/"),
   );
 
-  static Future<String?> login({
+  static Future<User?> login({
     required String username,
     required String password,
   }) async {
@@ -58,7 +61,11 @@ class UserApi {
     final result = ApiResponse.fromJson(response.data);
     if (result.code == 0) {
       String? token = result.data?['token'];
-      return token;
+      final storage = FlutterSecureStorage();
+      storage.write(key: "jwt_key", value: token);
+
+      final user = User.fromJson(result.data?["user"]);
+      return user;
     } else {
       return null;
     }

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/contants/Assets/index.dart';
+import 'package:myapp/providers/UserProvider/index.dart';
+import 'package:provider/provider.dart';
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = context.read<UserProvider>();
+    final avatarUrl = userProvider.avatar;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -15,7 +20,9 @@ class MainDrawer extends StatelessWidget {
             accountName: const Text("data"),
             accountEmail: const Text("example@qq.com"),
             currentAccountPicture: CircleAvatar(
-              backgroundImage: AssetImage(MyAssets.avatar),
+              backgroundImage: avatarUrl != null
+                  ? NetworkImage(avatarUrl)
+                  : AssetImage(MyAssets.avatar),
             ),
           ),
           ListTile(

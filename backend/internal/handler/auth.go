@@ -21,15 +21,16 @@ func (s *AuthHandler) Login(c *gin.Context) {
 		Password string `json:"password"`
 	}
 
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": err.Error()})
 		return
 	}
 	if req.Username == "" || req.Password == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 1,
-			"msg":  "用户名或密码错误",
+			"msg":  "用户名或密码不能为空",
 		})
+		return
 	}
 
 	var user model.User

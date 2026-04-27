@@ -66,6 +66,7 @@ func OSSUpload(file *multipart.FileHeader, fileName string) (string, error) {
 	log.Printf("RequestId: %#v\n", result.ResultCommon.Headers.Get("X-Oss-Request-Id"))
 	log.Printf("ETag: %#v\n", *result.ETag)
 
-	fileURL := fmt.Sprintf("https://%s.%s.aliyuncs.com/%s", bucketName, region, objectKey)
+	//"https://" + bucketName + ".oss-" + endpoint + "/" + path, nil
+	fileURL := fmt.Sprintf("https://%s.oss-%s.aliyuncs.com/%s", bucketName, region, objectKey)
 	return fileURL, nil
 }

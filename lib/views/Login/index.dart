@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/index.dart';
@@ -27,51 +28,54 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
+
     try {
+      // 打印一下，确保这里有值
+      print("正在登录: ${_usernameController.text}");
+
       final user = await UserApi.login(
         username: _usernameController.text,
         password: _passwordController.text,
       );
-      // 在这里添加一个检查，确保页面依然存在
+
       if (!mounted) return;
 
-      final userProvider = context.read<UserProvider>();
       if (user != null) {
-        userProvider.updateUserInfo(user);
-        context.go('/home'); //登录成功跳转
-      } else {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("登录失败"),
-              content: Text("用户不存在"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(), // 关闭弹窗
-                  child: Text('确定'),
-                ),
-              ],
-            );
-          },
-        );
+        context.read<UserProvider>().updateUserInfo(user);
+        context.go('/home');
       }
+    } on DioException catch (e) {
+      // 专门捕获 Dio 异常
+      if (!mounted) return;
+
+      // 尝试提取后端定义的 "msg" 字段
+      String errorMsg = "网络请求失败";
+      if (e.response?.data != null && e.response?.data is Map) {
+        errorMsg = e.response?.data['msg'] ?? e.message;
+      }
+
+      _showErrorDialog(errorMsg);
     } catch (e) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("登录出错"),
-          content: Text("发生错误: $e"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('确定'),
-            ),
-          ],
-        ),
-      );
+      _showErrorDialog("发生未知错误: $e");
     }
+  }
+
+  // 提取弹窗逻辑，让代码清爽点
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("登录失败"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

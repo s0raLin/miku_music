@@ -5,7 +5,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:myapp/api/model/ApiResponse/index.dart';
 import 'package:myapp/api/model/User/index.dart';
-import 'package:myapp/providers/UserProvider/index.dart';
 
 class MusicApi {
   static final Dio _dio = Dio();
@@ -52,11 +51,14 @@ class UserApi {
     required String username,
     required String password,
   }) async {
-    final formData = FormData.fromMap({
-      "username": username,
-      "password": password,
-    });
-    final response = await _dio.post("/login", data: formData);
+    // final formData = FormData.fromMap({
+    //   "username": username,
+    //   "password": password,
+    // });
+    final response = await _dio.post(
+      "/login",
+      data: {"username": username, "password": password},
+    );
 
     final result = ApiResponse.fromJson(response.data);
     if (result.code == 0) {

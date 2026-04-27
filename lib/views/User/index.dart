@@ -14,7 +14,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       body: CustomScrollView(
         slivers: [
           // 1. 沉浸式顶部栏
-          SliverAppBar.large(
+          SliverAppBar(
             title: const Text("个人主页"),
             actions: [
               IconButton(

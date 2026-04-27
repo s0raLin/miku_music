@@ -5,6 +5,7 @@ class MyAssets {
   static const String home = "assets/icons/home.png";
   static const String music = "assets/icons/music.png";
   static const String folder = "assets/icons/folder.png";
+  static const String user = "assets/icons/user.png";
 
 
 

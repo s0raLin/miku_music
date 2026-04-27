@@ -55,13 +55,14 @@ final List<AppNavItem> navItems = [
     icon: Icons.music_note,
     label: "音乐",
   ),
+
   AppNavItem(
-    name: "files",
-    path: "/files",
-    page: FilesPage(),
-    i: ImageIcon(AssetImage(MyAssets.folder)),
-    icon: Icons.folder,
-    label: "文件",
+    name: "user",
+    path: "/user",
+    page: UserProfilePage(),
+    i: ImageIcon(AssetImage(MyAssets.user)),
+    icon: Icons.person,
+    label: "我的",
   ),
 ];
 
@@ -114,6 +115,21 @@ final _routes = [
     },
   ),
   GoRoute(
+    name: "files",
+    path: "/files",
+    builder: (context, state) {
+      // AppNavItem(
+      //   name: "files",
+      //   path: "/files",
+      //   page: FilesPage(),
+      //   i: ImageIcon(AssetImage(MyAssets.folder)),
+      //   icon: Icons.folder,
+      //   label: "文件",
+      // ),
+      return FilesPage();
+    },
+  ),
+  GoRoute(
     name: "settings",
     path: "/settings",
     pageBuilder: (context, state) {
@@ -137,12 +153,6 @@ final _routes = [
     },
   ),
 
-  GoRoute(
-    path: "/user",
-    builder: (context, state) {
-      return UserProfilePage();
-    },
-  ),
   StatefulShellRoute.indexedStack(
     builder: (context, state, navigationShell) =>
         MainPage(navigationShell: navigationShell),

@@ -29,10 +29,10 @@ class _MainDrawerState extends State<MainDrawer> {
   int _screenIndex = 0;
   final _destinations = <Destination>[
     Destination(
-      path: "/user",
-      label: "用户信息",
-      icon: const Icon(Icons.person),
-      selectedIcon: const Icon(Icons.person),
+      path: "/files",
+      label: "选择目录",
+      icon: const Icon(Icons.folder),
+      selectedIcon: const Icon(Icons.folder),
     ),
     Destination(
       path: "/login",

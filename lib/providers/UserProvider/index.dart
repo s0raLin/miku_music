@@ -23,9 +23,10 @@ class UserProvider extends ChangeNotifier {
     await _storage.write(key: jwtKey, value: token);
   }
 
-  String? get username => _user?.username;
+  // String? get username => _user?.username;
   String? get token => _token;
-  String? get avatar => _user?.avatarURL;
+  // String? get avatar => _user?.avatarURL;
+  User? get user => _user;
 
   void updateUserInfo(User newUser) {
     _user = newUser;

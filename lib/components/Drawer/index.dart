@@ -10,15 +10,22 @@ class MainDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = context.read<UserProvider>();
-    final avatarUrl = userProvider.avatar;
+    final username = userProvider.user?.username;
+
+    final avatarUrl = userProvider.user?.avatarURL;
+    final email = userProvider.user?.email;
 
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            accountName: const Text("data"),
-            accountEmail: const Text("example@qq.com"),
+            accountName: username != null && username.isNotEmpty
+                ? Text(username)
+                : null,
+            accountEmail: email != null && email.isNotEmpty
+                ? Text(email)
+                : null,
             currentAccountPicture: CircleAvatar(
               backgroundImage: avatarUrl != null
                   ? NetworkImage(avatarUrl)

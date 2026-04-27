@@ -26,6 +26,7 @@ class Destination {
 }
 
 class _MainDrawerState extends State<MainDrawer> {
+  int _screenIndex = 0;
   final _destinations = <Destination>[
     Destination(
       path: "/user",
@@ -46,6 +47,7 @@ class _MainDrawerState extends State<MainDrawer> {
       selectedIcon: const Icon(Icons.settings),
     ),
   ];
+
   @override
   Widget build(BuildContext context) {
     final userProvider = context.read<UserProvider>();
@@ -55,8 +57,11 @@ class _MainDrawerState extends State<MainDrawer> {
     final email = userProvider.user?.email ?? "请登录账号";
 
     return NavigationDrawer(
+      selectedIndex: _screenIndex,
       onDestinationSelected: (int idx) {
+        _screenIndex = idx;
         context.push(_destinations[idx].path);
+        setState(() {});
       },
       children: [
         UserAccountsDrawerHeader(

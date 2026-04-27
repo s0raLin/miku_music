@@ -135,105 +135,107 @@ class _FilesPageState extends State<FilesPage> {
                     : 220.0;
                 return CustomScrollView(
                   slivers: [
-                    SliverAppBar(
-                      pinned: false,
-                      snap: false,
-                      floating: false,
-                      expandedHeight: 80,
-                      flexibleSpace: const FlexibleSpaceBar(title: Text("库")),
+                    SliverAppBar.medium(
+                      scrolledUnderElevation: 2,
+                      title: const Text("库"),
                     ),
-                    SliverGrid.builder(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: maxExtent,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 0.8,
-                      ),
-                      itemCount: albums.length,
-                      itemBuilder: (context, i) {
-                        final cover = albums[i].value.first.coverBytes;
-                        final albumName = albums[i].key;
-                        final album = albums[i].value;
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                      sliver: SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: maxExtent,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 0.8,
+                        ),
+                        itemCount: albums.length,
+                        itemBuilder: (context, i) {
+                          final cover = albums[i].value.first.coverBytes;
+                          final albumName = albums[i].key;
+                          final album = albums[i].value;
 
-                        return InkWell(
-                          onTap: () {
-                            context.push(
-                              "/album-detail",
-                              extra: {"albumName": albumName, "songs": album},
-                            );
-                          },
-                          // 使用 borderRadius 确保水波纹点击效果也符合卡片圆角
-                          borderRadius: BorderRadius.circular(12),
-                          child: Card(
-                            // 1. 显式设置 M3 风格：可以通过 elevation 为 0 并设置颜色来实现 Filled 效果
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                12,
-                              ), // M3 默认圆角较大
-                            ),
-                            // 2. 使用 surfaceContainerHighest 或 surfaceVariant 作为背景色
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start, // 文字左对齐通常更美观
-                              children: [
-                                // 3. 比例固定的图片容器
-                                AspectRatio(
-                                  aspectRatio: 1 / 1, // 强制图片为正方形，符合专辑封面逻辑
-                                  child: Container(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceVariant,
-                                    child: Center(
-                                      child: cover != null && cover.isNotEmpty
-                                          ? Image.memory(
-                                              cover,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity, // 铺满容器
-                                              height: double.infinity,
-                                            )
-                                          : Icon(
-                                              Icons.music_note, // 建议使用 M3 风格图标
-                                              size: 40,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                            ),
+                          return InkWell(
+                            onTap: () {
+                              context.push(
+                                "/album-detail",
+                                extra: {"albumName": albumName, "songs": album},
+                              );
+                            },
+                            // 使用 borderRadius 确保水波纹点击效果也符合卡片圆角
+                            borderRadius: BorderRadius.circular(12),
+                            child: Card(
+                              // 1. 显式设置 M3 风格：可以通过 elevation 为 0 并设置颜色来实现 Filled 效果
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  12,
+                                ), // M3 默认圆角较大
+                              ),
+                              // 2. 使用 surfaceContainerHighest 或 surfaceVariant 作为背景色
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                              clipBehavior: Clip.antiAlias,
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start, // 文字左对齐通常更美观
+                                children: [
+                                  // 3. 比例固定的图片容器
+                                  AspectRatio(
+                                    aspectRatio: 1 / 1, // 强制图片为正方形，符合专辑封面逻辑
+                                    child: Container(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceVariant,
+                                      child: Center(
+                                        child: cover != null && cover.isNotEmpty
+                                            ? Image.memory(
+                                                cover,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity, // 铺满容器
+                                                height: double.infinity,
+                                              )
+                                            : Icon(
+                                                Icons
+                                                    .music_note, // 建议使用 M3 风格图标
+                                                size: 40,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                              ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                // 4. 文字内边距与排版
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    12,
-                                    8,
-                                    12,
-                                    12,
+                                  // 4. 文字内边距与排版
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      8,
+                                      12,
+                                      12,
+                                    ),
+                                    child: Text(
+                                      albumName ?? "未知专辑",
+                                      maxLines: 1,
+                                      overflow:
+                                          TextOverflow.ellipsis, // 防止长文本溢出
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
+                                    ),
                                   ),
-                                  child: Text(
-                                    albumName ?? "未知专辑",
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis, // 防止长文本溢出
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                        ),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ],
                 );

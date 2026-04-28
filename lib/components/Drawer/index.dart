@@ -22,7 +22,6 @@ class _MainDrawerState extends State<MainDrawer> {
     final isLoggedIn = user != null;
 
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     // 动态生成菜单项
     final List<Map<String, dynamic>> destinations = [
@@ -76,7 +75,6 @@ class _MainDrawerState extends State<MainDrawer> {
         Padding(
           padding: const EdgeInsets.fromLTRB(28, 40, 28, 20),
           child: Row(
-
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 头像
@@ -106,8 +104,6 @@ class _MainDrawerState extends State<MainDrawer> {
           padding: EdgeInsets.symmetric(horizontal: 28),
           child: Divider(),
         ),
-        const SizedBox(height: 12),
-
         // 遍历生成选项
         ...destinations.map(
           (d) => NavigationDrawerDestination(
@@ -115,6 +111,10 @@ class _MainDrawerState extends State<MainDrawer> {
             selectedIcon: Icon(d['selectedIcon']),
             label: Text(d['label']),
           ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 28),
+          child: Divider(),
         ),
       ],
     );

@@ -111,7 +111,7 @@ class _UserProfilePageState extends State<UserProfilePage>
                               decoration: BoxDecoration(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.primaryContainer,
+                                ).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Center(child: Text("111")),
@@ -128,7 +128,7 @@ class _UserProfilePageState extends State<UserProfilePage>
                               decoration: BoxDecoration(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.primaryContainer,
+                                ).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Center(child: Text("222")),
@@ -162,7 +162,7 @@ class M3UserCard extends StatelessWidget {
     return Card(
       elevation: 0,
       // 使用 secondaryContainer 让背景色更出挑，或者使用 surfaceContainerHighest 保持稳重
-      color: colorScheme.secondaryContainer,
+      color: colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24), // 增加圆角更具 M3 感
       ),
@@ -192,14 +192,14 @@ class M3UserCard extends StatelessWidget {
                         "苍璃 s0raLin",
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.onSecondaryContainer,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "Coding with Music & Arch Linux",
                         style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSecondaryContainer,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -246,10 +246,7 @@ class M3UserCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: colorScheme.onSecondaryContainer.withOpacity(0.6),
-          ),
+          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -278,13 +275,12 @@ class _PlaylistQuickCard extends StatelessWidget {
 
     // 统一使用主题色：如果没有传 customColor，则默认使用 primary
     // 也可以这里固定使用 colorScheme.primary
-    final activeColor = colorScheme.secondaryContainer;
 
     return SizedBox(
       width: 105,
       child: Card.filled(
         // 背景使用极其清淡的主题色，保持 M3 的通透感
-        color: activeColor,
+        color: colorScheme.secondaryContainer,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: InkWell(
@@ -296,7 +292,7 @@ class _PlaylistQuickCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: activeColor,
+                    color: colorScheme.secondaryContainer,
                     shape: BoxShape.circle,
                   ),
                   child: coverBytes != null && coverBytes!.isNotEmpty
@@ -308,7 +304,7 @@ class _PlaylistQuickCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface, // 使用通用的文字颜色
+                    color: colorScheme.onSecondaryContainer, // 使用通用的文字颜色
                     fontSize: 13,
                   ),
                 ),

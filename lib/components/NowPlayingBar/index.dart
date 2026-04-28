@@ -96,9 +96,15 @@ class _WideLayout extends StatelessWidget {
         // 右侧：功能操作
         Align(
           alignment: Alignment.centerRight,
-          child: _QueueActions(
-            showCompactPlayPause: false,
-            onPlayPause: mp.togglePlay,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _VolumeControllerWidget(),
+              _QueueActions(
+                showCompactPlayPause: false,
+                onPlayPause: mp.togglePlay,
+              ),
+            ],
           ),
         ),
       ],
@@ -232,42 +238,61 @@ class _ProgressBar extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return StreamBuilder<PositionData>(
-      stream: mp.positionDataStream, // 监听位置、缓存、时长流
+      stream: mp.positionDataStream,
       builder: (context, snap) {
         final pos =
             snap.data ??
             PositionData(Duration.zero, Duration.zero, Duration.zero);
         final durationMs = pos.duration.inMilliseconds;
         final positionMs = pos.position.inMilliseconds;
-
-        // 计算百分比
         double value = (durationMs > 0) ? positionMs / durationMs : 0.0;
 
         return SizedBox(
-          width: 320, // 固定宽度确保居中视觉稳定
+          width: 320,
+          // 既然要变大，我们把高度稍微拉一点点，确保文字对齐
+          height: 36,
           child: Row(
             children: [
+              // 时间文本稍微放大一点点以匹配变粗的线条
               Text(fmt(pos.position), style: _ts(cs)),
+              const SizedBox(width: 8), // 增加一点文本和线条的间距
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    year2023: false,
-                    trackHeight: 4,
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 6,
-                    ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 12,
-                    ),
+                    // 1. 核心改动：显著增加轨道高度，使其看起来“更大”
+                    trackHeight: 10.0, // 从 2.0 增加到 10.0
+                    // 2. 核心改动：彻底移除圆形滑块（Thumb）
+                    thumbShape: SliderComponentShape.noThumb,
+
+                    // 3. 核心改动：点击时不再显示圆形光晕（Overlay）
+                    overlayShape: SliderComponentShape.noOverlay,
+
+                    // 4. 调整轨道形状：使用圆角矩形，更 M3
+                    trackShape: const RoundedRectSliderTrackShape(),
+
+                    // 气泡样式保持一致
+                    showValueIndicator: ShowValueIndicator.onlyForContinuous,
+                    valueIndicatorShape: const DropSliderValueIndicatorShape(),
+                    // 因为没有滑块，气泡可能需要往上调一点点
+                    valueIndicatorColor: cs.primary,
                   ),
                   child: Slider(
+                    year2023: false,
+                    label: fmt(pos.position),
                     value: value.clamp(0.0, 1.0),
+                    // 虽然视觉上没有滑块，但 onChanged 依然有效
+                    // 用户点击或拖动整根线条都能跳转进度
                     onChanged: (v) => mp.player.seek(
                       Duration(milliseconds: (durationMs * v).toInt()),
                     ),
+                    // 鲜艳模式下使用 primary
+                    activeColor: cs.primary,
+                    // 未激活部分使用表面色的变体，增加层级感
+                    inactiveColor: cs.surfaceContainerHighest,
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(fmt(pos.duration), style: _ts(cs)),
             ],
           ),
@@ -276,8 +301,62 @@ class _ProgressBar extends StatelessWidget {
     );
   }
 
-  TextStyle _ts(ColorScheme cs) =>
-      TextStyle(fontSize: 10, color: cs.onSurfaceVariant);
+  TextStyle _ts(ColorScheme cs) => TextStyle(
+    fontSize: 11,
+    color: cs.onSurfaceVariant,
+    fontWeight: FontWeight.w500,
+  );
+}
+
+/// 音量控制
+class _VolumeControllerWidget extends StatelessWidget {
+
+  const _VolumeControllerWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final mp = context.read<MusicProvider>();
+    final volume = context.select<MusicProvider, double>((p) => p.volume);
+    final isMuted = volume == 0.0;
+
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              // 核心修复：改为 onlyForContinuous，这样连续滑动的 Slider 也会在拖动时显示气泡
+              showValueIndicator: ShowValueIndicator.onlyForContinuous,
+              // 可选：美化气泡形状（M3 风格）
+              valueIndicatorShape: const DropSliderValueIndicatorShape(),
+            ),
+            child: Slider(
+              year2023: false,
+              label: "${(volume * 100).toInt()}%",
+              value: volume,
+              onChanged: (value) {
+                mp.setVolume(value);
+              },
+              activeColor: colorScheme.primary,
+              inactiveColor: colorScheme.surfaceContainerHighest,
+            ),
+          ),
+        ),
+        _MiniIconButton(
+          icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+          tooltip: isMuted ? '打开声音' : '静音',
+          onPressed: () {
+            if (isMuted) {
+              mp.setVolume(0.5); // 恢复到中等音量
+            } else {
+              mp.setVolume(0.0); // 静音
+            }
+          },
+        ),
+      ],
+    );
+  }
 }
 
 /// 更多操作：包括播放队列菜单

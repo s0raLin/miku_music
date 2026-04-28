@@ -26,6 +26,10 @@ class MusicProvider extends ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   StreamSubscription? _stateSubscription; //持有的监听器句柄
 
+  // 音量控制
+  double _volume = 1.0;
+  double get volume => _volume;
+
   // 歌曲库
   final List<MusicInfo> _library = [];
   List<MusicInfo> get library => _library;
@@ -299,6 +303,23 @@ class MusicProvider extends ChangeNotifier {
     _stateSubscription = player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) _playNext();
     });
+    // 初始化音量
+    _loadVolume();
+  }
+
+  Future<void> _loadVolume() async {
+    final prefs = await SharedPreferences.getInstance();
+    _volume = prefs.getDouble('volume') ?? 1.0;
+    player.setVolume(_volume);
+    notifyListeners();
+  }
+
+  Future<void> setVolume(double volume) async {
+    _volume = volume.clamp(0.0, 1.0);
+    await player.setVolume(_volume);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('volume', _volume);
+    notifyListeners();
   }
 
   @override

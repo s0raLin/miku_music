@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -54,97 +55,17 @@ class _UserProfilePageState extends State<UserProfilePage>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
+              child: Wrap(
+                spacing: 12.0, // 水平间距
+                runSpacing: 12.0, // 垂直间距（如果换行的话）
                 children: [
-                  SizedBox(
-                    width: 100,
-                    child: Card(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      clipBehavior: Clip.antiAlias,
-
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 1 / 1,
-                            child: Container(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              child: Center(
-                                child: Icon(Icons.music_note, size: 40),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                            child: Text("喜欢"),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 100,
-                    child: Card(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      clipBehavior: Clip.antiAlias,
-
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 1 / 1,
-                            child: Container(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              child: Center(
-                                child: Icon(Icons.music_note, size: 40),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                            child: Text("最近"),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 100,
-                    child: Card(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      clipBehavior: Clip.antiAlias,
-
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 1 / 1,
-                            child: Container(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              child: Center(
-                                child: Icon(Icons.music_note, size: 40),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                            child: Text("本地"),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _PlaylistQuickCard(onTap: () {}, title: "喜欢"),
+                  _PlaylistQuickCard(onTap: () {}, title: "最近"),
+                  _PlaylistQuickCard(
+                    onTap: () {
+                      context.push("/files");
+                    },
+                    title: "本地",
                   ),
                 ],
               ),
@@ -223,6 +144,55 @@ class _UserProfilePageState extends State<UserProfilePage>
           // 底部留白
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
+      ),
+    );
+  }
+}
+
+class _PlaylistQuickCard extends StatelessWidget {
+  final String title;
+
+  final String? imageUrl;
+
+  final VoidCallback? onTap;
+  const _PlaylistQuickCard({
+    super.key,
+    required this.title,
+    this.imageUrl,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 100,
+      child: Card(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        clipBehavior: Clip.antiAlias,
+
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 1 / 1,
+                child: Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: imageUrl != null && imageUrl!.isNotEmpty
+                        ? Image.network(imageUrl!, fit: BoxFit.cover)
+                        : Icon(Icons.music_note, size: 40),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Text(title),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

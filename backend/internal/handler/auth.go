@@ -25,6 +25,7 @@ func (s *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": err.Error()})
 		return
 	}
+	
 	if req.Username == "" || req.Password == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 1,
@@ -41,6 +42,7 @@ func (s *AuthHandler) Login(c *gin.Context) {
 		})
 		return
 	}
+
 	if req.Password != user.Password {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 1,

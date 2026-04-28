@@ -8,4 +8,8 @@ type User struct {
 	Email     string `gorm:"type:varchar(255);comment:邮箱" json:"email"`
 	Username  string `gorm:"type:varchar(50);not null" json:"username"`
 	Password  string `gorm:"type:varchar(255);not null" json:"password"`
+
+	UploadMusics []MusicInfo `gorm:"many2many:user_uploads_music;"`
+
+	UplaodsPlayLists []PlayList `gorm:"many2many:user_uploads_playlist"`
 }

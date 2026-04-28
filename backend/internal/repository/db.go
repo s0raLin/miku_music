@@ -43,7 +43,7 @@ func Init(cfg *config.Config) *gorm.DB {
 	err = db.AutoMigrate(
 		&model.User{},
 		&model.MusicInfo{},
-		&model.UserMusicRelation{},
+		&model.PlayList{},
 	)
 
 	fmt.Printf("Mysql 连接成功")

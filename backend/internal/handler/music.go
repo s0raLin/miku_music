@@ -81,3 +81,43 @@ func (s *MusicHandler) AddMusic(c *gin.Context) {
 	})
 }
 
+func (s *MusicHandler) AddMusics(c *gin.Context) {
+	var req struct {
+		UserID string   `json:"user"`
+		Music  []string `json:"music"`
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 1,
+			"msg":  "解析表单失败",
+		})
+	}
+	musics := form.File["music[]"]
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 1,
+			"msg":  "无效的JSON数据",
+		})
+		return
+	}
+
+	for _, music := range musics {
+
+		newUUID := uuid.New().String()
+		ext := filepath.Ext(music.Filename)
+		newFileName := newUUID + ext
+		_, err := utils.UploadFileToOSS(music, "music/"+newFileName)
+		if err != nil {
+			continue
+		}
+
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "上传成功",
+	})
+}

@@ -31,6 +31,10 @@ func Setup(r *gin.Engine) *gin.Engine {
 		{
 			music.POST("", musicHandler.AddMusic)
 		}
+		playList := sandBox.Group("/playlist")
+		{
+			playList.POST("", )
+		}
 	}
 	return r
 }

@@ -83,18 +83,11 @@ func (s *MusicHandler) AddMusic(c *gin.Context) {
 
 func (s *MusicHandler) AddMusics(c *gin.Context) {
 	var req struct {
-		UserID string   `json:"user"`
-		Music  []string `json:"music"`
+		Name        string `json:"name"`
+		UserID      uint   `json:"user"`
+		Description string `json:"description"`
+		MusicIDs    []uint `json:"music_ids"`
 	}
-
-	form, err := c.MultipartForm()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 1,
-			"msg":  "解析表单失败",
-		})
-	}
-	musics := form.File["music[]"]
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -103,17 +96,29 @@ func (s *MusicHandler) AddMusics(c *gin.Context) {
 		})
 		return
 	}
+	
+	var musics []model.MusicInfo
+	if err := repository.DB.Find(&musics, req.MusicIDs).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 1,
+			"msg":  "上传失败",
+		})
+		return
+	}
 
-	for _, music := range musics {
+	playlist := model.PlayList{
+		Name:        req.Name,
+		UserID:      req.UserID,
+		Description: req.Description,
+		Musics:      musics,
+	}
 
-		newUUID := uuid.New().String()
-		ext := filepath.Ext(music.Filename)
-		newFileName := newUUID + ext
-		_, err := utils.UploadFileToOSS(music, "music/"+newFileName)
-		if err != nil {
-			continue
-		}
-
+	if err := repository.DB.Create(&playlist).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 1,
+			"msg":  "歌单数据库保存失败",
+		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

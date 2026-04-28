@@ -76,7 +76,8 @@ class _MainDrawerState extends State<MainDrawer> {
         Padding(
           padding: const EdgeInsets.fromLTRB(28, 40, 28, 20),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 头像
               CircleAvatar(
@@ -89,7 +90,7 @@ class _MainDrawerState extends State<MainDrawer> {
               const SizedBox(width: 16),
               // 用户名：显式设置颜色为 onSurface 确保可见
               Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(isLoggedIn ? user.username : "游客"),
                   const SizedBox(height: 4),

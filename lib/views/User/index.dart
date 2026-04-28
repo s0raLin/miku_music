@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 class UserProfilePage extends StatefulWidget {
@@ -58,22 +59,23 @@ class _UserProfilePageState extends State<UserProfilePage>
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Wrap(
-                alignment: WrapAlignment.start, //靠左对齐
-                spacing: 16.0, // 水平间距
-                runSpacing: 12.0, // 垂直间距（如果换行的话）
+                spacing: 12.0,
+                runSpacing: 12.0,
                 children: [
-                  _PlaylistQuickCard(onTap: () {}, title: "喜欢"),
                   _PlaylistQuickCard(
-                    onTap: () {
-                      context.push("/user/recent");
-                    },
-                    title: "最近",
+                    onTap: () {},
+                    title: "喜欢",
+                    icon: Icons.favorite_rounded,
                   ),
                   _PlaylistQuickCard(
-                    onTap: () {
-                      context.push("/user/files");
-                    },
+                    onTap: () => context.push("/user/recent"),
+                    title: "最近",
+                    icon: Icons.history_rounded,
+                  ),
+                  _PlaylistQuickCard(
+                    onTap: () => context.push("/user/files"),
                     title: "本地",
+                    icon: Icons.folder_special_rounded,
                   ),
                 ],
               ),
@@ -148,122 +150,75 @@ class _UserProfilePageState extends State<UserProfilePage>
   }
 }
 
-class _PlaylistQuickCard extends StatelessWidget {
-  final String title;
-
-  final String? imageUrl;
-
-  final VoidCallback? onTap;
-  const _PlaylistQuickCard({
-    super.key,
-    required this.title,
-    this.imageUrl,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 100,
-      child: Card(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        clipBehavior: Clip.antiAlias,
-
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AspectRatio(
-                aspectRatio: 1 / 1,
-                child: Ink(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: Center(
-                    child: imageUrl != null && imageUrl!.isNotEmpty
-                        ? Image.network(imageUrl!, fit: BoxFit.cover)
-                        : Icon(Icons.music_note, size: 40),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                child: Text(title),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+// --- 优化后的用户信息卡片 ---
 class M3UserCard extends StatelessWidget {
   const M3UserCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 获取 M3 颜色方案
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Card(
-      // M3 风格：使用 filled 类型
       elevation: 0,
+      // 使用 secondaryContainer 让背景色更出挑，或者使用 surfaceContainerHighest 保持稳重
+      color: colorScheme.secondaryContainer,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(24), // 增加圆角更具 M3 感
       ),
-      color: colorScheme.surfaceContainerHighest, // M3 标准容器颜色
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
             Row(
               children: [
-                // 头像带圆角外框
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
+                // 头像
+                CircleAvatar(
+                  radius: 36,
+                  backgroundColor: colorScheme.primary,
                   child: const CircleAvatar(
-                    radius: 32,
+                    radius: 34,
                     backgroundImage: NetworkImage(
                       'https://placeholder.com/150',
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
-                // 用户基本信息
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "用户名称",
-                        style: TextStyle(
-                          fontSize: 20,
+                        "苍璃 s0raLin",
+                        style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
+                          color: colorScheme.onSecondaryContainer,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "这里是一段个性签名或简介...",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant,
+                        "Coding with Music & Arch Linux",
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSecondaryContainer,
                         ),
                       ),
                     ],
                   ),
                 ),
-                // 右侧操作按钮
-                FilledButton.tonal(onPressed: () {}, child: const Text("编辑")),
+                FilledButton(
+                  onPressed: () {},
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
+                  child: const Text("编辑"),
+                ),
               ],
             ),
-            const Divider(height: 32),
-            // 底部统计数据
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Divider(color: colorScheme.outlineVariant),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -291,9 +246,77 @@ class M3UserCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          style: TextStyle(
+            fontSize: 12,
+            color: colorScheme.onSecondaryContainer.withOpacity(0.6),
+          ),
         ),
       ],
+    );
+  }
+}
+
+// --- 优化后的快捷入口卡片 ---
+class _PlaylistQuickCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Uint8List? coverBytes;
+  final VoidCallback? onTap;
+  // 增加一个枚举或索引来决定使用哪种主题色，或者统一使用 primary
+
+  const _PlaylistQuickCard({
+    super.key,
+    required this.title,
+    required this.icon,
+    this.onTap,
+    this.coverBytes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // 统一使用主题色：如果没有传 customColor，则默认使用 primary
+    // 也可以这里固定使用 colorScheme.primary
+    final activeColor = colorScheme.secondaryContainer;
+
+    return SizedBox(
+      width: 105,
+      child: Card.filled(
+        // 背景使用极其清淡的主题色，保持 M3 的通透感
+        color: activeColor,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: activeColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: coverBytes != null && coverBytes!.isNotEmpty
+                      ? Image.memory(coverBytes!)
+                      : Icon(icon),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface, // 使用通用的文字颜色
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

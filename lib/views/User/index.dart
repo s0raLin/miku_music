@@ -54,34 +54,69 @@ class _UserProfilePageState extends State<UserProfilePage>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                height: 400,
-                child: Column(
-                  children: [
-                    TabBar.secondary(
+              child: Column(
+                children: [
+                  TabBar.secondary(
+                    controller: _tabController,
+                    isScrollable: true, //允许自适应宽度
+                    tabs: const [
+                      Tab(text: "自建歌单"),
+                      Tab(text: "收藏歌单"),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 140,
+                    child: TabBarView(
                       controller: _tabController,
-                      tabs: const [
-                        Tab(text: "自建歌单"),
-                        Tab(text: "收藏歌单"),
+                      children: [
+                        Card(
+                          margin: const EdgeInsets.all(16.0),
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal, //设置为横向滚动
+                            itemCount: 10,
+                            itemBuilder: (context, index) {
+                              return Container(
+                                width: 100,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Center(child: Text("111")),
+                              );
+                            },
+                          ),
+                        ),
+                        Card(
+                          margin: const EdgeInsets.all(16.0),
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal, //设置为横向滚动
+                            itemCount: 10,
+                            itemBuilder: (context, index) {
+                              return Container(
+                                width: 100,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Center(child: Text("222")),
+                              );
+                            },
+                          ),
+                        ),
                       ],
                     ),
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: const [
-                          Card(
-                            margin: EdgeInsets.all(16.0),
-                            child: Center(child: Text("111")),
-                          ),
-                          Card(
-                            margin: EdgeInsets.all(16.0),
-                            child: Center(child: Text("222")),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

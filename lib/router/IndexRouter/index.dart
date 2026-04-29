@@ -153,25 +153,7 @@ final _routes = [
   GoRoute(
     name: "settings",
     path: "/settings",
-    pageBuilder: (context, state) {
-      return CustomTransitionPage(
-        child: const SettingsPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position:
-                Tween<Offset>(
-                  // Offset(1, 0) 表示屏幕右侧边缘外
-                  // Offset(0, 0) 表示屏幕中心位置
-                  begin: const Offset(1, 0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeOutExpo),
-                ),
-            child: child,
-          );
-        },
-      );
-    },
+    builder: (context, state) => SettingsPage(),
   ),
   StatefulShellRoute.indexedStack(
     builder: (context, state, navigationShell) =>

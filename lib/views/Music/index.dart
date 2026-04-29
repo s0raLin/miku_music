@@ -58,36 +58,30 @@ class _MusicPageState extends State<MusicPage> {
           Icon(
             icon,
             size: 80,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 24),
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
             textAlign: TextAlign.center,
           ),
-          if (action != null) ...[
-            const SizedBox(height: 16),
-            action,
-          ],
+          if (action != null) ...[const SizedBox(height: 16), action],
         ],
       ),
     );
@@ -163,7 +157,8 @@ class _MusicPageState extends State<MusicPage> {
                 final entry = albums[index];
                 final albumName = entry.key;
                 final songs = entry.value;
-                final cover = songs.firstWhere(
+                final cover = songs
+                    .firstWhere(
                       (s) => s.coverBytes != null && s.coverBytes!.isNotEmpty,
                       orElse: () => songs.first,
                     )
@@ -176,10 +171,7 @@ class _MusicPageState extends State<MusicPage> {
                   onTap: () {
                     context.push(
                       "/user/files/album-detail",
-                      extra: {
-                        'albumName': albumName,
-                        'songs': songs,
-                      },
+                      extra: {'albumName': albumName, 'songs': songs},
                     );
                   },
                 );
@@ -233,8 +225,9 @@ class _MusicPageState extends State<MusicPage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontWeight:
-                            isCurrent ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: isCurrent
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                     subtitle: Text(
@@ -328,7 +321,9 @@ class _MusicPageState extends State<MusicPage> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text("取消")),
+            onPressed: () => Navigator.pop(context),
+            child: const Text("取消"),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text("创建"),
@@ -368,9 +363,7 @@ class _SongTile extends StatelessWidget {
           width: 50,
           height: 50,
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
           child: music.coverBytes != null && music.coverBytes!.isNotEmpty
               ? Image.memory(music.coverBytes!, fit: BoxFit.cover)
               : Icon(Icons.music_note_rounded, color: colorScheme.primary),
@@ -379,7 +372,9 @@ class _SongTile extends StatelessWidget {
           music.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal),
+          style: TextStyle(
+            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
         subtitle: Text(
           music.artist,
@@ -490,23 +485,20 @@ class _PlaylistCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  color: colorScheme.surfaceContainerHighest,
-                  child: Center(
-                    child: playlist.coverBytes != null &&
-                            playlist.coverBytes!.isNotEmpty
-                        ? Image.memory(
-                            playlist.coverBytes!,
-                            fit: BoxFit.cover,
-                          )
-                        : Icon(
-                            Icons.playlist_play_rounded,
-                            size: 48,
-                            color: colorScheme.primary,
-                          ),
-                  ),
+              Container(
+                height: 140,
+                width: double.infinity,
+                color: colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child:
+                      playlist.coverBytes != null &&
+                          playlist.coverBytes!.isNotEmpty
+                      ? Image.memory(playlist.coverBytes!, fit: BoxFit.cover)
+                      : Icon(
+                          Icons.playlist_play_rounded,
+                          size: 48,
+                          color: colorScheme.primary,
+                        ),
                 ),
               ),
               Padding(

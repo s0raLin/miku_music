@@ -96,7 +96,7 @@ func (s *MusicHandler) AddMusics(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	var musics []model.MusicInfo
 	if err := repository.DB.Find(&musics, req.MusicIDs).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -124,5 +124,21 @@ func (s *MusicHandler) AddMusics(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "上传成功",
+	})
+}
+
+func (s *MusicHandler) ListMusics(c *gin.Context) {
+	var musics []model.MusicInfo
+
+	if err := repository.DB.Find(&musics).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":1,
+			"msg": "查找失败",
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code":0,
+		"msg": "查找成功",
+		"data": musics,
 	})
 }

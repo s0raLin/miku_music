@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
 
@@ -23,7 +25,7 @@ Go SDK V2 客户端初始化配置说明：
    - 如需采用 HTTP 协议，请在指定域名时指定为 HTTP
 */
 
-func OSSUpload(file multipart.File, fileName string) (string, error) {
+func OSSUpload(body io.Reader, fileName string) (string, error) {
 	bucketName := "cangli"
 	region := "cn-beijing"
 
@@ -45,7 +47,7 @@ func OSSUpload(file multipart.File, fileName string) (string, error) {
 	request := &oss.PutObjectRequest{
 		Bucket: oss.Ptr(bucketName), // 存储空间名称
 		Key:    oss.Ptr(objectKey),  // 对象名称
-		Body:   file,                // 要上传的字符串内容
+		Body:   body,                // 要上传的字符串内容
 	}
 
 	// 发送上传对象的请求
@@ -71,6 +73,16 @@ func UploadFileToOSS(fileHeader *multipart.FileHeader, path string) (string, err
 		return "", err
 	}
 	fileURL, err := OSSUpload(file, path)
+	if err != nil {
+		return "", err
+	}
+	return fileURL, nil
+}
+
+func UploadBytesToOSS(data []byte, path string) (string, error) {
+	reader := bytes.NewReader(data)
+
+	fileURL, err := OSSUpload(reader, path)
 	if err != nil {
 		return "", err
 	}

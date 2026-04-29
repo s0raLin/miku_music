@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:audiotags/audiotags.dart';
+// import 'package:audiotags/audiotags.dart';
+import 'package:metadata_god/metadata_god.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:on_audio_query_forked/on_audio_query.dart';
@@ -67,14 +68,26 @@ class MusicService {
     );
   }
 
-  static Future<MusicInfo> parse(String path) async {
-    final Tag? tag = await AudioTags.read(path);
+  // 增加初始化标志，避免重复初始化
+  static bool _isMetadataInitialized = false;
 
-    String? artist = tag?.trackArtist ?? tag?.albumArtist ?? "未知歌手";
-    Uint8List? coverBytes;
-    if (tag?.pictures.isNotEmpty ?? false) {
-      coverBytes = tag?.pictures.first.bytes;
+  static Future<void> _ensureInitialized() async {
+    if (!_isMetadataInitialized) {
+      await MetadataGod.initialize();
+      _isMetadataInitialized = true;
     }
+  }
+
+  static Future<MusicInfo> parse(String path) async {
+    await _ensureInitialized();
+    // final Tag? tag = await AudioTags.read(path);
+    final metadata = await MetadataGod.readMetadata(file: path);
+
+    final title = metadata.title ?? p.basename(path);
+    final artist = metadata.artist ?? "未知歌手";
+    final album = metadata.album ?? "未知专辑";
+    final duration = metadata.duration ?? Duration.zero;
+    final Uint8List? coverBytes = metadata.picture?.data;
 
     // 2. 手动寻找并读取外部 .lrc 文件
     String lyrics = "";
@@ -88,11 +101,10 @@ class MusicService {
 
     return MusicInfo(
       id: path,
-      title: tag?.title ?? "未知标题",
+      title: title,
       artist: artist,
-      album: tag?.album ?? "未知",
-
-      duration: Duration(milliseconds: tag?.duration ?? 0),
+      album: album,
+      duration: duration,
       coverBytes: coverBytes,
       lyrics: lyrics,
     );

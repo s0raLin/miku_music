@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 class MusicInfo {
@@ -17,4 +18,19 @@ class MusicInfo {
     required this.lyrics,
     this.album, required this.id,
   });
+
+  // 将对象转换为 Map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'artist': artist,
+      // Duration 需要转换为毫秒或秒，后端才好处理
+      'duration_ms': duration.inMilliseconds,
+      // 封面：如果是二进制，需要转为 Base64 字符串
+      'cover': coverBytes != null ? base64Encode(coverBytes!) : null,
+      'lyrics': lyrics,
+      'album': album,
+    };
+  }
 }

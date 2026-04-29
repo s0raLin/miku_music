@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"miku_music/internal/model"
 	"miku_music/internal/repository"
 	"miku_music/utils"
@@ -79,13 +80,14 @@ func (s *MusicHandler) AddMusic(c *gin.Context) {
 	var coverURL string
 	var coverErr error
 	coverFile, err := c.FormFile("cover")
+	fmt.Println(coverFile)
 	if err == nil && coverFile != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			file, _ := coverFile.Open()
 			defer file.Close()
-			coverURL, coverErr = utils.OSSUpload(file, "cover/"+newUUID+"jpg")
+			coverURL, coverErr = utils.OSSUpload(file, "cover/"+newUUID+".jpg")
 		}()
 	}
 

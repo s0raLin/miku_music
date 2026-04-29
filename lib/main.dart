@@ -8,17 +8,19 @@ import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:myapp/router/IndexRouter/index.dart';
 import 'package:myapp/service/Settings/index.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 Future<void> main() async {
   //确保与原生层通信准备就绪flu
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isLinux || Platform.isWindows) {
+  if (!kIsWeb && Platform.isLinux || Platform.isWindows) {
     JustAudioMediaKit.ensureInitialized(
       linux: true, // default: true  - dependency: media_kit_libs_linux
       windows:
           false, // default: true  - dependency: media_kit_libs_windows_audio
-      // android: true, // default: false - dependency: media_kit_libs_android_audio
+      android:
+          true, // default: false - dependency: media_kit_libs_android_audio
       // iOS: true, // default: false - dependency: media_kit_libs_ios_audio
       // macOS: true, // default: false - dependency: media_kit_libs_macos_audio
     );

@@ -6,7 +6,6 @@ import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/views/User/Files/index.dart';
 import 'package:myapp/views/Home/index.dart';
 import 'package:myapp/views/Login/index.dart';
-import 'package:myapp/views/Register/index.dart';
 import 'package:myapp/views/User/Files/AlumDetail/index.dart';
 import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/MusicDetail/index.dart';
@@ -108,7 +107,6 @@ final _shellBranches = navItems.map((item) {
 final _routes = [
   GoRoute(path: "/splash", builder: (context, state) => SplashPage()),
   GoRoute(path: "/login", builder: (context, state) => LoginPage()),
-  GoRoute(path: "/register", builder: (context, state) => RegisterPage()),
   GoRoute(
     name: "about",
     path: "/about",
@@ -189,4 +187,3 @@ class IndexRouter extends StatelessWidget {
     );
   }
 }
-

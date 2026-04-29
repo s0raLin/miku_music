@@ -8,6 +8,8 @@ import 'package:on_audio_query_forked/on_audio_query.dart';
 
 import 'package:path/path.dart' as p; // 推荐使用 path 库处理后缀
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class ScanProgress {
   final String currentPath; //正在处理的路径
   final MusicInfo? music; //如果解析了音乐,则返回对象
@@ -19,6 +21,7 @@ class MusicService {
   static final OnAudioQuery _audioQuery = OnAudioQuery();
 
   static Future<bool> requestPermission() async {
+    if (kIsWeb) return true;
     if (!await _audioQuery.permissionsRequest()) {
       return await _audioQuery.permissionsRequest();
     }
@@ -117,6 +120,7 @@ class MusicService {
   static Stream<ScanProgress> scanDirectories(
     List<String> selectedDirectories,
   ) async* {
+    if (kIsWeb) return;
     for (final directoryPath in selectedDirectories) {
       final dir = Directory(directoryPath);
 

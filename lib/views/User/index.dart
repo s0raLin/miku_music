@@ -38,10 +38,6 @@ class _UserProfilePageState extends State<UserProfilePage>
                 onPressed: () {},
                 icon: const Icon(Icons.share_outlined),
               ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.settings_outlined),
-              ),
             ],
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),

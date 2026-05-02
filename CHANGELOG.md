@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.6.0](https://github.com/s0raLin/miku_music/compare/v1.5.0...v1.6.0) (2026-05-02)
+
+
+### Features
+
+* **api:** implement playlist support and bulk music upload ([89bf0d2](https://github.com/s0raLin/miku_music/commit/89bf0d29972412fd88300ba98bf3906f6e081bc5))
+* **api:** modularize client API and add music endpoints ([760426c](https://github.com/s0raLin/miku_music/commit/760426cd17055c78dc7e1b6bfdbc0ab5fe6e90a3))
+* **auth:** integrate jwt token into user model and provider ([6f4b3d8](https://github.com/s0raLin/miku_music/commit/6f4b3d81f45b678ece0eb35e44acfa9485f3bbcb))
+* **auth:** unify login and registration into a single tabbed view ([1d7def6](https://github.com/s0raLin/miku_music/commit/1d7def61a64d54f29a7db10374b32feceb3721d4))
+* **music:** add music listing endpoint and cleanup ui code ([6c85004](https://github.com/s0raLin/miku_music/commit/6c85004b90c30881836c0a27fd4edc5ac57fbe3b))
+* **music:** implement nested scroll view for music library ([859aef6](https://github.com/s0raLin/miku_music/commit/859aef6dec5c3bc785a4e7f3da48727fd9ac74f7))
+* **music:** implement playlist management system ([d9dd3cf](https://github.com/s0raLin/miku_music/commit/d9dd3cf23505258635d8f495e60f0522e6b2e5ef))
+* **music:** support metadata extraction and cover art upload ([29e1815](https://github.com/s0raLin/miku_music/commit/29e181562d9e1b1f5f05807009548db2c1f8ffe1))
+* **nav:** add user profile route and update drawer destinations ([42a86dd](https://github.com/s0raLin/miku_music/commit/42a86dd1a98f18faee585cb3930d6542789d191f))
+* **ui:** enhance playback controls and user profile styling ([7e2e23f](https://github.com/s0raLin/miku_music/commit/7e2e23f9538fdbe302239474ac9d28bc0c4f8240))
+* **ui:** enhance theme provider and refine settings UI ([ff20915](https://github.com/s0raLin/miku_music/commit/ff209154a6fe0234c1814223fd14f8a77eeaf65d))
+* **ui:** implement about page and enhance drawer navigation ([151bf91](https://github.com/s0raLin/miku_music/commit/151bf915e62b300a5d3420c2ae4d7633c4b776aa))
+* **ui:** implement reactive user state in drawer ([c7fcdfc](https://github.com/s0raLin/miku_music/commit/c7fcdfcaaba98f69052b458bb52fdcf8b4772f58))
+* **ui:** implement responsive navigation layout and settings access ([fa65225](https://github.com/s0raLin/miku_music/commit/fa652259beca28c07b2c151d2325a19c5efbe085))
+* **user:** add quick access category cards to profile view ([3ed8029](https://github.com/s0raLin/miku_music/commit/3ed8029aa0e232cdbca762b0931625a6ea5ccf68))
+
+
+### Bug Fixes
+
+* **music:** correct cover art file extension and remove unused import ([b93190d](https://github.com/s0raLin/miku_music/commit/b93190df2565a3748bdb5af0cc47e1f3f563c5de))
+* **ui:** manage selected index state in NavigationDrawer ([4683167](https://github.com/s0raLin/miku_music/commit/46831676de7d2a3b87ffd11a0e6f371dc8b5409e))
+
 ## [1.5.0](https://github.com/s0raLin/miku_music/compare/v1.4.0...v1.5.0) (2026-04-27)
 
 

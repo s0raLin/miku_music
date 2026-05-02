@@ -1,30 +1,37 @@
+// 桌面端无动画切换逻辑
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:material_color_utilities/blend/blend.dart';
 import 'package:myapp/service/Settings/index.dart';
+
+class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
+  const NoAnimationPageTransitionsBuilder();
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child;
+  }
+}
 
 class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode;
   Color _seedColor;
 
-  // 构造函数初始值
   ThemeProvider({
-    ThemeMode initialMode = ThemeMode.light,
+    ThemeMode initialMode = ThemeMode.system,
     Color initialColor = const Color(0xFF6750A4),
   }) : _themeMode = initialMode,
        _seedColor = initialColor;
 
   ThemeMode get themeMode => _themeMode;
   Color get seedColor => _seedColor;
-  bool get isDark => _themeMode == ThemeMode.dark;
 
-  void toggleThemeMode() {
-    _themeMode = _themeMode == ThemeMode.dark
-        ? ThemeMode.light
-        : ThemeMode.dark;
-    notifyListeners();
-    //状态改变时自动持久化
-    SettingService.setThemeMode(themeMode);
-  }
+  // --- 逻辑方法 ---
 
   void setThemeMode(ThemeMode mode) {
     _themeMode = mode;
@@ -35,9 +42,15 @@ class ThemeProvider extends ChangeNotifier {
   void setSeedColor(Color color) {
     _seedColor = color;
     notifyListeners();
-    //持久化颜色值
     SettingService.setColor(color);
   }
+
+  // M3 颜色谐波化算法：让自定义颜色（如链接色）适配主题种子色
+  Color blend(Color targetColor) {
+    return Color(Blend.harmonize(targetColor.value, _seedColor.value));
+  }
+
+  // --- 主题构建 ---
 
   ThemeData _buildTheme(Brightness brightness) {
     final baseTheme = ThemeData(
@@ -49,93 +62,70 @@ class ThemeProvider extends ChangeNotifier {
         dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
       ),
     );
+
     final scheme = baseTheme.colorScheme;
+
     return baseTheme.copyWith(
+      // 整合：桌面端优化动画
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: NoAnimationPageTransitionsBuilder(),
+          TargetPlatform.windows: NoAnimationPageTransitionsBuilder(),
+          TargetPlatform.macOS: NoAnimationPageTransitionsBuilder(),
+        },
+      ),
+
+      // 整合：你的 GoogleFonts
       textTheme: GoogleFonts.notoSansScTextTheme(baseTheme.textTheme),
+
+      // 整合：新代码中更精细的组件样式
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
-        backgroundColor: scheme.surfaceContainer,
+        backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
+        elevation: 0,
       ),
-      drawerTheme: DrawerThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
-        surfaceTintColor: Colors.transparent,
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.secondaryContainer,
-        foregroundColor: scheme.onSecondaryContainer,
-      ),
-      listTileTheme: ListTileThemeData(
-        iconColor: scheme.onSurfaceVariant,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+
+      cardTheme: CardThemeData(
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
       ),
+
       navigationBarTheme: NavigationBarThemeData(
         height: 68,
+        indicatorColor: scheme.secondaryContainer,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        indicatorColor: scheme.secondaryContainer,
       ),
-      navigationDrawerTheme: NavigationDrawerThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
-        indicatorColor: scheme.secondaryContainer,
+
+      drawerTheme: DrawerThemeData(backgroundColor: scheme.surface),
+
+      listTileTheme: ListTileThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        selectedColor: scheme.secondary,
       ),
+
       tabBarTheme: TabBarThemeData(
         dividerColor: Colors.transparent,
-        indicatorColor: scheme.primary,
         labelColor: scheme.primary,
         unselectedLabelColor: scheme.onSurfaceVariant,
+        indicatorColor: scheme.primary,
       ),
-      searchBarTheme: SearchBarThemeData(
-        backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHighest),
-        elevation: const WidgetStatePropertyAll(0),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: scheme.surfaceContainerHigh,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: scheme.outlineVariant),
-        ),
-      ),
-      cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
 
-      //设置MenuAnchor弹出面板的样式
+      // 菜单样式
       menuTheme: MenuThemeData(
         style: MenuStyle(
           backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainer),
-          elevation: const WidgetStatePropertyAll(3),
           shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ), // 面板圆角
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          // 可以统一定义菜单的内边距
-          padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(vertical: 8),
-          ),
-        ),
-      ),
-
-      // 2. 设置 MenuItemButton 和 SubmenuButton 的全局样式
-      menuButtonTheme: MenuButtonThemeData(
-        style: MenuItemButton.styleFrom(
-          foregroundColor: scheme.onSurface,
-          iconColor: scheme.onSurfaceVariant,
-          // 设置菜单项的圆角（通常比面板圆角略小，看起来更协调）
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
       ),
     );
   }
 
   ThemeData get lightTheme => _buildTheme(Brightness.light);
-
   ThemeData get darkTheme => _buildTheme(Brightness.dark);
 }

@@ -35,6 +35,7 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   package_info_plus: ^8.0.0
   metadata_god: ^1.1.0
+  material_color_utilities: ^0.13.0
 
 dependency_overrides:
   # 强制锁定版本，消除 2.11.1 与 2.12.0 的冲突

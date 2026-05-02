@@ -47,7 +47,7 @@ class ThemeProvider extends ChangeNotifier {
 
   // M3 颜色谐波化算法：让自定义颜色（如链接色）适配主题种子色
   Color blend(Color targetColor) {
-    return Color(Blend.harmonize(targetColor.value, _seedColor.value));
+    return Color(Blend.harmonize(targetColor.toARGB32(), _seedColor.toARGB32()));
   }
 
   // --- 主题构建 ---

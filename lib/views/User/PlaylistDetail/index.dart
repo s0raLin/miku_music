@@ -182,8 +182,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    if (playlist == null)
+    if (playlist == null) {
       return const Scaffold(body: Center(child: Text("歌单不存在")));
+    }
 
     final songs = musicProvider.getPlaylistSongs(widget.playlistId);
     final isSystem = playlist.isSystem;

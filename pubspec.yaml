@@ -26,7 +26,7 @@ dependencies:
   media_kit_libs_windows_audio: any
   collection: ^1.19.1
   permission_handler: ^12.0.1
-  on_audio_query_forked: ^2.9.1
+  # on_audio_query_forked: ^2.9.1
   flutter_animate: ^4.5.2
   flex_color_scheme: ^8.4.0
   flutter_speed_dial: ^7.0.0
@@ -38,6 +38,7 @@ dependencies:
   material_color_utilities: ^0.13.0
   lottie: ^3.3.3
   url_launcher: ^6.3.2
+  photo_manager: ^3.9.0
 
 dependency_overrides:
   # 强制锁定版本，消除 2.11.1 与 2.12.0 的冲突
@@ -51,6 +52,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/
     - assets/icons/
     - lib/assets/
     - lib/assets/images/

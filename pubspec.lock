@@ -376,14 +376,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
-  id3:
-    dependency: transitive
-    description:
-      name: id3
-      sha256: "24176a6e08db6297c8450079e94569cd8387f913c817e5e3d862be7dc191e0b8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.2"
   image:
     dependency: transitive
     description:
@@ -648,46 +640,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.3.0"
-  on_audio_query_android_v1_8:
-    dependency: transitive
-    description:
-      name: on_audio_query_android_v1_8
-      sha256: b50d4863cecd674b15146523181b39b0abb33fc1b61d13a42ec235a99fe219b0
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.1"
-  on_audio_query_forked:
-    dependency: "direct main"
-    description:
-      name: on_audio_query_forked
-      sha256: d3326e33ba8938b513954f9045f7430790418a81844a32db044803e70a4cc986
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.9.1"
-  on_audio_query_ios:
-    dependency: transitive
-    description:
-      name: on_audio_query_ios
-      sha256: "9b3efa39a656fa3720980e3c6a1f55b7257d0032a45ffeb3f70eaa2c7f10f929"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
-  on_audio_query_platform_interface:
-    dependency: transitive
-    description:
-      name: on_audio_query_platform_interface
-      sha256: c23e019a31bd0774828476e428fd33b0dd1d82c9d4791dba80429358fc65dcd3
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.7.0"
-  on_audio_query_web:
-    dependency: transitive
-    description:
-      name: on_audio_query_web
-      sha256: "990efa52d879e6caffa97f24b34acd9caa1ce2c4c4cb873fe5a899a9b1af02c7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.6.0"
   package_config:
     dependency: transitive
     description:
@@ -824,6 +776,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
+  photo_manager:
+    dependency: "direct main"
+    description:
+      name: photo_manager
+      sha256: fb3bc8ea653370f88742b3baa304700107c83d12748aa58b2b9f2ed3ef15e6c2
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.9.0"
   platform:
     dependency: transitive
     description:

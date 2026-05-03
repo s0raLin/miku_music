@@ -5,11 +5,12 @@ import 'dart:typed_data';
 import 'package:metadata_god/metadata_god.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:on_audio_query_forked/on_audio_query.dart';
+// import 'package:on_audio_query_forked/on_audio_query.dart';
 
 import 'package:path/path.dart' as p; // 推荐使用 path 库处理后缀
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:photo_manager/photo_manager.dart';
 
 class ScanProgress {
   final String currentPath; //正在处理的路径
@@ -19,37 +20,59 @@ class ScanProgress {
 }
 
 class MusicService {
-  static final OnAudioQuery _audioQuery = OnAudioQuery();
+  // static final OnAudioQuery _audioQuery = OnAudioQuery();
 
-  static Future<bool> requestPermission() async {
-    if (kIsWeb) return true;
-    if (!await _audioQuery.permissionsRequest()) {
-      return await _audioQuery.permissionsRequest();
-    }
-    return true;
-  }
+  // static Future<bool> requestPermission() async {
+  //   if (kIsWeb) return true;
+  //   if (!await _audioQuery.permissionsRequest()) {
+  //     return await _audioQuery.permissionsRequest();
+  //   }
+  //   return true;
+  // }
 
   static Future<List<MusicInfo>> getAllAndroidSongs() async {
-    final List<SongModel> songs = await _audioQuery.querySongs(
-      sortType: SongSortType.DISPLAY_NAME,
-      orderType: OrderType.ASC_OR_SMALLER,
-      uriType: UriType.EXTERNAL,
+    // 1. 请求权限
+    final PermissionState ps = await PhotoManager.requestPermissionExtend();
+    if (!ps.isAuth) return [];
+
+    await _ensureInitialized();
+
+    // 2. 获取所有的音频路径列表 (通常系统会将音频分文件夹，如 "Music", "Download")
+    final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
+      type: RequestType.audio, // 必须指定只查音频
     );
 
-    return songs
-        .map(
-          (song) => MusicInfo(
-            id: song.id.toString(),
-            title: song.title,
-            artist: song.artist ?? "未知歌手",
-            album: song.album ?? "未知专辑",
-            duration: Duration(milliseconds: song.duration ?? 0),
-            coverBytes: null,
-            lyrics: '',
-            // coverBytes: 可以后面用 queryArtwork 单独获取
-          ),
-        )
-        .toList();
+    List<MusicInfo> musicList = [];
+
+    for (var path in paths) {
+      // 3. 获取该路径下所有的音频实体 (这里可以做分页，目前演示获取全部)
+      final List<AssetEntity> entities = await path.getAssetListRange(
+        start: 0,
+        end: await path.assetCountAsync,
+      );
+
+      for (var asset in entities) {
+        // 4. 将 AssetEntity 转换为你的 MusicInfo
+        // 注意：asset.file 是一个 Future，因为获取实际文件路径涉及异步 IO
+        final File? file = await asset.file;
+
+        if (file != null && file.path.isNotEmpty) {
+          final metadata = await MetadataGod.readMetadata(file: file.path);
+          musicList.add(
+            MusicInfo(
+              id: file.path, // 直接使用确定的路径作为 ID
+              title: metadata.title ?? asset.title ?? "未知曲目",
+              artist: metadata.artist ?? "未知歌手",
+              album: metadata.album ?? "未知专辑",
+              duration: metadata.duration ?? asset.videoDuration,
+              coverBytes: metadata.picture?.data, // 直接获取封面字节
+              lyrics: '', // 歌词通常需要额外扫描 .lrc 文件
+            ),
+          );
+        }
+      }
+    }
+    return musicList;
   }
 
   static Future<MusicInfo> getSongById(String id) async {

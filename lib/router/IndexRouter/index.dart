@@ -5,6 +5,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/views/MusicDashboard/index.dart';
+import 'package:myapp/views/User/EditProfile/index.dart';
 import 'package:myapp/views/User/Files/index.dart';
 import 'package:myapp/views/Home/index.dart';
 import 'package:myapp/views/Login/index.dart';
@@ -104,14 +105,19 @@ final List<AppNavItem> navItems = [
         path: "/favorites",
         builder: (context, state) => const FavoritesPage(),
       ),
-      GoRoute(
-        name: "playlist",
-        path: "/playlist/:id",
-        builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return PlaylistDetailPage(playlistId: id);
-        },
-      ),
+GoRoute(
+         name: "playlist",
+         path: "/playlist/:id",
+         builder: (context, state) {
+           final id = state.pathParameters['id']!;
+           return PlaylistDetailPage(playlistId: id);
+         },
+       ),
+       GoRoute(
+         name: "edit-profile",
+         path: "/edit-profile",
+         builder: (context, state) => const EditProfilePage(),
+       ),
     ],
   ),
 ];

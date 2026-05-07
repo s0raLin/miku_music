@@ -312,18 +312,24 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 16),
-          _buildSectionHeader(context, "关于"),
+_buildSectionHeader(context, "关于"),
 
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.info_outline_rounded),
-                  title: const Text("软件版本"),
-                  trailing: Text("$version (Build $buildNumber)"),
-                  onTap: () => context.pushNamed('about'),
-                ),
+           Card(
+             child: Column(
+               children: [
+                 ListTile(
+                   leading: const Icon(Icons.person_rounded),
+                   title: const Text("编辑资料"),
+                   trailing: const Icon(Icons.chevron_right),
+                   onTap: () => context.push("/user/edit-profile"),
+                 ),
+                 const Divider(height: 1, indent: 16, endIndent: 16),
+                 ListTile(
+                   leading: const Icon(Icons.info_outline_rounded),
+                   title: const Text("软件版本"),
+                   trailing: Text("$version (Build $buildNumber)"),
+                   onTap: () => context.pushNamed('about'),
+                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16),
                 ListTile(
                   leading: const Icon(Icons.code_rounded),

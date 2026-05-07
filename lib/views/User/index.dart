@@ -28,10 +28,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
             actions: [
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert), // 纵向三个点
-                onSelected: (value) {
-                  // 处理点击后的逻辑
-                  print("选择了: $value");
-                },
+onSelected: (value) {
+                   if (value == "edit") {
+                     context.push("/user/edit-profile");
+                   }
+                   print("选择了: $value");
+                 },
                 itemBuilder: (BuildContext context) => [
                   const PopupMenuItem(
                     value: "share",
@@ -517,7 +519,10 @@ class M3UserCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                FilledButton(onPressed: () {}, child: const Text("编辑")),
+                FilledButton(
+                   onPressed: () => context.push("/user/edit-profile"),
+                   child: const Text("编辑"),
+                 ),
               ],
             ),
             Padding(

@@ -35,7 +35,7 @@ class MusicDashboardPage extends StatelessWidget {
 
           return CustomScrollView(
             slivers: [
-              SliverAppBar.large(
+              SliverAppBar(
                 title: const Text("MikuMusic"),
                 centerTitle: false,
                 backgroundColor: Colors.transparent,
@@ -52,7 +52,8 @@ class MusicDashboardPage extends StatelessWidget {
                     pattern: pattern,
                   ),
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => _DashboardCard(index: index, isNarrow: isNarrow),
+                    (context, index) =>
+                        _DashboardCard(index: index, isNarrow: isNarrow),
                     childCount: 5,
                   ),
                 ),

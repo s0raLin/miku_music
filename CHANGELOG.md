@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/s0raLin/miku_music/compare/v1.9.0...v1.10.0) (2026-05-08)
+
+
+### Features
+
+* **music:** implement CoverFlow and enhance music playback UI ([1be5a30](https://github.com/s0raLin/miku_music/commit/1be5a30d78934b0443d3131ee3576de5f26cf3f1))
+
 ## [1.9.0](https://github.com/s0raLin/miku_music/compare/v1.8.0...v1.9.0) (2026-05-08)
 
 

@@ -7,6 +7,7 @@ import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+
 // ─── 主页面 ───────────────────────────────────────────────────────────────────
 
 class MusicDetailPage extends StatefulWidget {

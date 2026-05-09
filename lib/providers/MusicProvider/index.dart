@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
-import 'package:myapp/service/Files/index.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -190,13 +189,6 @@ class MusicProvider extends ChangeNotifier {
   // ─────────────────────────────────────────────
 
   MusicProvider() {
-
-    _loadHistory(); // 从本地恢复播放历史
-    _loadFavList();
-    _loadPlaylists(); // 从本地恢复歌单
-    _loadAppInfo(); // 加载应用版本信息
-    _loadVolume(); // 恢复上次保存的音量
-
     // 歌曲播放完毕时自动切换到下一首
     _stateSubscription = player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) _playNext();
@@ -206,6 +198,35 @@ class MusicProvider extends ChangeNotifier {
     _stateSubscription2 = player.playingStream.listen((_) {
       notifyListeners();
     });
+  }
+
+  Future<void> bootstrap({
+    required List<MusicInfo> scannedSongs,
+    void Function(String module, String detail)? onProgress,
+  }) async {
+    onProgress?.call('恢复媒体库', '已载入 ${scannedSongs.length} 首歌曲');
+    _library
+      ..clear()
+      ..addAll(scannedSongs);
+    notifyListeners();
+
+    onProgress?.call('恢复播放历史', '正在读取历史记录');
+    await _loadHistory();
+
+    onProgress?.call('恢复收藏列表', '正在读取我喜欢列表');
+    await _loadFavList();
+
+    onProgress?.call('恢复用户歌单', '正在恢复歌单结构');
+    await _loadPlaylists();
+
+    _syncFavoritesPlaylist();
+    notifyListeners();
+
+    onProgress?.call('恢复音量设置', '正在同步播放器音量');
+    await _loadVolume();
+
+    onProgress?.call('读取应用信息', '正在获取版本号');
+    await _loadAppInfo();
   }
 
   // ─────────────────────────────────────────────

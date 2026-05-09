@@ -8,6 +8,20 @@ import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/service/Settings/index.dart';
 
+class StartupScanProgress {
+  final String module;
+  final String detail;
+  final int scannedCount;
+  final int foundCount;
+
+  const StartupScanProgress({
+    required this.module,
+    required this.detail,
+    this.scannedCount = 0,
+    this.foundCount = 0,
+  });
+}
+
 class InitializationService {
   // 1. 启动前的硬性初始化
   static Future<void> preRunInit() async {
@@ -52,17 +66,38 @@ class InitializationService {
     };
   }
 
-  static Future<List<MusicInfo>> scanInitialMusic() async {
+  static Future<List<MusicInfo>> scanInitialMusic({
+    void Function(StartupScanProgress progress)? onProgress,
+  }) async {
     final List<MusicInfo> fetchedLibrary = [];
     final paths = await FileService.loadPaths();
+
+    onProgress?.call(
+      StartupScanProgress(
+        module: '读取本地目录',
+        detail: paths.isEmpty ? '没有已保存的音乐目录' : '已读取 ${paths.length} 个目录',
+      ),
+    );
 
     if (paths.isEmpty) return [];
 
     // 使用 await for 等待扫描流完成（这可能会让启动页停留稍久，但能保证数据完整）
+    var scannedCount = 0;
     await for (final s in MusicService.scanDirectories(paths)) {
+      scannedCount++;
+
       if (s.music != null) {
         fetchedLibrary.add(s.music!);
       }
+
+      onProgress?.call(
+        StartupScanProgress(
+          module: '扫描本地音乐库',
+          detail: s.currentPath,
+          scannedCount: scannedCount,
+          foundCount: fetchedLibrary.length,
+        ),
+      );
     }
     return fetchedLibrary;
   }

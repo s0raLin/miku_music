@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -18,20 +17,6 @@ class _CoverFlowPageState extends State<CoverFlowPage> {
 
   // 设定一个你认为最舒服的卡片物理宽度
   final double _idealCardWidth = 300.0;
-
-  final List<Map<String, String>> _musicData = [
-    {'cover': 'https://picsum.photos/seed/1/600/600', 'title': 'World Is Mine'},
-    {'cover': 'https://picsum.photos/seed/2/600/600', 'title': 'Senbonzakura'},
-    {
-      'cover': 'https://picsum.photos/seed/3/600/600',
-      'title': 'Hajimete no Oto',
-    },
-    {'cover': 'https://picsum.photos/seed/4/600/600', 'title': 'Melt'},
-    {
-      'cover': 'https://picsum.photos/seed/5/600/600',
-      'title': 'Tell Your World',
-    },
-  ];
 
   @override
   void didChangeDependencies() {

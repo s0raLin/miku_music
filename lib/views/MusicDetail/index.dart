@@ -364,8 +364,9 @@ class _LyricsSectionState extends State<_LyricsSection>
   ) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
-      if (a[i]['time'] != b[i]['time'] || a[i]['text'] != b[i]['text'])
+      if (a[i]['time'] != b[i]['time'] || a[i]['text'] != b[i]['text']) {
         return false;
+      }
     }
     return true;
   }

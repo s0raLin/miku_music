@@ -44,8 +44,6 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.forward();
     _startInitialization();
-
-    _initAndroidApp();
   }
 
   Future<void> _startInitialization() async {
@@ -54,6 +52,9 @@ class _SplashPageState extends State<SplashPage>
     final startupProvider = context.read<StartupProvider>();
     final themeProvider = context.read<ThemeProvider>();
     final musicProvider = context.read<MusicProvider>();
+
+    final pfs = await SharedPreferences.getInstance();
+    final bool isFirstRun = pfs.getBool("is_first_run") ?? true;
 
     try {
       await startupProvider.run(
@@ -67,28 +68,25 @@ class _SplashPageState extends State<SplashPage>
 
     final remaining = 1800 - stopwatch.elapsedMilliseconds;
     if (remaining > 0) await Future.delayed(Duration(milliseconds: remaining));
+    if (!mounted) return;
 
-    if (mounted && startupSucceeded) context.toHome();
+    if (startupSucceeded) {
+      if (!Platform.isAndroid) {
+        context.toHome();
+        return;
+      }
+      if (isFirstRun) {
+        context.go("/setup");
+      } else {
+        context.go("/home");
+      }
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _initAndroidApp() async {
-    if (!Platform.isAndroid) return;
-
-    final pfs = await SharedPreferences.getInstance();
-    final bool isFirstRun = pfs.getBool("is_first_run") ?? true;
-
-    if (!mounted) return;
-    if (isFirstRun) {
-      context.go("setup");
-    } else {
-      context.go("home");
-    }
   }
 
   @override

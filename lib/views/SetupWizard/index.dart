@@ -104,7 +104,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                       }
                     },
                     child: Text(
-                      _currentIndex == _steps.length - 1 ? "开始设置" : "下一步",
+                      _currentIndex == _steps.length - 1 ? "开始" : "下一步",
                     ),
                   ),
                 ],

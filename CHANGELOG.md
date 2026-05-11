@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.11.0](https://github.com/s0raLin/miku_music/compare/v1.10.0...v1.11.0) (2026-05-11)
+
+
+### Features
+
+* **auth:** add setup wizard for first-time users ([c713466](https://github.com/s0raLin/miku_music/commit/c71346635a0cfa6e23bbdd06f6fa78a23d21e973))
+* **music:** implement initial music library scanning on startup ([4be4b9a](https://github.com/s0raLin/miku_music/commit/4be4b9ab92397f6e401ad68095ea4da398086887))
+* **music:** implement NetEase Cloud Music integration and playlist management ([2ef0746](https://github.com/s0raLin/miku_music/commit/2ef07461ffa98d6f6b5ea72febf3ce7ae85d2030))
+* **ui:** add window management and system tray support ([6dda5d2](https://github.com/s0raLin/miku_music/commit/6dda5d23bc9c59cad433ce02bf78cd9d1a181b48))
+
+
+### Bug Fixes
+
+* **music:** improve Android storage permissions and scanning logic ([832c516](https://github.com/s0raLin/miku_music/commit/832c516634410a116d519d9152cb52f70c04a2d1))
+* **ui:** integrate setup wizard flow into splash screen ([d3e2ee8](https://github.com/s0raLin/miku_music/commit/d3e2ee8042eee2a54f4ece71b72b4a866476ef0b))
+
 ## [1.10.0](https://github.com/s0raLin/miku_music/compare/v1.9.0...v1.10.0) (2026-05-08)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/s0raLin/miku_music/compare/v1.11.1...v1.11.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **app:** wrap dotenv loading in try-catch block ([c90686a](https://github.com/s0raLin/miku_music/commit/c90686a26fc6305ed533ad863479d07923801cb3))
+
 ## [1.11.1](https://github.com/s0raLin/miku_music/compare/v1.11.0...v1.11.1) (2026-05-11)
 
 

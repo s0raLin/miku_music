@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/NeteaseCloudMusic/index.dart';
 import 'package:myapp/components/Shared/index.dart';
+import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
@@ -86,7 +87,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: const M3UserCard(username: "匿名用户", description: "暂无介绍"),
+              child: _UserCard(
+                username: "匿名",
+                decoration: "暂无描述",
+                onTap: () {
+                  context.push("/user/edit-profile");
+                },
+              ),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -218,6 +225,48 @@ class _UserProfilePageState extends State<UserProfilePage> {
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
+    );
+  }
+}
+
+class _UserCard extends StatelessWidget {
+  final String username;
+  final String decoration;
+  final VoidCallback? onTap;
+  const _UserCard({
+    required this.username,
+    required this.decoration,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 46,
+          backgroundImage: AssetImage(MyAssets.mikulogo),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            // 让子组件在水平方向上靠起始位置（左侧）对齐
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(username),
+              const SizedBox(height: 4),
+              Text(
+                decoration,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                overflow: TextOverflow.ellipsis, // 防止描述过长导致换行
+              ),
+              const SizedBox(height: 4),
+              Text("- 关注 | - 粉丝"),
+            ],
+          ),
+        ),
+        IconButton(onPressed: onTap, icon: Icon(Icons.chevron_right_rounded)),
+      ],
     );
   }
 }
@@ -447,120 +496,6 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
       }
     }
   });
-}
-
-class M3UserCard extends StatelessWidget {
-  final String username;
-  final String description;
-
-  const M3UserCard({
-    super.key,
-    required this.username,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return AppPanel(
-      color: colorScheme.secondaryContainer,
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // 左边：大头像
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: colorScheme.primaryContainer,
-                child: Icon(
-                  Icons.person_rounded,
-                  size: 40,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              ),
-              // 一个小的在线状态或装饰点（可选）
-              // CircleAvatar(
-              //   radius: 10,
-              //   backgroundColor: colorScheme.surface,
-              //   child: Icon(Icons.bolt, size: 14, color: colorScheme.primary),
-              // ),
-            ],
-          ),
-          const SizedBox(width: 16),
-
-          // 右边：紧凑的信息流
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 1. 描述（在名字上方）
-                Text(
-                  description,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                // 2. 名字
-                Text(
-                  username,
-                  style: textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // 3. 底部小文字：关注、粉丝、听歌时长
-                DefaultTextStyle(
-                  style: textTheme.bodySmall!.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  child: Row(
-                    children: [
-                      Text("关注 -"),
-                      _buildDot(colorScheme),
-                      Text("粉丝 -"),
-                      _buildDot(colorScheme),
-                      const Icon(Icons.access_time_rounded, size: 12),
-                      const SizedBox(width: 4),
-                      Text("- 小时"),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 如果需要，这里可以放一个小箭头或编辑图标
-          Icon(
-            Icons.chevron_right_rounded,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 小圆点分隔符
-  Widget _buildDot(ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Container(
-        width: 3,
-        height: 3,
-        decoration: BoxDecoration(
-          color: colorScheme.outlineVariant,
-          shape: BoxShape.circle,
-        ),
-      ),
-    );
-  }
 }
 
 // --- 优化后的快捷入口卡片 ---

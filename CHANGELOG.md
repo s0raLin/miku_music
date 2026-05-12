@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.0](https://github.com/s0raLin/miku_music/compare/v1.11.2...v1.12.0) (2026-05-12)
+
+
+### Features
+
+* **ui:** add bio field and improve edit profile layout ([54fc6e0](https://github.com/s0raLin/miku_music/commit/54fc6e04e5a14d47014c05a1d4cb3a2dd33c8eac))
+* **ui:** replace M3UserCard with custom _UserCard in user profile ([5fd5dc8](https://github.com/s0raLin/miku_music/commit/5fd5dc893d6da3df8c3be6a57e3ac5f4c990a397))
+
 ## [1.11.2](https://github.com/s0raLin/miku_music/compare/v1.11.1...v1.11.2) (2026-05-11)
 
 

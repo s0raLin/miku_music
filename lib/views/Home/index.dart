@@ -124,10 +124,13 @@ class _HomePageState extends State<HomePage> {
               : SliverToBoxAdapter(
                   child: SizedBox(
                     height: 186,
-                    child: ListView.builder(
+                    child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: history.take(6).length,
+                      separatorBuilder: (BuildContext context, int index) {
+                        return SizedBox(width: 4);
+                      },
                       itemBuilder: (context, index) {
                         final item = history[index];
                         final badgeBackground = colorScheme.surfaceContainerHigh

@@ -76,28 +76,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete, color: colorScheme.error),
-                      title: Text(
-                        '删除',
-                        style: TextStyle(color: colorScheme.error),
-                      ),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
                 ],
               ),
             ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Divider(
-                height: 1,
-                thickness: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-              ),
-            ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
@@ -105,10 +86,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: const M3UserCard(
-                username: "蒼璃 s0raLin",
-                description: "用户中心与收藏",
-              ),
+              child: const M3UserCard(username: "匿名用户", description: "暂无介绍"),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -117,19 +95,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                height: 120,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal, // 设置为横向滚动
-                  itemBuilder: (BuildContext context, int index) =>
-                      quickCards[index],
-                  separatorBuilder: (BuildContext context, int index) =>
-                      const SizedBox(width: 12.0),
-                  itemCount: quickCards.length,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppSectionHeader(title: "我的音乐"),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 120,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal, // 设置为横向滚动
+                      itemBuilder: (BuildContext context, int index) =>
+                          quickCards[index],
+                      separatorBuilder: (BuildContext context, int index) =>
+                          const SizedBox(width: 12.0),
+                      itemCount: quickCards.length,
 
-                  // spacing: 12.0,
-                  // runSpacing: 12.0,
-                ),
+                      // spacing: 12.0,
+                      // runSpacing: 12.0,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -464,10 +449,10 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
   });
 }
 
-// --- 优化后的用户信息卡片 ---
 class M3UserCard extends StatelessWidget {
   final String username;
   final String description;
+
   const M3UserCard({
     super.key,
     required this.username,
@@ -481,82 +466,99 @@ class M3UserCard extends StatelessWidget {
 
     return AppPanel(
       color: colorScheme.surfaceContainer,
-      padding: const EdgeInsets.all(20),
-      child: Column(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
+          // 左边：大头像
+          Stack(
+            alignment: Alignment.bottomRight,
             children: [
               CircleAvatar(
-                radius: 36,
-                backgroundColor: colorScheme.primary,
-                child: CircleAvatar(
-                  radius: 34,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  foregroundColor: colorScheme.onSurfaceVariant,
-                  child: const Icon(Icons.person_rounded, size: 34),
+                radius: 40,
+                backgroundColor: colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.person_rounded,
+                  size: 40,
+                  color: colorScheme.onPrimaryContainer,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      username,
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+              // 一个小的在线状态或装饰点（可选）
+              // CircleAvatar(
+              //   radius: 10,
+              //   backgroundColor: colorScheme.surface,
+              //   child: Icon(Icons.bolt, size: 14, color: colorScheme.primary),
+              // ),
+            ],
+          ),
+          const SizedBox(width: 16),
+
+          // 右边：紧凑的信息流
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. 描述（在名字上方）
+                Text(
+                  description,
+                  style: textTheme.labelMedium?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              FilledButton(
-                onPressed: () => context.push("/user/edit-profile"),
-                child: const Text("编辑"),
-              ),
-            ],
+                // 2. 名字
+                Text(
+                  username,
+                  style: textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // 3. 底部小文字：关注、粉丝、听歌时长
+                DefaultTextStyle(
+                  style: textTheme.bodySmall!.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  child: Row(
+                    children: [
+                      Text("关注 -"),
+                      _buildDot(colorScheme),
+                      Text("粉丝 -"),
+                      _buildDot(colorScheme),
+                      const Icon(Icons.access_time_rounded, size: 12),
+                      const SizedBox(width: 4),
+                      Text("- 小时"),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Divider(color: colorScheme.outlineVariant),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem("动态", "128", colorScheme),
-              _buildStatItem("关注", "1.2k", colorScheme),
-              _buildStatItem("粉丝", "8.5k", colorScheme),
-            ],
+
+          // 如果需要，这里可以放一个小箭头或编辑图标
+          Icon(
+            Icons.chevron_right_rounded,
+            color: colorScheme.onSurfaceVariant,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value, ColorScheme colorScheme) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.primary,
-          ),
+  // 小圆点分隔符
+  Widget _buildDot(ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Container(
+        width: 3,
+        height: 3,
+        decoration: BoxDecoration(
+          color: colorScheme.outlineVariant,
+          shape: BoxShape.circle,
         ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-        ),
-      ],
+      ),
     );
   }
 }

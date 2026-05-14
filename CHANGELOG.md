@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/s0raLin/miku_music/compare/v1.12.0...v1.13.0) (2026-05-14)
+
+
+### Features
+
+* **ui:** add AppToast component and refactor snackbars ([c158669](https://github.com/s0raLin/miku_music/commit/c158669442d8b2b50303c142c9584a47d2f63e4f))
+
 ## [1.12.0](https://github.com/s0raLin/miku_music/compare/v1.11.2...v1.12.0) (2026-05-12)
 
 

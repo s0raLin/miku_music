@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:myapp/api/Client/index.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -76,7 +77,6 @@ class _LoginViewState extends State<LoginView> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      // 打印一下，确保这里有值
       print("正在登录: ${_usernameController.text}");
 
       final user = await UserApi.login(
@@ -90,40 +90,26 @@ class _LoginViewState extends State<LoginView> {
         await context.read<UserProvider>().updateUserInfo(user);
 
         if (!mounted) return;
+        AppToast.success(
+          context,
+          message: '欢迎回来，${user.username}',
+          title: '登录成功',
+        );
         context.go('/home');
       }
     } on DioException catch (e) {
-      // 专门捕获 Dio 异常
       if (!mounted) return;
 
-      // 尝试提取后端定义的 "msg" 字段
       String errorMsg = "网络请求失败";
       if (e.response?.data != null && e.response?.data is Map) {
         errorMsg = e.response?.data['msg'] ?? e.message;
       }
 
-      _showErrorDialog(errorMsg);
+      AppToast.error(context, message: errorMsg, title: '登录失败');
     } catch (e) {
       if (!mounted) return;
-      _showErrorDialog("发生未知错误: $e");
+      AppToast.error(context, message: "发生未知错误: $e", title: '登录失败');
     }
-  }
-
-  // 提取弹窗逻辑，让代码清爽点
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("登录失败"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -268,21 +254,39 @@ class _RegisterViewState extends State<RegisterView> {
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      Uint8List? avatarBytes;
-      if (_avatarImage != null) {
-        avatarBytes = await _avatarImage!.readAsBytes();
+      try {
+        Uint8List? avatarBytes;
+        if (_avatarImage != null) {
+          avatarBytes = await _avatarImage!.readAsBytes();
+        }
+
+        final response = await UserApi.register(
+          username: _usernameController.text,
+          password: _passwordController.text,
+          email: _emailController.text,
+          avatarBytes: avatarBytes,
+        );
+
+        if (response.statusCode == 200) {
+          if (!mounted) return;
+          AppToast.success(
+            context,
+            message: '注册成功，请登录',
+            title: '恭喜',
+          );
+          context.pop();
+        }
+      } on DioException catch (e) {
+        if (!mounted) return;
+        String errorMsg = "网络请求失败";
+        if (e.response?.data != null && e.response?.data is Map) {
+          errorMsg = e.response?.data['msg'] ?? e.message;
+        }
+        AppToast.error(context, message: errorMsg, title: '注册失败');
+      } catch (e) {
+        if (!mounted) return;
+        AppToast.error(context, message: "发生未知错误: $e", title: '注册失败');
       }
-
-      final response = await UserApi.register(
-        username: _usernameController.text,
-        password: _passwordController.text,
-        email: _emailController.text,
-        avatarBytes: avatarBytes,
-      );
-
-      if (response.statusCode == 200) {}
-
-      context.pop();
     }
   }
 

@@ -66,6 +66,21 @@ class AppToast {
     );
   }
 
+  static void neutral(
+    BuildContext context, {
+    required String message,
+    String? title,
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    show(
+      context,
+      message: message,
+      title: title,
+      tone: AppToastTone.neutral,
+      duration: duration,
+    );
+  }
+
   static void warning(
     BuildContext context, {
     required String message,

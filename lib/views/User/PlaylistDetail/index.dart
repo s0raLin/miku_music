@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -51,10 +52,16 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       ),
     );
 
-    if (newName != null && newName.isEmpty) {
-      if (!context.mounted) return;
-      context.read<MusicProvider>().renamePlaylist(playlist.id, newName);
-    }
+     if (newName != null && newName.isNotEmpty) {
+       if (!context.mounted) return;
+       context.read<MusicProvider>().renamePlaylist(playlist.id, newName);
+       if (context.mounted) {
+         AppToast.neutral(
+           context,
+           message: '歌单已重命名为「$newName」',
+         );
+       }
+     }
   }
 
   Future<void> _showDeleteConfirmDialog(
@@ -89,6 +96,10 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     provider.deletePlaylist(playlist.id);
 
     if (context.mounted) {
+      AppToast.neutral(
+        context,
+        message: '歌单「${playlist.name}」已删除',
+      );
       Navigator.of(context).pop();
     }
   }
@@ -116,7 +127,14 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    context.read<MusicProvider>().removeFromPlaylist(playlistId, musicId);
+    final provider = context.read<MusicProvider>();
+    provider.removeFromPlaylist(playlistId, musicId);
+    if (context.mounted) {
+      AppToast.neutral(
+        context,
+        message: '已从歌单移除',
+      );
+    }
   }
 
   Future<void> _showAddToPlaylistSheet(
@@ -167,10 +185,14 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     trailing: alreadyIn
                         ? Icon(Icons.check_circle, color: cs.secondary)
                         : null,
-                    onTap: () {
-                      musicProvider.addToPlaylist(p.id, song);
-                      Navigator.pop(context);
-                    },
+                     onTap: () {
+                       musicProvider.addToPlaylist(p.id, song);
+                       Navigator.pop(context);
+                       AppToast.success(
+                         context,
+                         message: '已添加到「${p.name}」',
+                       );
+                     },
                   );
                 },
               ),

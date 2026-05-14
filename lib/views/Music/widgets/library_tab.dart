@@ -21,11 +21,30 @@ class LibraryTab extends StatelessWidget {
               icon: Icons.music_note_rounded,
               title: "还没有歌曲",
               subtitle: "点击下方按钮上传歌曲开始使用",
-              action: FilledButton.icon(
-                onPressed: () => MusicApi.pickAndUploadMusic(),
-                icon: const Icon(Icons.upload_rounded),
-                label: const Text("上传歌曲"),
-              ),
+                 action: FilledButton.icon(
+                   onPressed: () async {
+                     try {
+                       await MusicApi.pickAndUploadMusic();
+                       if (context.mounted) {
+                         AppToast.success(
+                           context,
+                           message: '歌曲上传成功',
+                           title: '上传完成',
+                         );
+                       }
+                     } catch (e) {
+                       if (context.mounted) {
+                         AppToast.error(
+                           context,
+                           message: e.toString().replaceAll('Exception: ', ''),
+                           title: '上传失败',
+                         );
+                       }
+                     }
+                   },
+                   icon: const Icon(Icons.upload_rounded),
+                   label: const Text("上传歌曲"),
+                 ),
             )
           : ListView.separated(
               padding: const EdgeInsets.all(12),

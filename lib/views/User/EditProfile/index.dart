@@ -222,9 +222,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   // 保存逻辑保持不变，但增加一点触感反馈
-  void _saveProfile() {
+  void _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    AppToast.success(context, title: '资料已保存', message: '新的个人资料已更新');
-    // ... 原有逻辑 ...
+
+    final userProvider = context.read<UserProvider>();
+    final currentUser = userProvider.user;
+    if (currentUser == null) return;
+
+    // 更新用户信息
+    final updatedUser = User(
+      username: _usernameController.text,
+      email: _emailController.text,
+      avatarURL: currentUser.avatarURL,
+      token: currentUser.token,
+    );
+
+    await userProvider.updateUserInfo(updatedUser);
+
+    if (mounted) {
+      AppToast.success(
+        context,
+        message: '个人资料已更新',
+        title: '保存成功',
+      );
+    }
   }
 }

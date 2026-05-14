@@ -484,13 +484,19 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
   ).then((result) async {
     if (result == null || !context.mounted) return [];
 
-    final provider = context.read<MusicProvider>();
-    if (result['index'] == 0) {
-      final name = nameController.text.trim();
-      if (name.isNotEmpty) {
-        provider.createPlaylist(name);
-        
-      };
+     final provider = context.read<MusicProvider>();
+     if (result['index'] == 0) {
+       final name = nameController.text.trim();
+        if (name.isNotEmpty) {
+          provider.createPlaylist(name);
+          if (context.mounted) {
+            AppToast.success(
+              context,
+              message: '歌单「$name」已创建',
+              title: '创建成功',
+            );
+          }
+        }
 
     } else {
       final uid = uidController.text.trim();

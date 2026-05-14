@@ -7,19 +7,19 @@ import 'package:myapp/utils/Http/index.dart';
 class MusicApi {
   static Future<void> pickAndUploadMusic() async {
     final result = await FilePicker.pickFiles(
-      type: FileType.custom, //使用自定义模式
+      type: FileType.custom,
       allowedExtensions: ['mp3', 'flac', 'wav', 'm4a', 'ogg', 'aac'],
     );
 
-    if (result == null && result?.files.single.path == null) {
+    if (result == null) {
       return;
     }
-    final filePath = result?.files.single.path!;
-    final fileName = result?.files.single.name;
-
-    if (filePath == null || filePath.isEmpty) {
-      return; //用户取消上传
+    final filePath = result.files.single.path;
+    if (filePath == null) {
+      return;
     }
+    final fileName = result.files.single.name;
+
     final music = await MusicService.parse(filePath);
 
     FormData formData = FormData.fromMap({
@@ -39,7 +39,6 @@ class MusicApi {
       "/api/music",
       formData: formData,
       onSendProgress: (int sent, int total) {
-        // 这里可以计算进度：(sent / total * 100).toStringAsFixed(0)%
         print("上传进度: ${(sent / total * 100).round()}%");
       },
     );
@@ -56,15 +55,13 @@ class MusicApi {
 
     if (response.statusCode == 200) {
       print("获取成功: ${response.data}");
-
       List dataList = response.data["data"];
       List<Music> musics = dataList
           .map((item) => Music.fromJson(item))
           .toList();
       return musics;
     } else {
-      print("获取失败");
-      return [];
+      throw Exception("获取失败: ${response.statusMessage}");
     }
   }
 }

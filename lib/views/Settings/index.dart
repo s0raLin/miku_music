@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/contants/Theme/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
@@ -48,30 +49,43 @@ class SettingsPage extends StatelessWidget {
                       subtitle: Text(
                         _getThemeModeName(themeProvider.themeMode),
                       ),
-                      trailing: SegmentedButton<ThemeMode>(
-                        segments: const [
-                          ButtonSegment(
-                            value: ThemeMode.light,
-                            icon: Icon(Icons.light_mode_outlined),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.system,
-                            icon: Icon(Icons.settings_suggest_outlined),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.dark,
-                            icon: Icon(Icons.dark_mode_outlined),
-                          ),
-                        ],
-                        selected: {themeProvider.themeMode},
-                        onSelectionChanged: (Set<ThemeMode> newSelection) {
-                          themeProvider.setThemeMode(newSelection.first);
-                        },
-                        showSelectedIcon: false,
-                        style: const ButtonStyle(
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
+                       trailing: SegmentedButton<ThemeMode>(
+                         segments: const [
+                           ButtonSegment(
+                             value: ThemeMode.light,
+                             icon: Icon(Icons.light_mode_outlined),
+                           ),
+                           ButtonSegment(
+                             value: ThemeMode.system,
+                             icon: Icon(Icons.settings_suggest_outlined),
+                           ),
+                           ButtonSegment(
+                             value: ThemeMode.dark,
+                             icon: Icon(Icons.dark_mode_outlined),
+                           ),
+                         ],
+                         selected: {themeProvider.themeMode},
+                         onSelectionChanged: (Set<ThemeMode> newSelection) {
+                           themeProvider.setThemeMode(newSelection.first);
+                           final mode = newSelection.first;
+                           String msg;
+                           if (mode == ThemeMode.light) {
+                             msg = '浅色模式';
+                           } else if (mode == ThemeMode.dark) {
+                             msg = '深色模式';
+                           } else {
+                             msg = '跟随系统';
+                           }
+                           AppToast.neutral(
+                             context,
+                             message: '主题模式已切换为 $msg',
+                           );
+                         },
+                         showSelectedIcon: false,
+                         style: const ButtonStyle(
+                           visualDensity: VisualDensity.compact,
+                         ),
+                       ),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
 
@@ -138,21 +152,28 @@ class SettingsPage extends StatelessWidget {
                               ],
                             ),
                           ),
-                          DropdownButton<String>(
-                            value: themeProvider.audioQuality,
-                            items: const [
-                              DropdownMenuItem(value: "low", child: Text("低")),
-                              DropdownMenuItem(
-                                value: "normal",
-                                child: Text("标准"),
-                              ),
-                              DropdownMenuItem(value: "high", child: Text("高")),
-                            ],
-                            onChanged: (v) {
-                              if (v != null) themeProvider.setAudioQuality(v);
-                            },
-                            underline: Container(),
-                          ),
+                           DropdownButton<String>(
+                             value: themeProvider.audioQuality,
+                             items: const [
+                               DropdownMenuItem(value: "low", child: Text("低")),
+                               DropdownMenuItem(
+                                 value: "normal",
+                                 child: Text("标准"),
+                               ),
+                               DropdownMenuItem(value: "high", child: Text("高")),
+                             ],
+                             onChanged: (v) {
+                               if (v != null) {
+                                 themeProvider.setAudioQuality(v);
+                                 String q = v == 'high' ? '高' : v == 'normal' ? '标准' : '低';
+                                 AppToast.neutral(
+                                   context,
+                                   message: '音质已设置为 $q',
+                                 );
+                               }
+                             },
+                             underline: Container(),
+                           ),
                         ],
                       ),
                     ),
@@ -179,27 +200,34 @@ class SettingsPage extends StatelessWidget {
                               ],
                             ),
                           ),
-                          DropdownButton<String>(
-                            value: themeProvider.playlistSortBy,
-                            items: const [
-                              DropdownMenuItem(
-                                value: "time",
-                                child: Text("添加时间"),
-                              ),
-                              DropdownMenuItem(
-                                value: "name",
-                                child: Text("名称"),
-                              ),
-                              DropdownMenuItem(
-                                value: "random",
-                                child: Text("随机"),
-                              ),
-                            ],
-                            onChanged: (v) {
-                              if (v != null) themeProvider.setPlaylistSortBy(v);
-                            },
-                            underline: Container(),
-                          ),
+                           DropdownButton<String>(
+                             value: themeProvider.playlistSortBy,
+                             items: const [
+                               DropdownMenuItem(
+                                 value: "time",
+                                 child: Text("添加时间"),
+                               ),
+                               DropdownMenuItem(
+                                 value: "name",
+                                 child: Text("名称"),
+                               ),
+                               DropdownMenuItem(
+                                 value: "random",
+                                 child: Text("随机"),
+                               ),
+                             ],
+                             onChanged: (v) {
+                               if (v != null) {
+                                 themeProvider.setPlaylistSortBy(v);
+                                 String sortName = v == 'time' ? '添加时间' : v == 'name' ? '名称' : '随机';
+                                 AppToast.neutral(
+                                   context,
+                                   message: '排序方式已更新为 $sortName',
+                                 );
+                               }
+                             },
+                             underline: Container(),
+                           ),
                         ],
                       ),
                     ),
@@ -226,21 +254,25 @@ class SettingsPage extends StatelessWidget {
                               ],
                             ),
                           ),
-                          DropdownButton<int>(
-                            value: themeProvider.maxHistoryCount,
-                            items: const [
-                              DropdownMenuItem(value: 50, child: Text("50条")),
-                              DropdownMenuItem(value: 100, child: Text("100条")),
-                              DropdownMenuItem(value: 300, child: Text("300条")),
-                              DropdownMenuItem(value: 500, child: Text("500条")),
-                            ],
-                            onChanged: (v) {
-                              if (v != null) {
-                                themeProvider.setMaxHistoryCount(v);
-                              }
-                            },
-                            underline: Container(),
-                          ),
+                           DropdownButton<int>(
+                             value: themeProvider.maxHistoryCount,
+                             items: const [
+                               DropdownMenuItem(value: 50, child: Text("50条")),
+                               DropdownMenuItem(value: 100, child: Text("100条")),
+                               DropdownMenuItem(value: 300, child: Text("300条")),
+                               DropdownMenuItem(value: 500, child: Text("500条")),
+                             ],
+                             onChanged: (v) {
+                               if (v != null) {
+                                 themeProvider.setMaxHistoryCount(v);
+                                 AppToast.neutral(
+                                   context,
+                                   message: '历史记录上限已设为 ${v} 条',
+                                 );
+                               }
+                             },
+                             underline: Container(),
+                           ),
                         ],
                       ),
                     ),
@@ -255,54 +287,72 @@ class SettingsPage extends StatelessWidget {
                 child: Column(
                   children: [
                     // 双击播放
-                    ListTile(
-                      leading: const Icon(Icons.mouse_outlined, size: 20),
-                      title: const Text("双击列表项快速播放"),
-                      subtitle: Text(
-                        "开启后双击音乐列表项可直接播放",
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                      trailing: Switch(
-                        value: themeProvider.doubleTapToPlay,
-                        onChanged: (v) => themeProvider.setDoubleTapToPlay(v),
-                      ),
-                    ),
+                     ListTile(
+                       leading: const Icon(Icons.mouse_outlined, size: 20),
+                       title: const Text("双击列表项快速播放"),
+                       subtitle: Text(
+                         "开启后双击音乐列表项可直接播放",
+                         style: textTheme.bodySmall?.copyWith(
+                           color: colorScheme.outline,
+                         ),
+                       ),
+                       trailing: Switch(
+                         value: themeProvider.doubleTapToPlay,
+                         onChanged: (v) {
+                           themeProvider.setDoubleTapToPlay(v);
+                           AppToast.neutral(
+                             context,
+                             message: v ? '双击播放已开启' : '双击播放已关闭',
+                           );
+                         },
+                       ),
+                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
 
                     // 歌词封面
-                    ListTile(
-                      leading: const Icon(Icons.image_outlined, size: 20),
-                      title: const Text("显示歌词封面"),
-                      subtitle: Text(
-                        "在播放页面显示专辑封面",
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                      trailing: Switch(
-                        value: themeProvider.showLyricCover,
-                        onChanged: (v) => themeProvider.setShowLyricCover(v),
-                      ),
-                    ),
+                     ListTile(
+                       leading: const Icon(Icons.image_outlined, size: 20),
+                       title: const Text("显示歌词封面"),
+                       subtitle: Text(
+                         "在播放页面显示专辑封面",
+                         style: textTheme.bodySmall?.copyWith(
+                           color: colorScheme.outline,
+                         ),
+                       ),
+                       trailing: Switch(
+                         value: themeProvider.showLyricCover,
+                         onChanged: (v) {
+                           themeProvider.setShowLyricCover(v);
+                           AppToast.neutral(
+                             context,
+                             message: v ? '歌词封面已开启' : '歌词封面已关闭',
+                           );
+                         },
+                       ),
+                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
 
                     // 启动自动播放
-                    ListTile(
-                      leading: const Icon(Icons.play_arrow_outlined, size: 20),
-                      title: const Text("启动时自动播放"),
-                      subtitle: Text(
-                        "应用启动后自动开始播放",
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                      trailing: Switch(
-                        value: themeProvider.autoPlayOnStart,
-                        onChanged: (v) => themeProvider.setAutoPlayOnStart(v),
-                      ),
-                    ),
+                     ListTile(
+                       leading: const Icon(Icons.play_arrow_outlined, size: 20),
+                       title: const Text("启动时自动播放"),
+                       subtitle: Text(
+                         "应用启动后自动开始播放",
+                         style: textTheme.bodySmall?.copyWith(
+                           color: colorScheme.outline,
+                         ),
+                       ),
+                       trailing: Switch(
+                         value: themeProvider.autoPlayOnStart,
+                         onChanged: (v) {
+                           themeProvider.setAutoPlayOnStart(v);
+                           AppToast.neutral(
+                             context,
+                             message: v ? '启动自动播放已开启' : '启动自动播放已关闭',
+                           );
+                         },
+                       ),
+                     ),
                   ],
                 ),
               ),
@@ -313,24 +363,29 @@ class SettingsPage extends StatelessWidget {
               Card(
                 child: Column(
                   children: [
-                    ListTile(
-                      leading: const Icon(
-                        Icons.notifications_outlined,
-                        size: 20,
-                      ),
-                      title: const Text("通知栏显示详情"),
-                      subtitle: Text(
-                        "在通知栏显示歌曲信息和封面",
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                      trailing: Switch(
-                        value: themeProvider.showNotificationDetail,
-                        onChanged: (v) =>
-                            themeProvider.setShowNotificationDetail(v),
-                      ),
-                    ),
+                     ListTile(
+                       leading: const Icon(
+                         Icons.notifications_outlined,
+                         size: 20,
+                       ),
+                       title: const Text("通知栏显示详情"),
+                       subtitle: Text(
+                         "在通知栏显示歌曲信息和封面",
+                         style: textTheme.bodySmall?.copyWith(
+                           color: colorScheme.outline,
+                         ),
+                       ),
+                       trailing: Switch(
+                         value: themeProvider.showNotificationDetail,
+                         onChanged: (v) {
+                           themeProvider.setShowNotificationDetail(v);
+                           AppToast.neutral(
+                             context,
+                             message: v ? '通知栏详情已开启' : '通知栏详情已关闭',
+                           );
+                         },
+                       ),
+                     ),
                   ],
                 ),
               ),
@@ -433,10 +488,16 @@ class _ThemeSeedButton extends StatelessWidget {
         ? cs.inverseSurface
         : cs.onInverseSurface;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
+     return InkWell(
+       onTap: () {
+         onTap();
+         AppToast.neutral(
+           context,
+           message: '主题色已更新',
+         );
+       },
+       borderRadius: BorderRadius.circular(12),
+       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         width: 48,

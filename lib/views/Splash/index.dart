@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/StartupProvider/index.dart';
@@ -69,6 +70,14 @@ class _SplashPageState extends State<SplashPage>
     final remaining = 1800 - stopwatch.elapsedMilliseconds;
     if (remaining > 0) await Future.delayed(Duration(milliseconds: remaining));
     if (!mounted) return;
+
+    if (!startupSucceeded && mounted) {
+      AppToast.error(
+        context,
+        message: startupProvider.errorMessage ?? '初始化失败，请重试',
+        title: '启动错误',
+      );
+    }
 
     if (startupSucceeded) {
       if (!Platform.isAndroid) {

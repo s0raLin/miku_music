@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/api/Model/Music/index.dart';
+import 'package:myapp/components/Shared/index.dart';
 
 class NetWorkPage extends StatefulWidget {
   const NetWorkPage({super.key});
@@ -21,8 +22,27 @@ class _NetWorkPageState extends State<NetWorkPage> {
             child: Center(
               child: TextButton(
                 onPressed: () async {
-                  musics = await MusicApi.listMusic();
-                  setState(() {});
+                  List<Music> result;
+                  try {
+                    result = await MusicApi.listMusic();
+                  } catch (e) {
+                    if (!mounted) return;
+                    AppToast.error(
+                      context,
+                      message: e.toString(),
+                      title: '同步失败',
+                    );
+                    return;
+                  }
+                  if (!mounted) return;
+                  setState(() {
+                    musics = result;
+                  });
+                  AppToast.success(
+                    context,
+                    message: '已加载 ${musics.length} 首歌曲',
+                    title: '同步完成',
+                  );
                 },
                 child: Text("获取"),
               ),

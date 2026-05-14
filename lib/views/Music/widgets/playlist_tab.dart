@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/views/Music/widgets/empty_state.dart';
 import 'package:myapp/views/Music/widgets/playlist_card.dart';
@@ -93,11 +94,16 @@ class PlaylistTab extends StatelessWidget {
       ),
     );
 
-    if (name != null && name.isNotEmpty) {
-      // 直接检查传入 context 的挂载状态
-      if (!context.mounted) return;
-
-      context.read<MusicProvider>().createPlaylist(name);
-    }
+     if (name != null && name.isNotEmpty) {
+       if (!context.mounted) return;
+       context.read<MusicProvider>().createPlaylist(name);
+       if (context.mounted) {
+         AppToast.success(
+           context,
+           message: '歌单「$name」已创建',
+           title: '创建成功',
+         );
+       }
+     }
   }
 }

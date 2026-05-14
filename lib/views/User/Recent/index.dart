@@ -21,13 +21,17 @@ class RecentlyPlayedPage extends StatelessWidget {
           SliverAppBar(
             title: const Text("最近播放"),
             actions: [
-              IconButton(
-                onPressed: () {
-                  musicProvider.clearHistory();
-                },
-                icon: const Icon(Icons.delete_sweep_outlined),
-                tooltip: "清空历史",
-              ),
+               IconButton(
+                 onPressed: () {
+                   musicProvider.clearHistory();
+                   AppToast.neutral(
+                     context,
+                     message: '播放历史已清空',
+                   );
+                 },
+                 icon: const Icon(Icons.delete_sweep_outlined),
+                 tooltip: "清空历史",
+               ),
             ],
           ),
           SliverPadding(
@@ -73,14 +77,25 @@ class RecentlyPlayedPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.play_circle_outline_rounded),
-              title: const Text("播放"),
-              onTap: () {
-                Navigator.pop(context);
-                provider.playFromLibrary(music);
-              },
-            ),
+               ListTile(
+                 leading: Icon(
+                   provider.favList.any((m) => m.id == music.id)
+                       ? Icons.favorite_rounded
+                       : Icons.favorite_border_rounded,
+                 ),
+                 title: Text(
+                   provider.favList.any((m) => m.id == music.id) ? "取消收藏" : "收藏",
+                 ),
+                 onTap: () {
+                   Navigator.pop(context);
+                   provider.toggleFav(music);
+                   final isFav = provider.favList.any((m) => m.id == music.id);
+                   AppToast.neutral(
+                     context,
+                     message: isFav ? '已添加到喜欢' : '已取消收藏',
+                   );
+                 },
+               ),
             ListTile(
               leading: const Icon(Icons.playlist_play_rounded),
               title: const Text("下一首播放"),
@@ -90,20 +105,25 @@ class RecentlyPlayedPage extends StatelessWidget {
                 AppToast.success(context, title: "已加入队列", message: "已添加到下一首");
               },
             ),
-            ListTile(
-              leading: Icon(
-                provider.favList.any((m) => m.id == music.id)
-                    ? Icons.favorite_rounded
-                    : Icons.favorite_border_rounded,
-              ),
-              title: Text(
-                provider.favList.any((m) => m.id == music.id) ? "取消收藏" : "收藏",
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                provider.toggleFav(music);
-              },
-            ),
+               ListTile(
+                 leading: Icon(
+                   provider.favList.any((m) => m.id == music.id)
+                       ? Icons.favorite_rounded
+                       : Icons.favorite_border_rounded,
+                 ),
+                 title: Text(
+                   provider.favList.any((m) => m.id == music.id) ? "取消收藏" : "收藏",
+                 ),
+                 onTap: () {
+                   Navigator.pop(context);
+                   provider.toggleFav(music);
+                   final isFav = provider.favList.any((m) => m.id == music.id);
+                   AppToast.neutral(
+                     context,
+                     message: isFav ? '已添加到喜欢' : '已取消收藏',
+                   );
+                 },
+               ),
           ],
         ),
       ),

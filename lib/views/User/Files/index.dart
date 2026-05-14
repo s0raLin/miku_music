@@ -68,12 +68,28 @@ class _FilesPageState extends State<FilesPage>
         setState(() {
           _isScanning = false;
         });
+        if (_musicList.isNotEmpty) {
+          AppToast.success(
+            context,
+            message: '扫描完成，共 ${_musicList.length} 首歌曲',
+          );
+        } else {
+          AppToast.neutral(
+            context,
+            message: '未发现音频文件',
+          );
+        }
       },
-      onError: (_) {
+      onError: (e) {
         if (!mounted) return;
         setState(() {
           _isScanning = false;
         });
+        AppToast.error(
+          context,
+          message: '扫描出错: $e',
+          title: '扫描失败',
+        );
       },
     );
   }
@@ -134,6 +150,13 @@ class _FilesPageState extends State<FilesPage>
     if (result != null) {
       if (Platform.isAndroid &&
           !(await MusicService.ensureAndroidAudioPermission())) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            message: '请授予存储和音频权限以扫描音乐',
+            title: '权限不足',
+          );
+        }
         return;
       }
       await FileService.savePaths(result);

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/contants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -80,7 +81,14 @@ class CoverTabContent extends StatelessWidget {
               ),
             ),
             IconButton(
-              onPressed: () => provider.toggleFav(music),
+              onPressed: () {
+                provider.toggleFav(music);
+                final isFav = provider.favList.any((m) => m.id == music.id);
+                AppToast.neutral(
+                  context,
+                  message: isFav ? '已添加到喜欢' : '已取消收藏',
+                );
+              },
               icon: Icon(
                 isLiked
                     ? Icons.favorite_rounded

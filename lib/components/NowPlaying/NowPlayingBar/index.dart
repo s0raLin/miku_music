@@ -48,7 +48,7 @@ class NowPlayingBar extends StatelessWidget {
                     child: _CompactLayout(music: music),
                   ),
                 ),
-                // 添加一个微小的“收起”按钮（可选）
+                // 添加一个微小的“收起”按钮
                 Positioned(
                   right: 0,
                   top: 4,

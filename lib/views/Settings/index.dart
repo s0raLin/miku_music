@@ -67,19 +67,6 @@ class SettingsPage extends StatelessWidget {
                          selected: {themeProvider.themeMode},
                          onSelectionChanged: (Set<ThemeMode> newSelection) {
                            themeProvider.setThemeMode(newSelection.first);
-                           final mode = newSelection.first;
-                           String msg;
-                           if (mode == ThemeMode.light) {
-                             msg = '浅色模式';
-                           } else if (mode == ThemeMode.dark) {
-                             msg = '深色模式';
-                           } else {
-                             msg = '跟随系统';
-                           }
-                           AppToast.neutral(
-                             context,
-                             message: '主题模式已切换为 $msg',
-                           );
                          },
                          showSelectedIcon: false,
                          style: const ButtonStyle(
@@ -165,11 +152,6 @@ class SettingsPage extends StatelessWidget {
                              onChanged: (v) {
                                if (v != null) {
                                  themeProvider.setAudioQuality(v);
-                                 String q = v == 'high' ? '高' : v == 'normal' ? '标准' : '低';
-                                 AppToast.neutral(
-                                   context,
-                                   message: '音质已设置为 $q',
-                                 );
                                }
                              },
                              underline: Container(),
@@ -219,11 +201,6 @@ class SettingsPage extends StatelessWidget {
                              onChanged: (v) {
                                if (v != null) {
                                  themeProvider.setPlaylistSortBy(v);
-                                 String sortName = v == 'time' ? '添加时间' : v == 'name' ? '名称' : '随机';
-                                 AppToast.neutral(
-                                   context,
-                                   message: '排序方式已更新为 $sortName',
-                                 );
                                }
                              },
                              underline: Container(),
@@ -265,10 +242,6 @@ class SettingsPage extends StatelessWidget {
                              onChanged: (v) {
                                if (v != null) {
                                  themeProvider.setMaxHistoryCount(v);
-                                 AppToast.neutral(
-                                   context,
-                                   message: '历史记录上限已设为 ${v} 条',
-                                 );
                                }
                              },
                              underline: Container(),
@@ -300,10 +273,6 @@ class SettingsPage extends StatelessWidget {
                          value: themeProvider.doubleTapToPlay,
                          onChanged: (v) {
                            themeProvider.setDoubleTapToPlay(v);
-                           AppToast.neutral(
-                             context,
-                             message: v ? '双击播放已开启' : '双击播放已关闭',
-                           );
                          },
                        ),
                      ),
@@ -323,10 +292,6 @@ class SettingsPage extends StatelessWidget {
                          value: themeProvider.showLyricCover,
                          onChanged: (v) {
                            themeProvider.setShowLyricCover(v);
-                           AppToast.neutral(
-                             context,
-                             message: v ? '歌词封面已开启' : '歌词封面已关闭',
-                           );
                          },
                        ),
                      ),
@@ -346,10 +311,6 @@ class SettingsPage extends StatelessWidget {
                          value: themeProvider.autoPlayOnStart,
                          onChanged: (v) {
                            themeProvider.setAutoPlayOnStart(v);
-                           AppToast.neutral(
-                             context,
-                             message: v ? '启动自动播放已开启' : '启动自动播放已关闭',
-                           );
                          },
                        ),
                      ),
@@ -379,10 +340,6 @@ class SettingsPage extends StatelessWidget {
                          value: themeProvider.showNotificationDetail,
                          onChanged: (v) {
                            themeProvider.setShowNotificationDetail(v);
-                           AppToast.neutral(
-                             context,
-                             message: v ? '通知栏详情已开启' : '通知栏详情已关闭',
-                           );
                          },
                        ),
                      ),
@@ -491,10 +448,6 @@ class _ThemeSeedButton extends StatelessWidget {
      return InkWell(
        onTap: () {
          onTap();
-         AppToast.neutral(
-           context,
-           message: '主题色已更新',
-         );
        },
        borderRadius: BorderRadius.circular(12),
        child: AnimatedContainer(

@@ -73,13 +73,9 @@ class AppToast {
 
     ft.Fluttertoast.showToast(
       msg: finalMessage,
-      toastLength: duration.inSeconds > 2
-          ? ft.Toast.LENGTH_LONG
-          : ft.Toast.LENGTH_SHORT,
+      toastLength: ft.Toast.LENGTH_SHORT,
       gravity: ft.ToastGravity.BOTTOM,
       fontSize: 16.0,
-      // 【千万不要】在这里写 backgroundColor 和 textColor！
-      // 留空后，Android 12+ 系统会自动采用 M3 胶囊样式与系统主题色
     );
   }
 
@@ -88,7 +84,7 @@ class AppToast {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(milliseconds: 1200), // 改为 1.2 秒
   }) {
     show(
       context,
@@ -103,7 +99,7 @@ class AppToast {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(milliseconds: 1200), // 改为 1.2 秒
   }) {
     show(
       context,
@@ -118,7 +114,7 @@ class AppToast {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(milliseconds: 1500), // 警告略长，1.5 秒
   }) {
     show(
       context,
@@ -133,7 +129,7 @@ class AppToast {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(milliseconds: 2000), // 错误改短到 2 秒（原为 3 秒）
   }) {
     show(
       context,

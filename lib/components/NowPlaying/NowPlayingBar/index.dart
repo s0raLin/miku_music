@@ -181,7 +181,7 @@ class _WideLayout extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => _QueueSheet(mp: context.read<MusicProvider>()),
+      builder: (_) => _QueueSheet(),
     );
   }
 }
@@ -229,7 +229,7 @@ class _CompactLayout extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => _QueueSheet(mp: context.read<MusicProvider>()),
+      builder: (_) => _QueueSheet(),
     );
   }
 }
@@ -476,13 +476,15 @@ class _VolumeControl extends StatelessWidget {
 //   • 列表项使用 ListTile（M3 标准高度 56/72dp）
 // ============================================================
 class _QueueSheet extends StatelessWidget {
-  final MusicProvider mp;
-  const _QueueSheet({required this.mp, super.key});
+  const _QueueSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+
+    final mp = context.watch<MusicProvider>();
+
 
     return Column(
       mainAxisSize: MainAxisSize.min,

@@ -4,32 +4,28 @@ import 'package:myapp/model/Music/index.dart';
 
 class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   final AudioPlayer _player = AudioPlayer();
-
   AudioPlayer get player => _player;
 
   MyAudioHandler() {
-    // 转发播放器事件到 audio_service 的状态流中，供系统通知栏展现
+    // 转发播放器事件到 audio_service 的状态流中
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
   }
 
   /// 供 Provider 调用：切换歌曲并播放
   Future<void> playMusic(MusicInfo music) async {
-    
-    // 1. 通知系统当前正在播放什么（这会在通知栏显示歌名和歌手）
     final item = MediaItem(
       id: music.id,
       album: music.album ?? "未知专辑",
       title: music.title,
       artist: music.artist,
-      duration: music.duration, // 传入 Duration
-      // 如果有封面图片字节，可以转换为内部 URI，这里暂时放空
+      duration: music.duration,
     );
+
     mediaItem.add(item);
 
-    // 2. 加载本地音频文件并播放
     try {
       await _player.setFilePath(music.id);
-      play();
+      await play();
     } catch (e) {
       playbackState.add(
         playbackState.value.copyWith(errorMessage: e.toString()),
@@ -54,21 +50,21 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     );
   }
 
-  /// 状态转换：将 just_audio 内部状态映射到系统的通知栏状态
+  /// 状态转换（重点修改部分）
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
       controls: [
-        MediaControl.skipToPrevious,
-        if (_player.playing) MediaControl.pause else MediaControl.play,
-        MediaControl.stop,
-        MediaControl.skipToNext,
+        MediaControl.skipToPrevious, // 上一首
+        if (_player.playing) MediaControl.pause else MediaControl.play, // 播放/暂停
+        MediaControl.skipToNext, // 下一首
+        // MediaControl.stop,   // ← 已移除，不再显示停止按钮
       ],
       systemActions: const {
         MediaAction.seek,
         MediaAction.seekForward,
         MediaAction.seekBackward,
       },
-      androidCompactActionIndices: const [0, 1, 3],
+      androidCompactActionIndices: const [0, 1, 2], // 紧凑模式显示前3个按钮
       processingState: const {
         ProcessingState.idle: AudioProcessingState.idle,
         ProcessingState.loading: AudioProcessingState.loading,

@@ -23,8 +23,8 @@ Future<void> main() async {
       // 设置为 true，防止用户在播放时手动右滑误删通知栏
       androidNotificationOngoing: true,
       androidShowNotificationBadge: true,
-      // 这里的快捷动作图标可以根据上一次你的需要，指定你的自定义关闭图标（如果有的话）
-      androidNotificationIcon: 'mipmap/launcher_icon',
+  
+      androidStopForegroundOnPause: true,  //左滑停止
     ),
   );
 

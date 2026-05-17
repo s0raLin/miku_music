@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.17.0](https://github.com/s0raLin/miku_music/compare/v1.16.0...v1.17.0) (2026-05-17)
+
+
+### Features
+
+* **audio:** implement background audio playback service ([9da65f8](https://github.com/s0raLin/miku_music/commit/9da65f80553048589675dac94e55065b16767cf7))
+* **audio:** implement local file caching for album art ([0959671](https://github.com/s0raLin/miku_music/commit/09596719c3fb8ae424f476dba62ed02d2de968a3))
+* **ui:** enhance navigation and refactor initialization logic ([deff4ec](https://github.com/s0raLin/miku_music/commit/deff4ecac3a5520a66ee893fd4d758b432e00006))
+
+
+### Bug Fixes
+
+* **audio:** include file URI as artUri in MediaItem ([a34374d](https://github.com/s0raLin/miku_music/commit/a34374dac728fc91ecfbe3cc1d22f37c9e60f241))
+* **audio:** update notification controls and playback behavior ([d9ef344](https://github.com/s0raLin/miku_music/commit/d9ef344a9b9eff3adfb5192e441e00b69c7c3836))
+
 ## [1.16.0](https://github.com/s0raLin/miku_music/compare/v1.15.0...v1.16.0) (2026-05-15)
 
 

@@ -4,21 +4,21 @@
 
 ## 项目概览
 
-- 应用入口在 [lib/main.dart](/home/cangli/Desktop/dart/myapp/lib/main.dart)，启动时会先执行 `InitializationService.preRunInit()`，随后初始化 `audio_service` 后台播放服务。
+- 应用入口在 [lib/main.dart](lib/main.dart)，启动时会先执行 `InitializationService.preRunInit()`，随后初始化 `audio_service` 后台播放服务。
 - 全局状态通过 `provider` 管理，当前注册了 `ThemeProvider`、`MusicProvider`、`UserProvider`、`NavProvider`、`StartupProvider`。
-- 路由由 [lib/router/IndexRouter/index.dart](/home/cangli/Desktop/dart/myapp/lib/router/IndexRouter/index.dart) 管理，默认从 `/splash` 进入。
+- 路由由 [lib/router/IndexRouter/index.dart](lib/router/IndexRouter/index.dart) 管理，默认从 `/splash` 进入。
 - 这是一个“本地音乐优先”的播放器：音乐库数据主要来自本地目录扫描，而不是纯在线流媒体。
 
 ## 已和代码核对的功能
 
 ### 1. 启动与初始化
 
-- 启动页位于 [lib/views/Splash/index.dart](/home/cangli/Desktop/dart/myapp/lib/views/Splash/index.dart)，会展示初始化进度和失败重试。
-- 初始化流程由 [lib/providers/StartupProvider/index.dart](/home/cangli/Desktop/dart/myapp/lib/providers/StartupProvider/index.dart) 编排，分为 3 步：
+- 启动页位于 [lib/views/Splash/index.dart](lib/views/Splash/index.dart)，会展示初始化进度和失败重试。
+- 初始化流程由 [lib/providers/StartupProvider/index.dart](lib/providers/StartupProvider/index.dart) 编排，分为 3 步：
   - 加载界面设置
   - 扫描本地音乐
   - 恢复播放器状态
-- Android 首次启动会跳转到 [lib/views/SetupWizard/index.dart](/home/cangli/Desktop/dart/myapp/lib/views/SetupWizard/index.dart) 申请权限；非 Android 平台启动完成后直接进入首页。
+- Android 首次启动会跳转到 [lib/views/SetupWizard/index.dart](lib/views/SetupWizard/index.dart) 申请权限；非 Android 平台启动完成后直接进入首页。
 
 ### 2. 路由与界面结构
 
@@ -32,13 +32,13 @@
   - `/about` 关于
   - `/login` 登录/注册
   - `/music-detail` 播放详情
-- 主界面在 [lib/views/index.dart](/home/cangli/Desktop/dart/myapp/lib/views/index.dart) 中根据宽度自适应：
+- 主界面在 [lib/views/index.dart](lib/views/index.dart) 中根据宽度自适应：
   - `>= 450px` 使用侧边栏布局
   - `< 450px` 使用底部导航
 
 ### 3. 音乐播放与媒体库
 
-- `MusicProvider` 位于 [lib/providers/MusicProvider/index.dart](/home/cangli/Desktop/dart/myapp/lib/providers/MusicProvider/index.dart)，负责：
+- `MusicProvider` 位于 [lib/providers/MusicProvider/index.dart](lib/providers/MusicProvider/index.dart)，负责：
   - 播放/暂停
   - 上一首/下一首
   - 音量持久化
@@ -47,16 +47,16 @@
   - 用户歌单恢复
   - 歌词解析结果缓存
   - 版本号读取
-- 本地扫描逻辑位于 [lib/service/Music/index.dart](/home/cangli/Desktop/dart/myapp/lib/service/Music/index.dart)：
+- 本地扫描逻辑位于 [lib/service/Music/index.dart](lib/service/Music/index.dart)：
   - 递归扫描已保存目录
   - 通过 `mime` 判断音频文件
   - 使用 `metadata_god` 读取标题、歌手、专辑、时长和封面
   - 自动读取同名 `.lrc` 歌词文件
-- 文件目录管理位于 [lib/service/Files/index.dart](/home/cangli/Desktop/dart/myapp/lib/service/Files/index.dart)，扫描目录会持久化到 `SharedPreferences`。
+- 文件目录管理位于 [lib/service/Files/index.dart](lib/service/Files/index.dart)，扫描目录会持久化到 `SharedPreferences`。
 
 ### 4. 主题与设置
 
-- 主题状态位于 [lib/providers/ThemeProvider/index.dart](/home/cangli/Desktop/dart/myapp/lib/providers/ThemeProvider/index.dart)。
+- 主题状态位于 [lib/providers/ThemeProvider/index.dart](lib/providers/ThemeProvider/index.dart)。
 - 当前代码中可确认的设置项包括：
   - 主题模式
   - 主题种子色
@@ -68,14 +68,14 @@
   - 双击列表项快速播放
   - 播放列表排序方式
   - 最大历史记录数量
-- 设置持久化由 [lib/service/Settings/index.dart](/home/cangli/Desktop/dart/myapp/lib/service/Settings/index.dart) 完成。
+- 设置持久化由 [lib/service/Settings/index.dart](lib/service/Settings/index.dart) 完成。
 
 ### 5. 登录与后端接口
 
-- 登录/注册页位于 [lib/views/Login/index.dart](/home/cangli/Desktop/dart/myapp/lib/views/Login/index.dart)。
-- 认证接口封装位于 [lib/api/Client/Auth/index.dart](/home/cangli/Desktop/dart/myapp/lib/api/Client/Auth/index.dart)。
-- 接口基地址来自 `.env` 中的 `API_URL`，读取逻辑位于 [lib/config/index.dart](/home/cangli/Desktop/dart/myapp/lib/config/index.dart)。
-- 仓库中包含 `backend/` 目录和独立说明 [backend/README.md](/home/cangli/Desktop/dart/myapp/backend/README.md)，说明该项目支持前后端联调；但本地音乐扫描与本地播放能力本身不依赖后端。
+- 登录/注册页位于 [lib/views/Login/index.dart](lib/views/Login/index.dart)。
+- 认证接口封装位于 [lib/api/Client/Auth/index.dart](lib/api/Client/Auth/index.dart)。
+- 接口基地址来自 `.env` 中的 `API_URL`，读取逻辑位于 [lib/config/index.dart](lib/config/index.dart)。
+- 仓库中包含 `backend/` 目录和独立说明 [backend/README.md](backend/README.md)，说明该项目支持前后端联调；但本地音乐扫描与本地播放能力本身不依赖后端。
 
 ## 预览图占位
 
@@ -154,5 +154,5 @@ flutter run
 
 ## 补充文档
 
-- [docs/m3-color-guidelines.md](/home/cangli/Desktop/dart/myapp/docs/m3-color-guidelines.md)
-- [docs/shared-components.md](/home/cangli/Desktop/dart/myapp/docs/shared-components.md)
+- [docs/m3-color-guidelines.md](docs/m3-color-guidelines.md)
+- [docs/shared-components.md](docs/shared-components.md)

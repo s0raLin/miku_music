@@ -29,7 +29,7 @@ class _SharedDemoPage extends StatelessWidget {
               child: MediaGridCard(
                 title: '夜航星',
                 subtitle: '默认文案布局',
-                fallbackIcon: Icons.music_note_rounded,
+                fallbackIcon: Icon(Icons.music_note_rounded, size: 32),
               ),
             ),
             const SizedBox(height: 16),
@@ -38,7 +38,7 @@ class _SharedDemoPage extends StatelessWidget {
               child: MediaGridCard(
                 title: '午后黑胶',
                 subtitle: 'Overlay 文案布局',
-                fallbackIcon: Icons.library_music_rounded,
+                fallbackIcon: Icon(Icons.library_music_rounded, size: 32),
                 textLayout: MediaGridCardTextLayout.overlay,
               ),
             ),
@@ -156,7 +156,7 @@ void main() {
             child: MediaGridCard(
               title: '午夜电台',
               subtitle: 'Overlay demo',
-              fallbackIcon: Icons.music_note_rounded,
+              fallbackIcon: Icon(Icons.music_note_rounded, size: 32),
               textLayout: MediaGridCardTextLayout.overlay,
             ),
           ),

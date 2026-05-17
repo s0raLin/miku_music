@@ -160,7 +160,10 @@ class _HomePageState extends State<HomePage> {
                             title: item.title,
                             subtitle: item.artist,
                             coverBytes: item.coverBytes,
-                            fallbackIcon: Icons.music_note_rounded,
+                            fallbackIcon: Icon(
+                              Icons.music_note_rounded,
+                              size: 32,
+                            ),
                             coverAspectRatio: 1.28,
                             titleLines: 1,
                             contentSpacing: 2,

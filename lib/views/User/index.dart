@@ -87,7 +87,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ],
               ),
             ],
-
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
@@ -214,13 +213,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             onTap: () {
                               context.push("/user/playlist/${playlist.id}");
                             },
-                            onMoreTap: () {
-                              _showPlaylistOptions(
-                                context,
-                                playlist,
-                                musicProvider,
-                              );
-                            },
                           );
                         },
                       );
@@ -284,146 +276,28 @@ class _UserPlaylistCard extends StatelessWidget {
   final Playlist playlist;
   final int songCount;
   final VoidCallback onTap;
-  final VoidCallback onMoreTap;
+  // final VoidCallback onMoreTap;
 
   const _UserPlaylistCard({
     required this.playlist,
     required this.songCount,
     required this.onTap,
-    required this.onMoreTap,
+    // required this.onMoreTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final actionBackground = colorScheme.surfaceContainerHigh.withValues(
-      alpha: colorScheme.brightness == Brightness.dark ? 0.9 : 0.82,
-    );
     return MediaGridCard(
       title: playlist.name,
       subtitle: "$songCount 首",
       coverBytes: playlist.coverBytes,
-      fallbackIcon: Icons.playlist_play_rounded,
+      fallbackIcon: Icon(Icons.playlist_play_rounded, size: 32),
       onTap: onTap,
       coverAspectRatio: 1.22,
       titleLines: 1,
       contentSpacing: 4,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-      trailing: Material(
-        color: actionBackground,
-        shape: const CircleBorder(),
-        child: IconButton(
-          onPressed: onMoreTap,
-          icon: Icon(Icons.more_horiz_rounded, color: colorScheme.onSurface),
-        ),
-      ),
     );
-  }
-}
-
-// --- 播放列表管理 ---
-Future<void> _showPlaylistOptions(
-  BuildContext context,
-  Playlist playlist,
-  MusicProvider provider,
-) async {
-  await showModalBottomSheet(
-    context: context,
-    builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!playlist.isSystem) ...[
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text("重命名"),
-              onTap: () {
-                Navigator.pop(context);
-                _showRenameDialog(context, playlist, provider);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outlined),
-              title: const Text("删除"),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmDialog(context, playlist, provider);
-              },
-            ),
-          ] else
-            ListTile(
-              leading: const Icon(Icons.info_outlined),
-              title: const Text("系统歌单"),
-              onTap: () => Navigator.pop(context),
-            ),
-        ],
-      ),
-    ),
-  );
-}
-
-Future<void> _showRenameDialog(
-  BuildContext context,
-  Playlist playlist,
-  MusicProvider provider,
-) async {
-  final controller = TextEditingController(text: playlist.name);
-  final newName = await showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("重命名歌单"),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        decoration: const InputDecoration(hintText: "歌单名称"),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("取消"),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, controller.text.trim()),
-          child: const Text("确定"),
-        ),
-      ],
-    ),
-  );
-  if (!context.mounted) return;
-  if (newName != null && newName.isNotEmpty) {
-    provider.renamePlaylist(playlist.id, newName);
-  }
-}
-
-Future<void> _showDeleteConfirmDialog(
-  BuildContext context,
-  Playlist playlist,
-  MusicProvider provider,
-) async {
-  final mp = context.read<MusicProvider>();
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("删除歌单"),
-      content: Text("确定要删除「${playlist.name}」吗？"),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text("取消"),
-        ),
-        FilledButton(
-          onPressed: () {
-            mp.deletePlaylist(playlist.id);
-            Navigator.pop(context, true);
-          },
-          child: const Text("删除"),
-        ),
-      ],
-    ),
-  );
-  if (!context.mounted) return;
-  if (confirmed == true) {
-    provider.deletePlaylist(playlist.id);
   }
 }
 
@@ -492,20 +366,15 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
   ).then((result) async {
     if (result == null || !context.mounted) return [];
 
-     final provider = context.read<MusicProvider>();
-     if (result['index'] == 0) {
-       final name = nameController.text.trim();
-        if (name.isNotEmpty) {
-          provider.createPlaylist(name);
-          if (context.mounted) {
-            AppToast.success(
-              context,
-              message: '歌单「$name」已创建',
-              title: '创建成功',
-            );
-          }
+    final provider = context.read<MusicProvider>();
+    if (result['index'] == 0) {
+      final name = nameController.text.trim();
+      if (name.isNotEmpty) {
+        provider.createPlaylist(name);
+        if (context.mounted) {
+          AppToast.success(context, message: '歌单「$name」已创建', title: '创建成功');
         }
-
+      }
     } else {
       final uid = uidController.text.trim();
       if (uid.isNotEmpty) {

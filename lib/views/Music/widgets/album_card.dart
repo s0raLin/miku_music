@@ -23,7 +23,7 @@ class AlbumCard extends StatelessWidget {
       title: albumName,
       subtitle: "$songCount 首",
       coverBytes: coverBytes,
-      fallbackIcon: Icons.album_rounded,
+      fallbackIcon: Icon(Icons.album_rounded, size: 32),
       onTap: onTap,
       coverAspectRatio: 1.22,
       titleLines: 2,

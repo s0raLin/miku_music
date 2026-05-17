@@ -253,9 +253,7 @@ class AppPanel extends StatelessWidget {
               Positioned.fill(
                 child: Material(
                   color: Colors.transparent,
-                  child: InkWell(
-                    onTap: onTap,
-                  ),
+                  child: InkWell(onTap: onTap),
                 ),
               ),
           ],
@@ -340,7 +338,7 @@ class MediaGridCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Uint8List? coverBytes;
-  final IconData fallbackIcon;
+  final Icon fallbackIcon;
   final VoidCallback? onTap;
   final Widget? badge;
   final Widget? trailing;
@@ -406,7 +404,8 @@ class MediaGridCard extends StatelessWidget {
     Widget buildArtwork({required bool fillHeight}) {
       return ArtworkCover(
         bytes: coverBytes,
-        fallbackIcon: fallbackIcon,
+        fallbackIcon: fallbackIcon.icon!,
+        iconSize: fallbackIcon.size!,
         aspectRatio: (fillHeight || expandArtwork) ? null : coverAspectRatio,
         overlay: useOverlay
             ? _GradientOverlay(
@@ -516,7 +515,7 @@ class _GradientOverlay extends StatelessWidget {
   }
 
   Widget buildWithChildren(BuildContext context, List<Widget> children) {
-     return DecoratedBox(
+    return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,

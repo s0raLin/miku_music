@@ -22,7 +22,7 @@ class PlaylistCard extends StatelessWidget {
       title: playlist.name,
       subtitle: "$songCount 首",
       coverBytes: playlist.coverBytes,
-      fallbackIcon: Icons.playlist_play_rounded,
+      fallbackIcon: Icon(Icons.playlist_play_rounded, size: 32),
       onTap: onTap,
       coverAspectRatio: 1.22,
       titleLines: 1,

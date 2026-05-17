@@ -13,12 +13,14 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// 供 Provider 调用：切换歌曲并播放
   Future<void> playMusic(MusicInfo music) async {
+    final Uri fileUrl = Uri.file(music.id);
     final item = MediaItem(
       id: music.id,
       album: music.album ?? "未知专辑",
       title: music.title,
       artist: music.artist,
       duration: music.duration,
+      artUri: fileUrl,
     );
 
     mediaItem.add(item);

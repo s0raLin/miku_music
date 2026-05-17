@@ -18,13 +18,10 @@ Future<void> main() async {
   globalAudioHandler = await AudioService.init(
     builder: () => MyAudioHandler(),
     config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.myapp.audio',
+      androidNotificationChannelId: 'com.m3music.audio',
       androidNotificationChannelName: 'M3Music 播放控制',
-      // 设置为 true，防止用户在播放时手动右滑误删通知栏
-      androidNotificationOngoing: true,
-      androidShowNotificationBadge: true,
-  
-      androidStopForegroundOnPause: true,  //左滑停止
+      androidNotificationOngoing: true, // 防止误滑动删除
+      androidShowNotificationBadge: true, //暂停时降低优先级(变为普通通知)
     ),
   );
 

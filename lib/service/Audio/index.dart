@@ -50,7 +50,7 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     );
   }
 
-  /// 状态转换（重点修改部分）
+  /// 状态转换
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
       controls: [

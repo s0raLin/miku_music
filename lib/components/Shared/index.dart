@@ -9,16 +9,17 @@ enum MediaGridCardTextLayout { below, overlay }
 enum AppToastTone { neutral, success, warning, error }
 
 // ---------------------------------------------------------------------------
-// 统一圆角常量 (严格符合 Material 3 的 Token 体系)
+// 统一圆角常量 — M3 Shape Scale
 // ---------------------------------------------------------------------------
 abstract final class AppRadius {
-  static const double card = 16; // M3 Medium Card 默认圆角 Token
-  static const double inner = 16; // M3 Small Shape Token (内部图像/容器)
-  static const double tile = 16; // M3 Large Shape Token (列表项外廓)
+  /// M3 Medium (Card 默认): 默认12 dp
+  static const double card = 16;
+
+  /// M3 Small (内嵌图像/头像容器): 默认8 dp
+  static const double inner = 16;
 
   static BorderRadius get cardBR => BorderRadius.circular(card);
   static BorderRadius get innerBR => BorderRadius.circular(inner);
-  static BorderRadius get tileBR => BorderRadius.circular(tile);
 }
 
 // ---------------------------------------------------------------------------
@@ -49,6 +50,8 @@ class AppToast {
     messenger.hideCurrentSnackBar();
 
     final colorScheme = Theme.of(context).colorScheme;
+
+    // M3 Snackbar 语义色映射
     final (bg, fg, icon) = switch (tone) {
       AppToastTone.success => (
         colorScheme.primaryContainer,
@@ -124,6 +127,7 @@ class AppToast {
     tone: AppToastTone.success,
     duration: duration,
   );
+
   static void neutral(
     BuildContext context, {
     required String message,
@@ -136,6 +140,7 @@ class AppToast {
     tone: AppToastTone.neutral,
     duration: duration,
   );
+
   static void warning(
     BuildContext context, {
     required String message,
@@ -148,6 +153,7 @@ class AppToast {
     tone: AppToastTone.warning,
     duration: duration,
   );
+
   static void error(
     BuildContext context, {
     required String message,
@@ -215,7 +221,9 @@ class AppSectionHeader extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// AppPanel (已移除 Border 属性)
+// AppPanel
+// 用途：通用内容容器，默认走 M3 filled card（surfaceContainerHigh）。
+// 若需要更低层次感（如嵌套在已有 Card 内），传入 color: colorScheme.surface。
 // ---------------------------------------------------------------------------
 class AppPanel extends StatelessWidget {
   final Widget child;
@@ -235,14 +243,13 @@ class AppPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 使用 Card.filled 替代原有的 Container 组合
     return Card.filled(
       margin: EdgeInsets.zero,
-      color: color, // 如果为 null，Card 会自动读取 M3 容器色
-      shape: borderRadius != null
-          ? RoundedRectangleBorder(borderRadius: borderRadius!)
-          : null, // 默认自带 M3 Medium 圆角 (12-16dp)
-      clipBehavior: Clip.antiAlias, // 确保 InkWell 泼溅不溢出圆角
+      color: color,
+      shape: RoundedRectangleBorder(
+        borderRadius: borderRadius ?? AppRadius.cardBR,
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -256,6 +263,7 @@ class AppPanel extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 // ArtworkCover
+// 背景填充色使用 M3 surfaceContainerHighest — 与 Card 背景形成层次对比。
 // ---------------------------------------------------------------------------
 class ArtworkCover extends StatelessWidget {
   final Uint8List? bytes;
@@ -290,6 +298,7 @@ class ArtworkCover extends StatelessWidget {
         height: double.infinity,
       );
     } else {
+      // surfaceContainerHighest 在浅色/深色主题下均提供足够对比
       content = ColoredBox(
         color: colorScheme.surfaceContainerHighest,
         child: Center(
@@ -323,7 +332,14 @@ class ArtworkCover extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// MediaGridCard (已移除 Container 中的 Border 属性，并修正了 Overlay 模式下的文本颜色)
+// MediaGridCard
+//
+// 背景色统一策略：
+//   • below 模式 → Card.filled 默认色（surfaceContainerHigh），无需手动指定。
+//   • overlay 模式 → color: Colors.transparent，视觉层次由图片+渐变承担。
+//
+// 与 SongListCardTile 保持一致：都走 Card.filled 默认色，不再使用
+// surfaceContainerLowest（该 Token 在 M3 中为最低层级，用于 Page 背景）。
 // ---------------------------------------------------------------------------
 class MediaGridCard extends StatelessWidget {
   final String title;
@@ -338,7 +354,7 @@ class MediaGridCard extends StatelessWidget {
   final bool expandArtwork;
   final double? coverAspectRatio;
   final double contentSpacing;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? padding;
   final MediaGridCardTextLayout textLayout;
   final int subtitleLines;
 
@@ -356,7 +372,7 @@ class MediaGridCard extends StatelessWidget {
     this.expandArtwork = false,
     this.coverAspectRatio = 1,
     this.contentSpacing = 8,
-    this.padding = const EdgeInsets.all(10),
+    this.padding,
     this.textLayout = MediaGridCardTextLayout.below,
     this.subtitleLines = 1,
   });
@@ -367,17 +383,16 @@ class MediaGridCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final bool useOverlay = textLayout == MediaGridCardTextLayout.overlay;
 
-    // 样式提取
-    final TextStyle titleStyle =
-        (theme.textTheme.titleSmall ?? const TextStyle()).copyWith(
-          fontWeight: FontWeight.w600,
-          color: useOverlay ? Colors.white : colorScheme.onSurface,
-        );
+    // overlay 模式：Card 透明，视觉由图片决定；below 模式：走 Card.filled 默认色
+    final cardColor = useOverlay ? Colors.transparent : null;
 
-    final TextStyle subtitleStyle =
-        (theme.textTheme.bodySmall ?? const TextStyle()).copyWith(
-          color: useOverlay ? Colors.white70 : colorScheme.onSurfaceVariant,
-        );
+    final titleStyle = theme.textTheme.titleSmall!.copyWith(
+      fontWeight: FontWeight.w600,
+      color: useOverlay ? Colors.white : colorScheme.onSurface,
+    );
+    final subtitleStyle = theme.textTheme.bodySmall!.copyWith(
+      color: useOverlay ? Colors.white70 : colorScheme.onSurfaceVariant,
+    );
 
     final titleWidget = Text(
       title,
@@ -392,31 +407,31 @@ class MediaGridCard extends StatelessWidget {
       style: subtitleStyle,
     );
 
-    Widget buildArtwork({required bool fillHeight}) {
-      return ArtworkCover(
-        bytes: coverBytes,
-        fallbackIcon: fallbackIcon.icon!,
-        iconSize: fallbackIcon.size ?? 24,
-        aspectRatio: (fillHeight || expandArtwork) ? null : coverAspectRatio,
-        // 如果是 Overlay 模式，直接把文字塞进 Cover 的 Overlay 层里
-        overlay: useOverlay
-            ? _GradientOverlay(
-                titleWidget: titleWidget,
-                subtitleWidget: subtitleWidget,
-              )
-            : null,
-      );
-    }
+    Widget buildArtwork({required bool fillHeight}) => ArtworkCover(
+      bytes: coverBytes,
+      fallbackIcon: fallbackIcon.icon!,
+      iconSize: fallbackIcon.size ?? 24,
+      aspectRatio: (fillHeight || expandArtwork) ? null : coverAspectRatio,
+      overlay: useOverlay
+          ? _GradientOverlay(
+              titleWidget: titleWidget,
+              subtitleWidget: subtitleWidget,
+            )
+          : null,
+    );
 
     final cardContent = Card.filled(
       margin: EdgeInsets.zero,
+      color: cardColor,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Stack(
           children: [
             Padding(
-              padding: padding,
+              padding:
+                  padding ??
+                  (useOverlay ? EdgeInsets.zero : const EdgeInsets.all(10)),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final hasBoundedHeight = constraints.maxHeight.isFinite;
@@ -444,7 +459,6 @@ class MediaGridCard extends StatelessWidget {
                 },
               ),
             ),
-            // 徽章与尾部组件挂载
             if (badge != null) Positioned(left: 12, top: 12, child: badge!),
             if (trailing != null)
               Positioned(right: 10, top: 10, child: trailing!),
@@ -459,7 +473,6 @@ class MediaGridCard extends StatelessWidget {
   }
 }
 
-// 修复了原代码中 Column 内部为空、以及布局写错方法的 Bug
 class _GradientOverlay extends StatelessWidget {
   final Widget titleWidget;
   final Widget subtitleWidget;
@@ -476,7 +489,6 @@ class _GradientOverlay extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          // 【已修复】移除了 const，并修正了不透明度黑色的写法
           colors: [Colors.transparent, Colors.black.withValues(alpha: 0.75)],
           stops: const [0.3, 1.0],
         ),
@@ -494,7 +506,11 @@ class _GradientOverlay extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// SongListCardTile (已移除 Container 中的 Border 属性)
+// SongListCardTile
+//
+// 选中态统一使用 M3 secondaryContainer / onSecondaryContainer。
+// 未选中态不再手动指定颜色，走 Card.filled 默认（surfaceContainerHigh），
+// 与 MediaGridCard below 模式保持一致的视觉层次。
 // ---------------------------------------------------------------------------
 class SongListCardTile extends StatelessWidget {
   final String title;
@@ -520,15 +536,14 @@ class SongListCardTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // 根据高亮状态抉择 Card 的底色
-    final tileColor = highlighted
-        ? colorScheme.secondaryContainer
-        : colorScheme.surfaceContainerLowest;
+    // 未选中：Card.filled 默认色（null 即可，无需 surfaceContainerLowest）
+    // 选中：M3 secondaryContainer，语义清晰
+    final tileColor = highlighted ? colorScheme.secondaryContainer : null;
 
     return Card.filled(
       color: tileColor,
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-      clipBehavior: Clip.antiAlias, // 确保 ListTile 的点击水波纹被限制在圆角内
+      clipBehavior: Clip.antiAlias,
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -569,6 +584,7 @@ class SongListCardTile extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 // QuickActionCard
+// 图标容器使用 secondaryContainer，与选中态色系统一（primary 留给主操作按钮）。
 // ---------------------------------------------------------------------------
 class QuickActionCard extends StatelessWidget {
   final String title;
@@ -591,7 +607,7 @@ class QuickActionCard extends StatelessWidget {
 
     return Card.filled(
       margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias, // 确保 InkWell 的水波纹不会溢出卡片的圆角
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -599,22 +615,23 @@ class QuickActionCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 图标容器
-              Container(
-                width: 48,
-                height: 48,
+              // 图标容器：secondaryContainer 与 ListTile 选中态色系统一
+              DecoratedBox(
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
+                  color: colorScheme.secondaryContainer,
                   borderRadius: AppRadius.innerBR,
                 ),
-                child: Icon(
-                  icon,
-                  color: colorScheme.onPrimaryContainer,
-                  size: 24,
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(
+                    icon,
+                    color: colorScheme.onSecondaryContainer,
+                    size: 24,
+                  ),
                 ),
               ),
               const Spacer(),
-              // 标题
               Text(
                 title,
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -622,7 +639,6 @@ class QuickActionCard extends StatelessWidget {
                   fontSize: 13,
                 ),
               ),
-              // 副标题
               if (subtitle != null) ...[
                 const SizedBox(height: 2),
                 Text(

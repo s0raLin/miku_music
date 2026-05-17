@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:metadata_god/metadata_god.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
 // import 'package:on_audio_query_forked/on_audio_query.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:crypto/crypto.dart'; // 用于 md5
 
 import 'package:path/path.dart' as p; // 推荐使用 path 库处理后缀
 
@@ -132,7 +136,7 @@ class MusicService {
 
   //保存歌词
   static Future<void> saveLyrics(String? lrcContent, String path) async {
-    if (lrcContent==null || lrcContent.isEmpty) return;
+    if (lrcContent == null || lrcContent.isEmpty) return;
 
     try {
       if (path.startsWith("/") && await File(path).exists()) {
@@ -148,6 +152,34 @@ class MusicService {
       }
     } catch (e) {
       debugPrint("歌词保存本地失败: $e");
+    }
+  }
+
+  /// 将内存中的二进制封面数据（Uint8List）转换为本地临时文件 Uri
+  static Future<Uri?> getAudioServiceCoverFromBytes(
+    Uint8List? imageBytes,
+    String musicId,
+  ) async {
+    if (imageBytes == null || imageBytes.isEmpty) return null;
+
+    try {
+      final tmpDir = await getTemporaryDirectory();
+
+      // 为防止 musicId 含有特殊字符导致文件名非法，将其转为 MD5 安全文件名
+      final safeFileName = md5.convert(utf8.encode(musicId)).toString();
+      final file = File("${tmpDir.path}/cover_$safeFileName.jpg");
+
+      if (await file.exists()) {
+        return file.uri;
+      }
+      // 直接将内存中的二进制数据写入磁盘文件
+      await file.writeAsBytes(imageBytes);
+
+      debugPrint('🎵 成功将内存封面保存至本地缓存: ${file.path}');
+      return file.uri; // 返回标准的 file://... 路径
+    } catch (e) {
+      debugPrint("转换本地文件失败: $e");
+      return null;
     }
   }
 }

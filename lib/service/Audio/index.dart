@@ -1,6 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/service/Music/index.dart';
 
 class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   final AudioPlayer _player = AudioPlayer();
@@ -13,12 +14,14 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// 供 Provider 调用：切换歌曲并播放
   Future<void> playMusic(MusicInfo music) async {
+    final uri = await MusicService.getAudioServiceCoverFromBytes(music.coverBytes, music.id);
     final item = MediaItem(
       id: music.id,
       album: music.album ?? "未知专辑",
       title: music.title,
       artist: music.artist,
       duration: music.duration,
+      artUri: uri,
     );
 
     mediaItem.add(item);

@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:myapp/main.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/service/Audio/index.dart';
@@ -414,22 +416,7 @@ class MusicProvider extends ChangeNotifier {
 
     _addToHistory(music);
 
-    // 调用 audioHandler 更新系统元数据并播放
-    // 顺便把这首歌的 MediaItem 信息通知给系统
-    final item = MediaItem(
-      id: music.id,
-      album: music.album ?? "未知专辑",
-      title: music.title,
-      artist: music.artist,
-      duration: music.duration, // 确保 MusicInfo 里有这个 Duration 字段
-    );
-
-    // 更新系统的 MediaItem
-    audioHandler.mediaItem.add(item);
-
-    // just_audio 会自动停止当前播放并加载新文件，无需手动调用 stop()
-    await player.setFilePath(music.id);
-    audioHandler.play(); //使用handler的播放命令
+    audioHandler.playMusic(music);
   }
 
   /// 切换播放 / 暂停状态。

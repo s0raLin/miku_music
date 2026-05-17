@@ -14,6 +14,7 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// 供 Provider 调用：切换歌曲并播放
   Future<void> playMusic(MusicInfo music) async {
+    
     // 1. 通知系统当前正在播放什么（这会在通知栏显示歌名和歌手）
     final item = MediaItem(
       id: music.id,

@@ -363,15 +363,35 @@ class MusicProvider extends ChangeNotifier {
   }
 
   /// 用新歌曲列表替换当前队列，并从 [startIndex] 开始播放。
-  Future<void> replaceQueue(List<MusicInfo> songs, {int startIndex = 0}) async {
+  Future<void> replaceQueue(
+    List<MusicInfo> songs, {
+    int startIndex = 0,
+    bool autoPlay = true,
+  }) async {
+    // 1. 安全边界检查
+    if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) return;
+
+    final targetMusic = songs[startIndex];
+
+    // 2. 核心修正：智能化判断。如果点的是当前队列中正在激活的这首歌
+    if (_currentIndex != -1 && currentMusic?.id == targetMusic.id) {
+      if (autoPlay) {
+        // 如果用户期望的操作是激活/播放，那就在这里直接切换 播放/暂停
+        togglePlay();
+      }
+      // 执行完单曲控制后直接退出，绝对不要去动底层的整个队列和 player.stop()
+      return;
+    }
+
+    // 3. 真正需要换队列的情况
     _queue = List.from(songs);
     _currentIndex = -1;
-    await player.stop();
-    notifyListeners();
 
-    if (_queue.isNotEmpty) {
-      await playByIndex(startIndex);
-    }
+    // 停止旧歌（注意：这里不要盲目立刻 notify，等新歌状态就绪一起通知，防止 UI 频繁重绘抖动）
+    await player.stop();
+
+    // 4. 载入或播放新队列中的目标歌曲
+    await playByIndex(startIndex, autoPlay: autoPlay);
   }
 
   // ─────────────────────────────────────────────

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.18.1](https://github.com/s0raLin/miku_music/compare/v1.18.0...v1.18.1) (2026-05-18)
+
+
+### Bug Fixes
+
+* **music:** simplify playback control and queue selection logic ([96f3061](https://github.com/s0raLin/miku_music/commit/96f30613290c214f4dff83c0e89e4022ef8d6151))
+* **music:** update library tab playback logic ([1556226](https://github.com/s0raLin/miku_music/commit/15562267816dd1ceddd35bd67616e56bd39690ab))
+
 ## [1.18.0](https://github.com/s0raLin/miku_music/compare/v1.17.0...v1.18.0) (2026-05-18)
 
 

@@ -68,7 +68,7 @@ class NowPlayingBar extends StatelessWidget {
 class _WideLayout extends StatelessWidget {
   final MusicInfo music;
   final String Function(Duration) fmt;
-  const _WideLayout({required this.music, required this.fmt, super.key});
+  const _WideLayout({required this.music, required this.fmt});
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +179,7 @@ class _WideLayout extends StatelessWidget {
 // ============================================================
 class _CompactLayout extends StatelessWidget {
   final MusicInfo music;
-  const _CompactLayout({required this.music, super.key});
+  const _CompactLayout({required this.music});
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +231,7 @@ class _CompactLayout extends StatelessWidget {
 // ============================================================
 class _TrackInfoTile extends StatelessWidget {
   final MusicInfo music;
-  const _TrackInfoTile({required this.music, super.key});
+  const _TrackInfoTile({required this.music});
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +297,7 @@ class _TrackInfoTile extends StatelessWidget {
 // ============================================================
 class _DetailedProgressBar extends StatelessWidget {
   final String Function(Duration) fmt;
-  const _DetailedProgressBar({required this.fmt, super.key});
+  const _DetailedProgressBar({required this.fmt});
 
   @override
   Widget build(BuildContext context) {
@@ -374,7 +374,7 @@ class _DetailedProgressBar extends StatelessWidget {
 // ============================================================
 class _MiniProgressBar extends StatelessWidget {
   final String Function(Duration) fmt;
-  const _MiniProgressBar({required this.fmt, super.key});
+  const _MiniProgressBar({required this.fmt});
 
   @override
   Widget build(BuildContext context) {
@@ -424,7 +424,7 @@ class _MiniProgressBar extends StatelessWidget {
 // 音量控制
 // ============================================================
 class _VolumeControl extends StatelessWidget {
-  const _VolumeControl({super.key});
+  const _VolumeControl();
 
   @override
   Widget build(BuildContext context) {
@@ -468,7 +468,7 @@ class _VolumeControl extends StatelessWidget {
 //   • 列表项使用 ListTile（M3 标准高度 56/72dp）
 // ============================================================
 class _QueueSheet extends StatelessWidget {
-  const _QueueSheet({super.key});
+  const _QueueSheet();
 
   @override
   Widget build(BuildContext context) {

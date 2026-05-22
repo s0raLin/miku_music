@@ -11,6 +11,7 @@ pub struct FlacAudioInfo {
     pub picture: Option<Vec<u8>>,
 }
 
+
 pub fn parse_flac_file(path: String) -> Result<FlacAudioInfo, String> {
     let path_obj = Path::new(&path);
 
@@ -47,9 +48,18 @@ pub fn parse_flac_file(path: String) -> Result<FlacAudioInfo, String> {
                 .map(|pic| pic.data.clone()); //复制出图片字节流Vec<u8>
 
             Ok(FlacAudioInfo {
-                title: vorbis.title().map(|v| v[0].clone()).unwrap_or_default(),
-                artist: vorbis.artist().map(|v| v[0].clone()).unwrap_or_default(),
-                album: vorbis.album().map(|v| v[0].clone()).unwrap_or_default(),
+                title: vorbis
+                    .title()
+                    .map(|v| v[0].clone())
+                    .unwrap_or("未知歌曲".to_string()),
+                artist: vorbis
+                    .artist()
+                    .map(|v| v[0].clone())
+                    .unwrap_or("未知歌手".to_string()),
+                album: vorbis
+                    .album()
+                    .map(|v| v[0].clone())
+                    .unwrap_or("未知专辑".to_string()),
                 duration_seconds: duration,
                 picture: picture_bytes, //塞入封面数据
             })
@@ -73,9 +83,18 @@ pub fn parse_flac_file(path: String) -> Result<FlacAudioInfo, String> {
 
             Ok(FlacAudioInfo {
                 // id3 提供了直接拿 title() 和 artist() 的方法
-                title: tag.title().map(String::from).unwrap_or_default(),
-                artist: tag.artist().map(String::from).unwrap_or_default(),
-                album: tag.album().map(String::from).unwrap_or_default(),
+                title: tag
+                    .title()
+                    .map(String::from)
+                    .unwrap_or("未知歌曲".to_string()),
+                artist: tag
+                    .artist()
+                    .map(String::from)
+                    .unwrap_or("未知歌手".to_string()),
+                album: tag
+                    .album()
+                    .map(String::from)
+                    .unwrap_or("未知专辑".to_string()),
                 duration_seconds: duration,
                 picture: picture_bytes,
             })

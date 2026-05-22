@@ -39,25 +39,8 @@ class MusicService {
     return audioStatus.isGranted && storageStatus.isGranted;
   }
 
-  // 增加初始化标志，避免重复初始化
-  // static bool _isMetadataInitialized = false;
-
-  // static Future<void> _ensureInitialized() async {
-  //   if (!_isMetadataInitialized) {
-  //     await MetadataGod.initialize();
-  //     _isMetadataInitialized = true;
-  //   }
-  // }
-
   static Future<MusicInfo> parse(String path) async {
-    // await _ensureInitialized();
-    // final metadata = await MetadataGod.readMetadata(file: path);
 
-    // final title = metadata.title ?? p.basename(path);
-    // final artist = metadata.artist ?? "未知歌手";
-    // final album = metadata.album ?? "未知专辑";
-    // final duration = metadata.duration ?? Duration.zero;
-    // final coverBytes = metadata.picture?.data;
     final song = await parseFlacFile(path: path);
     final title = song.title;
     final artist = song.artist;

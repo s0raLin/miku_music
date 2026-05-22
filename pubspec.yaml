@@ -62,7 +62,6 @@ dependencies:
 dependency_overrides:
   # 强制锁定版本，消除 2.11.1 与 2.12.0 的冲突
   # flutter_rust_bridge: 2.11.1
-  flutter_rust_bridge: 2.12.0
   # 在这里手动添加下面这两行，告诉 Flutter 去找本地的 SDK，而不是去网上下载
   integration_test:
     sdk: flutter

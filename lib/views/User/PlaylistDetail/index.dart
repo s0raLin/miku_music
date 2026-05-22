@@ -17,6 +17,9 @@ class PlaylistDetailPage extends StatefulWidget {
 }
 
 class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
+  // 专门用来存储桌面端鼠标点按位置的变量
+  Offset _actionMenuTapPosition = Offset.zero;
+
   // --- 逻辑方法区域 ---
 
   String _formatDuration(Duration d) {
@@ -25,43 +28,228 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     return hours > 0 ? "$hours小时 $minutes分钟" : "$minutes分钟";
   }
 
-  Future<void> _showRenameDialog(
-    BuildContext context,
-    Playlist playlist,
-  ) async {
-    final controller = TextEditingController(text: playlist.name);
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("重命名歌单"),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: "歌单名称"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text("确定"),
-          ),
-        ],
-      ),
-    );
+  // 统一响应式自适应菜单：手机端 BottomSheet，桌面端 PopupMenu
+  void _showResponsiveActionMenu(BuildContext context, Playlist playlist) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDesktop = MediaQuery.of(context).size.width >= 600;
 
-     if (newName != null && newName.isNotEmpty) {
-       if (!context.mounted) return;
-       context.read<MusicProvider>().renamePlaylist(playlist.id, newName);
-       if (context.mounted) {
-         AppToast.neutral(
-           context,
-           message: '歌单已重命名为「$newName」',
-         );
-       }
-     }
+    // 定义统一的菜单项数据结构，方便复用
+    final menuItems = [
+      _AdaptiveActionItem(
+        icon: Icons.add_rounded,
+        title: "添加歌曲",
+        onTap: () => _showModalSideSheet(
+          context: context,
+          child: Builder(
+            builder: (context) {
+              return SafeArea(
+                child: Padding(
+                  // 减小底部边距，让列表可以一直滑到底部
+                  padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. 固定的头部区域：标题 + 关闭按钮
+                      Row(
+                        children: [
+                          Text(
+                            "选择要添加的歌曲",
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            // 点击关闭侧边栏
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16), // 留点间距
+                      // 2. 核心：必须用 Expanded 包裹 ListView，否则会报错崩溃！
+                      Expanded(
+                        child: ListView.builder(
+                          // 假设你有一个歌曲数据列表，这里换成你自己的 List 长度即可
+                          itemCount: 50,
+                          // 开启预加载，提升鼠标滚动或手指滑动时的流畅度
+                          cacheExtent: 100,
+                          itemBuilder: (context, index) {
+                            // 每一个歌单行组件（支持懒加载，滑到屏幕内才会渲染）
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                              ),
+                              leading: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.music_note_rounded),
+                              ),
+                              title: Text("测试歌曲名称 #$index"),
+                              subtitle: Text("歌手名字 - 专辑 $index"),
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.add_circle_outline_rounded,
+                                ),
+                                color: Theme.of(context).colorScheme.primary,
+                                onPressed: () {
+                                  // TODO: 执行添加歌曲的逻辑
+                                  print("点击了添加第 $index 首歌曲");
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      _AdaptiveActionItem(
+        icon: Icons.edit_note_rounded,
+        title: "编辑歌单信息",
+        onTap: () => {},
+      ),
+      _AdaptiveActionItem(
+        icon: Icons.delete_sweep_rounded,
+        title: "删除歌单",
+        textColor: colorScheme.error,
+        iconColor: colorScheme.error,
+        onTap: () => _showDeleteConfirmDialog(context, playlist),
+      ),
+    ];
+
+    if (isDesktop) {
+      // 1. 桌面端逻辑：在点击坐标处弹出
+      final RenderBox overlay =
+          Overlay.of(context).context.findRenderObject() as RenderBox;
+      showMenu(
+        context: context,
+        position: RelativeRect.fromRect(
+          Rect.fromLTWH(
+            _actionMenuTapPosition.dx,
+            _actionMenuTapPosition.dy,
+            40,
+            40,
+          ),
+          Offset.zero & overlay.size,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        items: menuItems.map((item) {
+          return PopupMenuItem(
+            onTap: item.onTap,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(item.icon, size: 20, color: item.iconColor),
+                const SizedBox(width: 12),
+                Text(item.title, style: TextStyle(color: item.textColor)),
+              ],
+            ),
+          );
+        }).toList(),
+      );
+    } else {
+      // 2. 手机端逻辑：底部弹出菜单
+      showModalBottomSheet(
+        context: context,
+        showDragHandle: true,
+        useSafeArea: true,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
+                child: Text(
+                  playlist.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Divider(height: 1),
+              ...menuItems.map((item) {
+                return ListTile(
+                  leading: Icon(item.icon, color: item.iconColor),
+                  title: Text(
+                    item.title,
+                    style: TextStyle(color: item.textColor),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // 先关闭底栏
+                    if (item.onTap != null) item.onTap!(); // 再触发事件
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showModalSideSheet({
+    required BuildContext context,
+    required Widget child,
+    double width = 300
+  }) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true, //允许点击背景关闭
+      barrierLabel: "Dismiss Side Sheet",
+      // pageBuilder 只负责返回组件结构
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Material(
+            elevation: 2,
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            // 顺手加个符合 Material 3 规范的左侧大圆角，更好看！
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(24),
+            ),
+            child: SizedBox(
+              width: width,
+              height: double.infinity,
+              child: child,
+            ),
+          ),
+        );
+      },
+
+      // 把动画移到 transitionBuilder 里，确保进出都有丝滑的动画
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position:
+              Tween<Offset>(
+                begin: const Offset(1, 0), // 从屏幕右侧外开始
+                end: Offset.zero, // 移动到原点
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOutCubic,
+                ),
+              ),
+          child: child,
+        );
+      },
+    );
   }
 
   Future<void> _showDeleteConfirmDialog(
@@ -70,38 +258,32 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("删除歌单"),
-        content: Text("确定要删除「${playlist.name}」吗？"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("取消"),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
+      builder: (context) => CustomDialogWrapper(
+        child: AlertDialog(
+          title: const Text("删除歌单"),
+          content: Text("确定要删除「${playlist.name}」吗？"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("取消"),
             ),
-            child: const Text("删除"),
-          ),
-        ],
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              child: const Text("删除"),
+            ),
+          ],
+        ),
       ),
     );
     if (confirmed != true || !context.mounted) return;
 
-    final provider = context.read<MusicProvider>();
-
-    provider.deletePlaylist(playlist.id);
-
-    if (context.mounted) {
-      AppToast.neutral(
-        context,
-        message: '歌单「${playlist.name}」已删除',
-      );
-      Navigator.of(context).pop();
-    }
+    context.read<MusicProvider>().deletePlaylist(playlist.id);
+    AppToast.neutral(context, message: '歌单「${playlist.name}」已删除');
+    Navigator.of(context).pop();
   }
 
   Future<void> _confirmRemoveSong(
@@ -111,30 +293,26 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("移除歌曲"),
-        content: const Text("确定要从歌单中移除这首歌吗？"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("取消"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("移除"),
-          ),
-        ],
+      builder: (context) => CustomDialogWrapper(
+        child: AlertDialog(
+          title: const Text("移除歌曲"),
+          content: const Text("确定要从歌单中移除这首歌吗？"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("取消"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("移除"),
+            ),
+          ],
+        ),
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final provider = context.read<MusicProvider>();
-    provider.removeFromPlaylist(playlistId, musicId);
-    if (context.mounted) {
-      AppToast.neutral(
-        context,
-        message: '已从歌单移除',
-      );
-    }
+    context.read<MusicProvider>().removeFromPlaylist(playlistId, musicId);
+    AppToast.neutral(context, message: '已从歌单移除');
   }
 
   Future<void> _showAddToPlaylistSheet(
@@ -185,14 +363,11 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     trailing: alreadyIn
                         ? Icon(Icons.check_circle, color: cs.secondary)
                         : null,
-                     onTap: () {
-                       musicProvider.addToPlaylist(p.id, song);
-                       Navigator.pop(context);
-                       AppToast.success(
-                         context,
-                         message: '已添加到「${p.name}」',
-                       );
-                     },
+                    onTap: () {
+                      musicProvider.addToPlaylist(p.id, song);
+                      Navigator.pop(context);
+                      AppToast.success(context, message: '已添加到「${p.name}」');
+                    },
                   );
                 },
               ),
@@ -208,21 +383,23 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     return showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("上传确认"),
-          content: const Text("是否上传到云端?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(), //关闭弹窗
-              child: Text("取消", style: TextStyle(color: colorScheme.outline)),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("确认"),
-            ),
-          ],
+        return CustomDialogWrapper(
+          child: AlertDialog(
+            title: const Text("上传确认"),
+            content: const Text("是否上传到云端?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text("取消", style: TextStyle(color: colorScheme.outline)),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text("确认"),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -253,31 +430,33 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         slivers: [
           // 1. 沉浸式融合头部 (左对齐版本)
           SliverAppBar(
-            expandedHeight: 280, // 可根据需要微调
+            expandedHeight: 280,
             pinned: true,
             stretch: true,
             elevation: 0,
             scrolledUnderElevation: 2,
             leading: const BackButton(),
             actions: [
+              // 统一收纳为一个自适应“更多操作”按钮
               if (!isSystem)
-                IconButton(
-                  onPressed: () => _showRenameDialog(context, playlist),
-                  icon: const Icon(Icons.edit_note_rounded),
-                ),
-              if (!isSystem)
-                IconButton(
-                  onPressed: () => _showDeleteConfirmDialog(context, playlist),
-                  icon: const Icon(Icons.delete_sweep_rounded),
+                Listener(
+                  onPointerDown: (event) {
+                    // 在手指/鼠标按下的瞬间，记录它在屏幕上的绝对物理坐标
+                    _actionMenuTapPosition = event.position;
+                  },
+                  child: IconButton(
+                    onPressed: () =>
+                        _showResponsiveActionMenu(context, playlist),
+                    icon: const Icon(Icons.more_vert_rounded),
+                  ),
                 ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
-              titlePadding: EdgeInsets.zero, // 不使用默认 title
+              titlePadding: EdgeInsets.zero,
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // 背景渐变
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -290,7 +469,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       ),
                     ),
                   ),
-                  // 主要内容：左侧封面 + 右侧文字（标题在上）
                   SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -301,16 +479,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           _buildM3Cover(playlist, isFavorites, colorScheme),
-
                           const SizedBox(width: 20),
-
-                          // 右侧文字区域
                           Expanded(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // === 标题放在最上方 ===
                                 Text(
                                   playlist.name,
                                   style: theme.textTheme.headlineSmall
@@ -321,9 +495,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-
                                 const SizedBox(height: 12),
-
                                 Text(
                                   "${songs.length} 首歌曲",
                                   style: theme.textTheme.titleMedium?.copyWith(
@@ -331,17 +503,13 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                     color: colorScheme.onSurface,
                                   ),
                                 ),
-
                                 Text(
                                   _formatDuration(totalDuration),
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
-
                                 const SizedBox(height: 20),
-
-                                // 播放按钮
                                 FilledButton.icon(
                                   onPressed: songs.isNotEmpty
                                       ? () {
@@ -414,16 +582,15 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         ],
       ),
       floatingActionButton: SpeedDial(
-        icon: Icons.menu, // 未展开时的图标
-        activeIcon: Icons.close, // 展开时的图标
+        icon: Icons.menu,
+        activeIcon: Icons.close,
         backgroundColor: colorScheme.primaryContainer,
         foregroundColor: colorScheme.onPrimaryContainer,
         overlayColor: colorScheme.scrim,
         overlayOpacity: 0.5,
-        spacing: 12, // 子按钮之间的间距
+        spacing: 12,
         children: [
           SpeedDialChild(
-            // child: const Icon(Icons.folder_open),
             backgroundColor: colorScheme.secondaryContainer,
             labelWidget: Container(
               padding: const EdgeInsets.symmetric(
@@ -431,13 +598,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                 vertical: 10.0,
               ),
               decoration: BoxDecoration(
-                // Stadium 形状的关键：使用 StadiumBorder 或者设置很大的圆角
                 borderRadius: BorderRadius.circular(28.0),
                 color: Theme.of(context).colorScheme.secondaryContainer,
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min, // 紧凑
-                mainAxisAlignment: MainAxisAlignment.center, // 内容居中
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
@@ -451,7 +617,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     style: TextStyle(
                       fontSize: 14.0,
                       fontWeight: FontWeight.w500,
-                      // 关键：标签的字体颜色
                       color: Theme.of(context).colorScheme.onSecondaryContainer,
                     ),
                   ),
@@ -471,7 +636,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     ColorScheme colorScheme,
   ) {
     return Container(
-      width: 140, // 侧边布局时封面稍小一点更精致
+      width: 140,
       height: 140,
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHigh,
@@ -605,4 +770,30 @@ class _M3SongTile extends StatelessWidget {
       ),
     );
   }
+}
+
+// 辅助类：用于响应式菜单的数据承载
+class _AdaptiveActionItem {
+  final IconData icon;
+  final String title;
+  final Color? textColor;
+  final Color? iconColor;
+  final VoidCallback? onTap;
+
+  _AdaptiveActionItem({
+    required this.icon,
+    required this.title,
+    this.textColor,
+    this.iconColor,
+    this.onTap,
+  });
+}
+
+// 辅助组件：包裹普通 Dialog，防止 context 分离时的 mounted 警告隐患
+class CustomDialogWrapper extends StatelessWidget {
+  final Widget child;
+  const CustomDialogWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) => child;
 }

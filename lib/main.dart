@@ -1,3 +1,5 @@
+// The original content is temporarily commented out to allow generating a self-contained demo - feel free to uncomment later.
+
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
@@ -38,3 +40,4 @@ Future<void> main() async {
     ),
   );
 }
+

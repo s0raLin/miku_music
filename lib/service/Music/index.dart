@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:metadata_god/metadata_god.dart';
+// import 'package:metadata_god/metadata_god.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/src/rust/api/simple.dart';
 // import 'package:on_audio_query_forked/on_audio_query.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart'; // 用于 md5
@@ -39,24 +40,30 @@ class MusicService {
   }
 
   // 增加初始化标志，避免重复初始化
-  static bool _isMetadataInitialized = false;
+  // static bool _isMetadataInitialized = false;
 
-  static Future<void> _ensureInitialized() async {
-    if (!_isMetadataInitialized) {
-      await MetadataGod.initialize();
-      _isMetadataInitialized = true;
-    }
-  }
+  // static Future<void> _ensureInitialized() async {
+  //   if (!_isMetadataInitialized) {
+  //     await MetadataGod.initialize();
+  //     _isMetadataInitialized = true;
+  //   }
+  // }
 
   static Future<MusicInfo> parse(String path) async {
-    await _ensureInitialized();
-    final metadata = await MetadataGod.readMetadata(file: path);
+    // await _ensureInitialized();
+    // final metadata = await MetadataGod.readMetadata(file: path);
 
-    final title = metadata.title ?? p.basename(path);
-    final artist = metadata.artist ?? "未知歌手";
-    final album = metadata.album ?? "未知专辑";
-    final duration = metadata.duration ?? Duration.zero;
-    final coverBytes = metadata.picture?.data;
+    // final title = metadata.title ?? p.basename(path);
+    // final artist = metadata.artist ?? "未知歌手";
+    // final album = metadata.album ?? "未知专辑";
+    // final duration = metadata.duration ?? Duration.zero;
+    // final coverBytes = metadata.picture?.data;
+    final song = await parseFlacFile(path: path);
+    final title = song.title;
+    final artist = song.artist;
+    final album = song.album;
+    final duration = Duration(seconds: song.durationSeconds);
+    final coverBytes = song.picture;
 
     debugPrint(
       "封面: ${coverBytes != null ? '${coverBytes.length} bytes' : 'null'} → $path",

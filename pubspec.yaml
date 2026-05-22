@@ -34,7 +34,7 @@ dependencies:
   dio: ^5.9.2
   flutter_secure_storage: ^10.0.0
   package_info_plus: ^9.0.1
-  metadata_god: ^1.1.0
+  # metadata_god: ^1.1.0
   material_color_utilities: ^0.13.0
   lottie: ^3.3.3
   url_launcher: ^6.3.2
@@ -50,10 +50,22 @@ dependencies:
   audio_service: ^0.18.18
   path_provider: ^2.1.5
   crypto: ^3.0.7
+  rust_lib_myapp:
+    path: rust_builder
+  version: ^3.0.2
+  ed25519_edwards: ^0.3.1
+  github: ^9.25.1
+  hex: ^0.2.0
+  toml: ^0.18.0
+  flutter_rust_bridge: ^2.12.0
 
 dependency_overrides:
   # 强制锁定版本，消除 2.11.1 与 2.12.0 的冲突
-  flutter_rust_bridge: 2.11.1
+  # flutter_rust_bridge: 2.11.1
+  flutter_rust_bridge: 2.12.0
+  # 在这里手动添加下面这两行，告诉 Flutter 去找本地的 SDK，而不是去网上下载
+  integration_test:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

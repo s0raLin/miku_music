@@ -14,7 +14,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   jni
-  metadata_god
+  rust_lib_myapp
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

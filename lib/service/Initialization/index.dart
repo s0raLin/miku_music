@@ -8,6 +8,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/service/Settings/index.dart';
+import 'package:myapp/src/rust/frb_generated.dart';
 import 'package:window_manager/window_manager.dart';
 
 class StartupScanProgress {
@@ -27,7 +28,11 @@ class StartupScanProgress {
 class InitializationService {
   // 1. 启动前的硬性初始化
   static Future<void> preRunInit() async {
+    // 先通电，把 Flutter 底层环境和原生通道拉起来
     WidgetsFlutterBinding.ensureInitialized();
+
+    // 环境好了，放心初始化 Rust 库和本地配置
+    await RustLib.init();
 
     // 加载环境变量
     try {

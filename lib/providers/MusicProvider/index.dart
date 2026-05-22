@@ -449,12 +449,11 @@ class MusicProvider extends ChangeNotifier {
 
   /// 切换播放 / 暂停状态。
   void togglePlay() {
-
     if (player.playing) {
-        player.pause(); // 如果正在播放，直接暂停
-      } else {
-        player.play(); // 如果暂停了，直接让它继续播放
-      }
+      player.pause(); // 如果正在播放，直接暂停
+    } else {
+      player.play(); // 如果暂停了，直接让它继续播放
+    }
 
     notifyListeners();
   }

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/views/Music/widgets/empty_state.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -57,7 +56,7 @@ class _LyricsSectionState extends State<LyricsSection>
     final cs = Theme.of(context).colorScheme;
 
     if (lyrics.isEmpty) {
-      return EmptyState(
+      return AppEmptyState(
         icon: Icons.music_note_rounded,
         title: "暂无歌词",
         subtitle: "点击下方按钮查找",

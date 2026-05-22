@@ -5,7 +5,6 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/views/Music/widgets/album_card.dart';
-import 'package:myapp/views/Music/widgets/empty_state.dart';
 import 'package:provider/provider.dart';
 
 class LibraryTab extends StatelessWidget {
@@ -20,7 +19,7 @@ class LibraryTab extends StatelessWidget {
     if (library.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async {},
-        child: EmptyState(
+        child: AppEmptyState(
           icon: Icons.music_note_rounded,
           title: "还没有歌曲",
           subtitle: "点击下方按钮上传歌曲开始使用",

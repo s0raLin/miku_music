@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/views/Music/widgets/empty_state.dart';
 import 'package:myapp/views/Music/widgets/playlist_card.dart';
 import 'package:provider/provider.dart';
 
@@ -45,7 +44,7 @@ class PlaylistTab extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             userPlaylists.isEmpty
-                ? EmptyState(
+                ? AppEmptyState(
                     icon: Icons.playlist_play_rounded,
                     title: "还没有歌单",
                     subtitle: "创建自己的歌单来整理喜欢的歌曲",

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.19.0](https://github.com/s0raLin/miku_music/compare/v1.18.1...v1.19.0) (2026-05-22)
+
+
+### Features
+
+* **music:** restructure music library and simplify navigation ([a365e03](https://github.com/s0raLin/miku_music/commit/a365e03d01973ff59804d8b6113220d2e56b3ed2))
+* **ui:** implement responsive action menu for playlist details ([5f5544f](https://github.com/s0raLin/miku_music/commit/5f5544f237727e497d9bd266718528384e4a08c5))
+
 ## [1.18.1](https://github.com/s0raLin/miku_music/compare/v1.18.0...v1.18.1) (2026-05-18)
 
 

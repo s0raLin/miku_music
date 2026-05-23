@@ -256,14 +256,13 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
 
   @override
   Widget build(BuildContext context) {
-    final sw = Stopwatch()..start();
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final badgeBackground = colorScheme.surfaceContainerHigh.withValues(
       alpha: colorScheme.brightness == Brightness.dark ? 0.88 : 0.82,
     );
 
-    final w = SizedBox(
+    return SizedBox(
       width: 156,
       child: MediaGridCard(
         title: widget.music.title,
@@ -294,9 +293,6 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
         ),
       ),
     );
-
-    debugPrint('AlbumDetailPage build: ${sw.elapsedMilliseconds}ms');
-    return w;
   }
 }
 

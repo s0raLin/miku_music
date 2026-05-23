@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/views/Music/widgets/album_card.dart';
 import 'package:provider/provider.dart';
 
@@ -12,9 +16,11 @@ class LibraryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final musicProvider = context.watch<MusicProvider>();
-    final library = musicProvider.library;
-    final currentMusic = musicProvider.currentMusic;
+    // final musicProvider = context.watch<MusicProvider>();
+    final library = context.select<MusicProvider, List<MusicInfo>>(
+      (p) => p.library,
+    );
+    // final currentMusic = musicProvider.currentMusic;
 
     if (library.isEmpty) {
       return RefreshIndicator(
@@ -126,23 +132,13 @@ class LibraryTab extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             sliver: SliverList.separated(
               itemCount: library.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 6),
+              separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
                 final music = library[index];
-                return SongTile(
-                  music: music,
-                  isCurrent: music.id == currentMusic?.id,
-                  onTap: () {
-                    musicProvider.playFromLibrary(music);
-                    context.push("/music-detail");
-                  },
-                  onPressed: () {
-                    if (currentMusic == null || currentMusic.id != music.id) {
-                      musicProvider.playFromLibrary(music);
-                    } else {
-                      musicProvider.togglePlay();
-                    }
-                  },
+                return RepaintBoundary(
+                  child: ObservableMusicListItem(
+                    music: music,
+                  ),
                 );
               },
             ),
@@ -189,6 +185,96 @@ class SongTile extends StatelessWidget {
               : Icons.play_arrow_rounded,
         ),
       ),
+    );
+  }
+}
+
+class ObservableMusicListItem extends StatefulWidget {
+  final MusicInfo music;
+
+  const ObservableMusicListItem({super.key, required this.music});
+
+  @override
+  State<ObservableMusicListItem> createState() =>
+      _ObservableMusicListItemState();
+}
+
+class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('initState: ${widget.music.title}');
+    _loadCover();
+  }
+
+  // 加这个方法
+  Future<Uint8List?> _resizeImage(Uint8List bytes) async {
+    final codec = await ui.instantiateImageCodec(
+      bytes,
+      targetWidth: 144,
+      targetHeight: 144,
+    );
+    final frame = await codec.getNextFrame();
+    final byteData = await frame.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+    frame.image.dispose();
+    return byteData?.buffer.asUint8List();
+  }
+
+  void _loadCover() async {
+    if (widget.music.coverBytes != null &&
+        widget.music.coverBytes!.isNotEmpty) {
+      // 已有封面也压缩后再用
+      final small = await _resizeImage(widget.music.coverBytes!);
+      if (!mounted) return;
+      setState(() {
+        widget.music.coverBytes = small; // 回写小图，下次直接用
+      });
+      return;
+    }
+
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final updatedMusic = await MusicService.parse(widget.music.id);
+      final small = await _resizeImage(updatedMusic.coverBytes!);
+      if (mounted) {
+        setState(() {
+          widget.music.coverBytes = small; // 回写小图
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final musicProvider = context.read<MusicProvider>();
+    final isCurrent = context.select<MusicProvider, bool>(
+      (p) => p.currentMusic?.id == widget.music.id,
+    );
+
+    return SongTile(
+      music: widget.music,
+      onTap: () {
+        musicProvider.playFromLibrary(widget.music);
+        context.push("/music-detail");
+      },
+      onPressed: () {
+        final currentMusic = musicProvider.currentMusic;
+        if (currentMusic == null || currentMusic.id != widget.music.id) {
+          musicProvider.playFromLibrary(widget.music);
+        } else {
+          musicProvider.togglePlay();
+        }
+      },
+      isCurrent: isCurrent,
     );
   }
 }

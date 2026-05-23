@@ -184,9 +184,8 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
 
   @override
   Widget build(BuildContext context) {
-    final sw = Stopwatch()..start();
 
-    final w = MusicListItem(
+    return MusicListItem(
       id: widget.music.id,
       title: widget.music.title,
       artist: widget.music.artist,
@@ -194,8 +193,6 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
       coverBytes: _coverBytes,
       onTap: widget.onTap,
     );
-    debugPrint('AlbumDetailPage build: ${sw.elapsedMilliseconds}ms');
-    return w;
   }
 }
 

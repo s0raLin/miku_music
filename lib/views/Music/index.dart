@@ -72,7 +72,7 @@ class _MusicPageState extends State<MusicPage> {
           body: const TabBarView(
             children: [
               LibraryTab(),
-              PlaylistTab(), 
+              PlaylistTab(),
             ],
           ),
         ),
@@ -80,3 +80,5 @@ class _MusicPageState extends State<MusicPage> {
     );
   }
 }
+
+

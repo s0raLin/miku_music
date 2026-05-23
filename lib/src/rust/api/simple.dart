@@ -6,40 +6,5 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-Future<FlacAudioInfo> getAudioInfo({required String path}) =>
-    RustLib.instance.api.crateApiSimpleGetAudioInfo(path: path);
-
-class FlacAudioInfo {
-  final String title;
-  final String artist;
-  final String album;
-  final int durationSeconds;
-  final Uint8List? picture;
-
-  const FlacAudioInfo({
-    required this.title,
-    required this.artist,
-    required this.album,
-    required this.durationSeconds,
-    this.picture,
-  });
-
-  @override
-  int get hashCode =>
-      title.hashCode ^
-      artist.hashCode ^
-      album.hashCode ^
-      durationSeconds.hashCode ^
-      picture.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is FlacAudioInfo &&
-          runtimeType == other.runtimeType &&
-          title == other.title &&
-          artist == other.artist &&
-          album == other.album &&
-          durationSeconds == other.durationSeconds &&
-          picture == other.picture;
-}
+Future<String> greet({required String name}) =>
+    RustLib.instance.api.crateApiSimpleGreet(name: name);

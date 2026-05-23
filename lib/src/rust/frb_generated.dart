@@ -3,6 +3,8 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/audio_info.dart';
+import 'api/scanner.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -66,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -1060299419;
+  int get rustContentHash => -1162508210;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -78,9 +80,15 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
-  Future<FlacAudioInfo> crateApiSimpleGetAudioInfo({required String path});
+  Future<AudioInfo> crateApiAudioInfoGetAudioInfo({required String path});
+
+  Future<String> crateApiSimpleGreet({required String name});
 
   Future<void> crateApiSimpleInitApp();
+
+  Stream<AudioMetadata> crateApiScannerScanDirectoryParallel({
+    required String dirPath,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -92,7 +100,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  Future<FlacAudioInfo> crateApiSimpleGetAudioInfo({required String path}) {
+  Future<AudioInfo> crateApiAudioInfoGetAudioInfo({required String path}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -106,18 +114,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_flac_audio_info,
+          decodeSuccessData: sse_decode_audio_info,
           decodeErrorData: sse_decode_String,
         ),
-        constMeta: kCrateApiSimpleGetAudioInfoConstMeta,
+        constMeta: kCrateApiAudioInfoGetAudioInfoConstMeta,
         argValues: [path],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiSimpleGetAudioInfoConstMeta =>
+  TaskConstMeta get kCrateApiAudioInfoGetAudioInfoConstMeta =>
       const TaskConstMeta(debugName: "get_audio_info", argNames: ["path"]);
+
+  @override
+  Future<String> crateApiSimpleGreet({required String name}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSimpleGreetConstMeta,
+        argValues: [name],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSimpleGreetConstMeta =>
+      const TaskConstMeta(debugName: "greet", argNames: ["name"]);
 
   @override
   Future<void> crateApiSimpleInitApp() {
@@ -128,7 +164,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -146,6 +182,58 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSimpleInitAppConstMeta =>
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
+  @override
+  Stream<AudioMetadata> crateApiScannerScanDirectoryParallel({
+    required String dirPath,
+  }) {
+    final sink = RustStreamSink<AudioMetadata>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_String(dirPath, serializer);
+            sse_encode_StreamSink_audio_metadata_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 4,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiScannerScanDirectoryParallelConstMeta,
+          argValues: [dirPath, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiScannerScanDirectoryParallelConstMeta =>
+      const TaskConstMeta(
+        debugName: "scan_directory_parallel",
+        argNames: ["dirPath", "sink"],
+      );
+
+  @protected
+  AnyhowException dco_decode_AnyhowException(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return AnyhowException(raw as String);
+  }
+
+  @protected
+  RustStreamSink<AudioMetadata> dco_decode_StreamSink_audio_metadata_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
   @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -153,17 +241,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  FlacAudioInfo dco_decode_flac_audio_info(dynamic raw) {
+  AudioInfo dco_decode_audio_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
     if (arr.length != 5)
       throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
-    return FlacAudioInfo(
+    return AudioInfo(
       title: dco_decode_String(arr[0]),
       artist: dco_decode_String(arr[1]),
       album: dco_decode_String(arr[2]),
       durationSeconds: dco_decode_u_32(arr[3]),
-      picture: dco_decode_opt_list_prim_u_8_strict(arr[4]),
+      coverArt: dco_decode_opt_list_prim_u_8_strict(arr[4]),
+    );
+  }
+
+  @protected
+  AudioMetadata dco_decode_audio_metadata(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return AudioMetadata(
+      title: dco_decode_String(arr[0]),
+      artist: dco_decode_String(arr[1]),
+      album: dco_decode_String(arr[2]),
+      durationSeconds: dco_decode_u_32(arr[3]),
+      path: dco_decode_String(arr[4]),
     );
   }
 
@@ -198,6 +301,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_String(deserializer);
+    return AnyhowException(inner);
+  }
+
+  @protected
+  RustStreamSink<AudioMetadata> sse_decode_StreamSink_audio_metadata_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
@@ -205,19 +323,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  FlacAudioInfo sse_decode_flac_audio_info(SseDeserializer deserializer) {
+  AudioInfo sse_decode_audio_info(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_title = sse_decode_String(deserializer);
     var var_artist = sse_decode_String(deserializer);
     var var_album = sse_decode_String(deserializer);
     var var_durationSeconds = sse_decode_u_32(deserializer);
-    var var_picture = sse_decode_opt_list_prim_u_8_strict(deserializer);
-    return FlacAudioInfo(
+    var var_coverArt = sse_decode_opt_list_prim_u_8_strict(deserializer);
+    return AudioInfo(
       title: var_title,
       artist: var_artist,
       album: var_album,
       durationSeconds: var_durationSeconds,
-      picture: var_picture,
+      coverArt: var_coverArt,
+    );
+  }
+
+  @protected
+  AudioMetadata sse_decode_audio_metadata(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_title = sse_decode_String(deserializer);
+    var var_artist = sse_decode_String(deserializer);
+    var var_album = sse_decode_String(deserializer);
+    var var_durationSeconds = sse_decode_u_32(deserializer);
+    var var_path = sse_decode_String(deserializer);
+    return AudioMetadata(
+      title: var_title,
+      artist: var_artist,
+      album: var_album,
+      durationSeconds: var_durationSeconds,
+      path: var_path,
     );
   }
 
@@ -269,22 +404,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_AnyhowException(
+    AnyhowException self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.message, serializer);
+  }
+
+  @protected
+  void sse_encode_StreamSink_audio_metadata_Sse(
+    RustStreamSink<AudioMetadata> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_audio_metadata,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
   }
 
   @protected
-  void sse_encode_flac_audio_info(
-    FlacAudioInfo self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_audio_info(AudioInfo self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.title, serializer);
     sse_encode_String(self.artist, serializer);
     sse_encode_String(self.album, serializer);
     sse_encode_u_32(self.durationSeconds, serializer);
-    sse_encode_opt_list_prim_u_8_strict(self.picture, serializer);
+    sse_encode_opt_list_prim_u_8_strict(self.coverArt, serializer);
+  }
+
+  @protected
+  void sse_encode_audio_metadata(AudioMetadata self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.title, serializer);
+    sse_encode_String(self.artist, serializer);
+    sse_encode_String(self.album, serializer);
+    sse_encode_u_32(self.durationSeconds, serializer);
+    sse_encode_String(self.path, serializer);
   }
 
   @protected

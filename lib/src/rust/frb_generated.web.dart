@@ -6,6 +6,8 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
+import 'api/audio_info.dart';
+import 'api/scanner.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -21,10 +23,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   });
 
   @protected
+  AnyhowException dco_decode_AnyhowException(dynamic raw);
+
+  @protected
+  RustStreamSink<AudioMetadata> dco_decode_StreamSink_audio_metadata_Sse(
+    dynamic raw,
+  );
+
+  @protected
   String dco_decode_String(dynamic raw);
 
   @protected
-  FlacAudioInfo dco_decode_flac_audio_info(dynamic raw);
+  AudioInfo dco_decode_audio_info(dynamic raw);
+
+  @protected
+  AudioMetadata dco_decode_audio_metadata(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -42,10 +55,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void dco_decode_unit(dynamic raw);
 
   @protected
+  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
+
+  @protected
+  RustStreamSink<AudioMetadata> sse_decode_StreamSink_audio_metadata_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
-  FlacAudioInfo sse_decode_flac_audio_info(SseDeserializer deserializer);
+  AudioInfo sse_decode_audio_info(SseDeserializer deserializer);
+
+  @protected
+  AudioMetadata sse_decode_audio_metadata(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -69,10 +93,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  void sse_encode_AnyhowException(
+    AnyhowException self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_audio_metadata_Sse(
+    RustStreamSink<AudioMetadata> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
-  void sse_encode_flac_audio_info(FlacAudioInfo self, SseSerializer serializer);
+  void sse_encode_audio_info(AudioInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_audio_metadata(AudioMetadata self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(

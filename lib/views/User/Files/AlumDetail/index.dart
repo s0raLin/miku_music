@@ -1,10 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:provider/provider.dart';
+import 'package:myapp/service/Music/index.dart';
+import 'dart:ui' as ui;
 
 class AlbumDetailPage extends StatelessWidget {
   final String albumName;
@@ -17,7 +16,6 @@ class AlbumDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final musicProvider = context.read<MusicProvider>();
     return Scaffold(
       appBar: AppBar(title: Text(albumName)),
       body: ListTileTheme(
@@ -31,19 +29,7 @@ class AlbumDetailPage extends StatelessWidget {
           itemCount: songs.length,
           itemBuilder: (context, index) {
             final music = songs[index];
-            return MusicListItem(
-              id: music.id,
-              title: music.title,
-              artist: music.artist,
-              duration: music.duration,
-              coverBytes: music.coverBytes,
-              onTap: () {
-                if (musicProvider.currentMusic?.id != music.id) {
-                  musicProvider.replaceQueue(songs, startIndex: index);
-                }
-                context.push("/music-detail", extra: music);
-              },
-            );
+            return ObservableMusicListItem(music: music);
           },
         ),
       ),
@@ -97,7 +83,7 @@ class MusicListItem extends StatelessWidget {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: coverBytes != null
-                        ? Image.memory(coverBytes!, fit: BoxFit.cover)
+                        ? Image(image: MemoryImage(coverBytes!))
                         : Icon(
                             Icons.music_note,
                             color: colorScheme.onSurfaceVariant,
@@ -125,6 +111,91 @@ class MusicListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class ObservableMusicListItem extends StatefulWidget {
+  final MusicInfo music;
+  final VoidCallback? onTap;
+
+  const ObservableMusicListItem({super.key, required this.music, this.onTap});
+
+  @override
+  State<ObservableMusicListItem> createState() =>
+      _ObservableMusicListItemState();
+}
+
+class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
+  Uint8List? _coverBytes;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('initState: ${widget.music.title}');
+    _loadCover();
+  }
+
+  // 加这个方法
+  Future<Uint8List?> _resizeImage(Uint8List bytes) async {
+    final codec = await ui.instantiateImageCodec(
+      bytes,
+      targetWidth: 144,
+      targetHeight: 144,
+    );
+    final frame = await codec.getNextFrame();
+    final byteData = await frame.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+    frame.image.dispose();
+    return byteData?.buffer.asUint8List();
+  }
+
+  void _loadCover() async {
+    if (widget.music.coverBytes != null &&
+        widget.music.coverBytes!.isNotEmpty) {
+      // 已有封面也压缩后再用
+      final small = await _resizeImage(widget.music.coverBytes!);
+      if (!mounted) return;
+      setState(() {
+        _coverBytes = small;
+        widget.music.coverBytes = small; // 回写小图，下次直接用
+      });
+      return;
+    }
+
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final updatedMusic = await MusicService.parse(widget.music.id);
+      final small = await _resizeImage(updatedMusic.coverBytes!);
+      if (mounted) {
+        setState(() {
+          _coverBytes = small;
+          widget.music.coverBytes = small; // 回写小图
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = Stopwatch()..start();
+
+    final w = MusicListItem(
+      id: widget.music.id,
+      title: widget.music.title,
+      artist: widget.music.artist,
+      duration: widget.music.duration,
+      coverBytes: _coverBytes,
+      onTap: widget.onTap,
+    );
+    debugPrint('AlbumDetailPage build: ${sw.elapsedMilliseconds}ms');
+    return w;
   }
 }
 

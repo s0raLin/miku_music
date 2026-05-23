@@ -5,7 +5,8 @@ import 'dart:typed_data';
 // import 'package:metadata_god/metadata_god.dart';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/src/rust/api/simple.dart';
+import 'package:myapp/src/rust/api/audio_info.dart';
+import 'package:myapp/src/rust/api/scanner.dart';
 
 // import 'package:on_audio_query_forked/on_audio_query.dart';
 import 'package:path_provider/path_provider.dart';
@@ -46,7 +47,7 @@ class MusicService {
     final artist = song.artist;
     final album = song.album;
     final duration = Duration(seconds: song.durationSeconds);
-    final coverBytes = song.picture;
+    final coverBytes = song.coverArt;
 
     debugPrint(
       "封面: ${coverBytes != null ? '${coverBytes.length} bytes' : 'null'} → $path",
@@ -96,29 +97,39 @@ class MusicService {
     List<String> selectedDirectories,
   ) async* {
     if (kIsWeb) return;
+
     for (final directoryPath in selectedDirectories) {
-      final dir = Directory(directoryPath);
+      // 1. 调用 Rust 的并行扫描，直接获取 Rust 返回的 Stream
+      // 注意：FRB 会把 Rust 的 `StreamSink<AudioMetadata>` 自动转换为 Dart 的 `Stream<AudioMetadata>`
+      final rustStream = scanDirectoryParallel(dirPath: directoryPath);
 
-      await for (final entity in dir.list(
-        recursive: true,
-        followLinks: false,
-      )) {
-        yield ScanProgress(currentPath: entity.path);
-        if (entity is File) {
-          final mimeType = lookupMimeType(entity.path);
-          if (mimeType != null && mimeType.startsWith("audio/")) {
-            try {
-              final music = await parse(entity.path);
+      await for (final rustMeta in rustStream) {
+        // 2. 收到 Rust 传回的基础元数据，先汇报路径
+        yield ScanProgress(currentPath: rustMeta.path);
 
-              //汇报解析成功的音乐数据
-              yield ScanProgress(currentPath: entity.path, music: music);
-            } catch (e, stack) {
-              debugPrint("解析失败: ${entity.path}");
-              debugPrint("错误: $e");
-              debugPrint("$stack");
-              continue;
-            }
+        try {
+          // 3. 补全 Dart 端的业务逻辑：查找外部歌词
+          String lyrics = "";
+          final baseName = p.withoutExtension(rustMeta.path);
+          final lrcFile = File("$baseName.lrc");
+          if (await lrcFile.exists()) {
+            lyrics = await lrcFile.readAsString();
           }
+
+          // 4. 组装成前端需要的 MusicInfo
+          final music = MusicInfo(
+            title: rustMeta.path,
+            artist: rustMeta.artist,
+            duration: Duration(seconds: rustMeta.durationSeconds),
+            coverBytes: null,
+            lyrics: lyrics,
+            id: rustMeta.path,
+          );
+
+          yield ScanProgress(currentPath: rustMeta.path, music: music);
+        } catch (e, stack) {
+          debugPrint("处理数据失败: ${rustMeta.path}, 错误: $e\n$stack");
+          continue;
         }
       }
     }

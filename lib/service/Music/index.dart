@@ -120,6 +120,7 @@ class MusicService {
           final music = MusicInfo(
             title: rustMeta.path,
             artist: rustMeta.artist,
+            album: rustMeta.album,
             duration: Duration(seconds: rustMeta.durationSeconds),
             coverBytes: null,
             lyrics: lyrics,

@@ -198,7 +198,6 @@ class ObservableMusicListItem extends StatefulWidget {
 }
 
 class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
-  Uint8List? _coverBytes;
   bool _isLoading = false;
 
   @override
@@ -230,7 +229,6 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
       final small = await _resizeImage(widget.music.coverBytes!);
       if (!mounted) return;
       setState(() {
-        _coverBytes = small;
         widget.music.coverBytes = small; // 回写小图，下次直接用
       });
       return;
@@ -244,7 +242,6 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
       final small = await _resizeImage(updatedMusic.coverBytes!);
       if (mounted) {
         setState(() {
-          _coverBytes = small;
           widget.music.coverBytes = small; // 回写小图
           _isLoading = false;
         });
@@ -267,7 +264,7 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
       child: MediaGridCard(
         title: widget.music.title,
         subtitle: widget.music.artist,
-        coverBytes: _coverBytes,
+        coverBytes: widget.music.coverBytes,
         fallbackIcon: Icon(Icons.music_note_rounded, size: 32),
         coverAspectRatio: 1.28,
         titleLines: 1,

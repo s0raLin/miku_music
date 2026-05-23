@@ -26,7 +26,7 @@ class AlbumCard extends StatelessWidget {
       fallbackIcon: Icon(Icons.album_rounded, size: 32),
       onTap: onTap,
       coverAspectRatio: 1.22,
-      titleLines: 2,
+      titleLines: 1,
       contentSpacing: 4,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
     );

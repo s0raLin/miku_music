@@ -11,13 +11,13 @@ class MusicInfo {
   final String? album;
 
   MusicInfo({
+    required this.id,
     required this.title,
     required this.artist,
     required this.duration,
     required this.coverBytes,
     required this.lyrics,
     this.album,
-    required this.id,
   });
 
   // 将对象转换为 Map

@@ -1,7 +1,7 @@
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     probe::Probe,
-    tag::Accessor,
+    tag::{Accessor, ItemKey},
 };
 
 /// 从音频文件中读取到的完整元数据
@@ -51,7 +51,10 @@ pub fn get_audio_info(path: &str) -> Result<AudioInfo, String> {
         .to_string();
 
     Ok(AudioInfo {
-        title: tag.title().map(|s| s.into_owned()).unwrap_or(file_stem),
+        title: tag
+            .title()
+            .map(|s| s.into_owned())
+            .unwrap_or(file_stem),
         artist: tag
             .artist()
             .map(|s| s.into_owned())

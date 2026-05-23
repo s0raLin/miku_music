@@ -98,13 +98,13 @@ class MusicService {
 
           // 4. 组装成前端需要的 MusicInfo
           final music = MusicInfo(
-            title: rustMeta.path,
+            id: rustMeta.path,
+            title: rustMeta.title,
             artist: rustMeta.artist,
             album: rustMeta.album,
             duration: Duration(seconds: rustMeta.durationSeconds),
             coverBytes: null,
             lyrics: lyrics,
-            id: rustMeta.path,
           );
 
           yield ScanProgress(currentPath: rustMeta.path, music: music);

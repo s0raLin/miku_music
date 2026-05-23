@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:myapp/api/Client/index.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/contants/Assets/index.dart';
+import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
 

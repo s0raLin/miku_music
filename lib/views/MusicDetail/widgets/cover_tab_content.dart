@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/contants/Assets/index.dart';
+import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';

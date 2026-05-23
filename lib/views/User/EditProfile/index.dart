@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/api/Model/User/index.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/contants/Assets/index.dart';
+import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
 

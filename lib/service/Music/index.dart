@@ -40,7 +40,6 @@ class MusicService {
   }
 
   static Future<MusicInfo> parse(String path) async {
-
     final song = await parseFlacFile(path: path);
     final title = song.title;
     final artist = song.artist;

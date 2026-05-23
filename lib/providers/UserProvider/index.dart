@@ -32,14 +32,12 @@ class UserProvider extends ChangeNotifier {
     _user = newUser;
     try {
       if (_user!.token != null && _user!.token!.isNotEmpty) {
-      await saveToken(_user!.token!);
-
-    }
+        await saveToken(_user!.token!);
+      }
     } catch (e) {
       print(e);
     }
     notifyListeners();
-
   }
 
   void logout() {

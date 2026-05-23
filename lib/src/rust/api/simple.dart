@@ -6,8 +6,8 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-Future<FlacAudioInfo> parseFlacFile({required String path}) =>
-    RustLib.instance.api.crateApiSimpleParseFlacFile(path: path);
+Future<FlacAudioInfo> getAudioInfo({required String path}) =>
+    RustLib.instance.api.crateApiSimpleGetAudioInfo(path: path);
 
 class FlacAudioInfo {
   final String title;

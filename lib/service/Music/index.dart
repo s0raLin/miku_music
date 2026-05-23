@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/src/rust/api/simple.dart';
+
 // import 'package:on_audio_query_forked/on_audio_query.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart'; // 用于 md5
@@ -40,7 +41,7 @@ class MusicService {
   }
 
   static Future<MusicInfo> parse(String path) async {
-    final song = await parseFlacFile(path: path);
+    final song = await getAudioInfo(path: path);
     final title = song.title;
     final artist = song.artist;
     final album = song.album;

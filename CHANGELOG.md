@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.20.0](https://github.com/s0raLin/miku_music/compare/v1.19.0...v1.20.0) (2026-05-23)
+
+
+### Features
+
+* **music:** implement parallel audio scanning via Rust ([ab328ee](https://github.com/s0raLin/miku_music/commit/ab328ee354d1d26cb9d3853238813ee00d020ac1))
+
+
+### Bug Fixes
+
+* **music:** map album metadata in MusicService ([cf3afd0](https://github.com/s0raLin/miku_music/commit/cf3afd03ac892336b8fbd45936eec8d2f30954b1))
+
 ## [1.19.0](https://github.com/s0raLin/miku_music/compare/v1.18.1...v1.19.0) (2026-05-22)
 
 

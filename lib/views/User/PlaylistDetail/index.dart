@@ -504,7 +504,20 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                               children: [
                                 // 💡 注意：原有的 playlist.name 标题组件已经移到了外层的 title 属性中
                                 // 这里留出相对应的空间，或者放置其他不需要固定在顶部的副标题信息
-                                const SizedBox(height: 28),
+                                Text(
+                                  (playlist.description != null &&
+                                          playlist.description!.isNotEmpty)
+                                      ? playlist.description!
+                                      : "暂无描述信息",
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme
+                                        .onSurfaceVariant, // 100% 的次要文本色，不加 alpha 减淡
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 6),
                                 Text(
                                   "${songs.length} 首歌曲",
                                   style: theme.textTheme.titleMedium?.copyWith(

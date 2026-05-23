@@ -294,7 +294,7 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
         ),
       ),
     );
-    ;
+
     debugPrint('AlbumDetailPage build: ${sw.elapsedMilliseconds}ms');
     return w;
   }

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 // import 'package:metadata_god/metadata_god.dart';
-import 'package:mime/mime.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:myapp/src/rust/api/scanner.dart';

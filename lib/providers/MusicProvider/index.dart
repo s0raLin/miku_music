@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
-import 'package:audio_service/audio_service.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:myapp/main.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/service/Audio/index.dart';

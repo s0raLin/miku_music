@@ -168,6 +168,7 @@ class MusicProvider extends ChangeNotifier {
   List<Playlist> get playlists => _playlists;
 
   String get favoritesPlaylistId => _favoritesPlaylistId;
+  String get recentPlaylistId => _recentPlaylistId;
 
   /// 用户自建歌单（排除系统歌单）。
   List<Playlist> get userPlaylists =>

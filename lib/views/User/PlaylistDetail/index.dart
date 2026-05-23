@@ -207,7 +207,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   void _showModalSideSheet({
     required BuildContext context,
     required Widget child,
-    double width = 300
+    double width = 300,
   }) {
     showGeneralDialog(
       context: context,
@@ -428,7 +428,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // 1. 沉浸式融合头部 (左对齐版本)
+          // 1. 沉浸式融合头部 (左对齐且支持标题收缩版本)
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
@@ -437,11 +437,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             scrolledUnderElevation: 2,
             leading: const BackButton(),
             actions: [
-              // 统一收纳为一个自适应“更多操作”按钮
               if (!isSystem)
                 Listener(
                   onPointerDown: (event) {
-                    // 在手指/鼠标按下的瞬间，记录它在屏幕上的绝对物理坐标
                     _actionMenuTapPosition = event.position;
                   },
                   child: IconButton(
@@ -451,12 +449,30 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                   ),
                 ),
             ],
+            // ✨ 关键改动：利用 FlexibleSpaceBar 自身的机制来实现标题的丝滑收缩
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
-              titlePadding: EdgeInsets.zero,
+              // 控制标题在展开和折叠状态下的内边距
+              titlePadding: EdgeInsets.only(
+                left: 56.0, // 折叠后，刚好避开左侧的返回按钮（BackButton 默认宽约 48-56）
+                bottom: 16.0, // 展开时，距离底部的间距
+                right: 56.0, // 避开右侧的 Action 按钮
+              ),
+              // 1. 这里的 title 会在滚动时自动放大/缩小、移动位置
+              title: Text(
+                playlist.name,
+                maxLines: 1, // 顶部栏通常只留一行
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              // 2. 这里的 background 负责承载封面、副标题和播放按钮
               background: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // 背景渐变色
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -469,6 +485,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       ),
                     ),
                   ),
+                  // 内容区域
                   SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -485,17 +502,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  playlist.name,
-                                  style: theme.textTheme.headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: colorScheme.onSurface,
-                                      ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 12),
+                                // 💡 注意：原有的 playlist.name 标题组件已经移到了外层的 title 属性中
+                                // 这里留出相对应的空间，或者放置其他不需要固定在顶部的副标题信息
+                                const SizedBox(height: 28),
                                 Text(
                                   "${songs.length} 首歌曲",
                                   style: theme.textTheme.titleMedium?.copyWith(
@@ -509,7 +518,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                     color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 16),
                                 FilledButton.icon(
                                   onPressed: songs.isNotEmpty
                                       ? () {
@@ -530,8 +539,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                   label: const Text("播放全部"),
                                   style: FilledButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
+                                      horizontal: 20,
+                                      vertical: 10,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),

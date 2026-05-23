@@ -15,7 +15,7 @@ import 'package:myapp/views/User/Files/AlumDetail/index.dart';
 import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/MusicDetail/index.dart';
 import 'package:myapp/views/User/Network/index.dart';
-import 'package:myapp/views/User/Recent/index.dart';
+import 'package:myapp/views/User/PlaylistDetail/Recent/index.dart';
 import 'package:myapp/views/NotFound/index.dart';
 import 'package:myapp/views/Settings/index.dart';
 import 'package:myapp/views/Splash/index.dart';
@@ -88,11 +88,6 @@ final List<AppNavItem> navItems = [
     label: "我的",
     routes: [
       GoRoute(
-        name: "recent",
-        path: "/recent", //访问路径为/profile/recent
-        builder: (context, state) => const RecentlyPlayedPage(),
-      ),
-      GoRoute(
         name: "files",
         path: "/files",
         builder: (context, state) {
@@ -124,6 +119,11 @@ final List<AppNavItem> navItems = [
             name: "favorites",
             path: "/favorites",
             builder: (context, state) => const FavoritesPage(),
+          ),
+          GoRoute(
+            name: "recent",
+            path: "/recent", //访问路径为/user/playlist/recent
+            builder: (context, state) => const RecentlyPlayedPage(),
           ),
           GoRoute(
             path: "/:id",

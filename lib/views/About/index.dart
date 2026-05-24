@@ -10,8 +10,6 @@ class AboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final version = context.select<MusicProvider, String>((p) => p.appVersion);
     final buildNumber = context.select<MusicProvider, String>(
       (p) => p.buildNumber,
@@ -30,55 +28,39 @@ class AboutPage extends StatelessWidget {
             title: const Text('关于'),
             centerTitle: false,
           ),
-
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
             sliver: SliverList.list(
               children: [
                 _AppBanner(version: version),
                 const SizedBox(height: 8),
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: _MetricCard(
-                          icon: Icons.new_releases_outlined,
-                          label: '版本号',
-                          value: 'v$version',
-                        ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MetricCard(
+                        icon: Icons.new_releases_outlined,
+                        label: '版本号',
+                        value: 'v$version',
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _MetricCard(
-                          icon: Icons.developer_board_outlined,
-                          label: '构建号',
-                          value: buildNumber,
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MetricCard(
+                        icon: Icons.developer_board_outlined,
+                        label: '构建号',
+                        value: buildNumber,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _AdaptiveRow(
-                  children: const [
-                    Expanded(flex: 3, child: _SystemInfoCard()),
-                    SizedBox(width: 8),
-                    Expanded(flex: 2, child: _FeaturesCard()),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
+                const _TechStackCard(),
+                const SizedBox(height: 8),
+                const _FeaturesCard(),
+                const SizedBox(height: 8),
                 const _LinksCard(),
                 const SizedBox(height: 24),
-                Center(
-                  child: Text(
-                    'M3Music · Built with Flutter & Material 3',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                _FooterText(),
               ],
             ),
           ),
@@ -89,7 +71,7 @@ class AboutPage extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 应用标识 Banner — M3 FilledCard
+// 应用标识 Banner
 // ─────────────────────────────────────────────────────────────────────────────
 class _AppBanner extends StatelessWidget {
   const _AppBanner({required this.version});
@@ -105,75 +87,50 @@ class _AppBanner extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: IntrinsicHeight(
-          // IntrinsicHeight 让左右两侧等高：
-          // 右侧文字有多高，左侧图标容器就有多高
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // AspectRatio(1:1) 保证始终正方形；
-              // 高度由 IntrinsicHeight 从右侧文字列推导，
-              // 因此图标的顶部和底部与文字列严格对齐
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.asset(
-                    MyAssets.mikulogo,
-                    fit: BoxFit.cover, // 或 BoxFit.fill，按图片比例选
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                MyAssets.mikulogo,
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'M3Music',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '跨平台音乐播放器',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      _VersionBadge(label: 'v$version'),
+                      _VersionBadge(label: 'Stable', filled: true),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'M3Music',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '跨平台音乐播放器',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        FilterChip(
-                          label: Text(
-                            'v$version',
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                          onSelected: null,
-                          selected: false,
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                        ),
-                        const SizedBox(width: 6),
-                        const FilterChip(
-                          label: Text('Stable', style: TextStyle(fontSize: 11)),
-                          onSelected: null,
-                          selected: true,
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -181,7 +138,35 @@ class _AppBanner extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 指标卡片 — M3 OutlinedCard
+// 版本徽标 — 用 Container 替代不可交互的 FilterChip
+// ─────────────────────────────────────────────────────────────────────────────
+class _VersionBadge extends StatelessWidget {
+  const _VersionBadge({required this.label, this.filled = false});
+
+  final String label;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontSize: 11,
+      color: filled ? cs.onSecondaryContainer : cs.onSurfaceVariant,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: filled ? cs.secondaryContainer : cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(label, style: textStyle),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 指标卡片 — M3 OutlinedCard，固定高度避免 IntrinsicHeight
 // ─────────────────────────────────────────────────────────────────────────────
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
@@ -207,26 +192,28 @@ class _MetricCard extends StatelessWidget {
           children: [
             Icon(icon, size: 20, color: cs.primary),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface,
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -236,10 +223,17 @@ class _MetricCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 系统信息 — M3 ElevatedCard
+// 技术栈卡片 — 独立全宽卡片，使用标准 ListTile
 // ─────────────────────────────────────────────────────────────────────────────
-class _SystemInfoCard extends StatelessWidget {
-  const _SystemInfoCard();
+class _TechStackCard extends StatelessWidget {
+  const _TechStackCard();
+
+  static const _items = [
+    (label: '框架', value: 'Flutter 3.x'),
+    (label: '设计系统', value: 'Material 3'),
+    (label: '分发平台', value: 'GitHub'),
+    (label: '协议', value: 'MIT License'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -248,42 +242,58 @@ class _SystemInfoCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
               children: [
                 Icon(Icons.info_outline_rounded, size: 18, color: cs.secondary),
                 const SizedBox(width: 8),
                 Text(
                   '技术栈',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: cs.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const Divider(height: 20),
-            _InfoRow(label: '框架', value: 'Flutter 3.x'),
-            const SizedBox(height: 6),
-            _InfoRow(label: '设计系统', value: 'Material 3'),
-            const SizedBox(height: 6),
-            _InfoRow(label: '分发平台', value: 'GitHub'),
-            const SizedBox(height: 6),
-            _InfoRow(label: '协议', value: 'MIT License'),
-          ],
-        ),
+          ),
+          const Divider(height: 20, indent: 16, endIndent: 16),
+          for (final item in _items)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    item.label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    item.value,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 特性标签 — M3 Card + Chip
+// 核心特性卡片 — 独立全宽，M3 AssistChip 替代自定义 Chip
 // ─────────────────────────────────────────────────────────────────────────────
 class _FeaturesCard extends StatelessWidget {
   const _FeaturesCard();
@@ -317,18 +327,17 @@ class _FeaturesCard extends StatelessWidget {
             ),
             const Divider(height: 20),
             Wrap(
-              spacing: 6,
-              runSpacing: 6,
+              spacing: 8,
+              runSpacing: 8,
               children: _features
                   .map(
                     (f) => Chip(
-                      label: Text(f),
-                      labelStyle: theme.textTheme.labelSmall,
+                      label: Text(f, style: theme.textTheme.labelSmall),
                       visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
                       side: BorderSide.none,
                       backgroundColor: cs.secondaryContainer,
                       labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                     ),
                   )
                   .toList(),
@@ -341,7 +350,7 @@ class _FeaturesCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 链接列表 — M3 ElevatedCard + 原生 ListTile
+// 链接列表 — clipBehavior + 标准 ListTile
 // ─────────────────────────────────────────────────────────────────────────────
 class _LinksCard extends StatelessWidget {
   const _LinksCard();
@@ -389,7 +398,7 @@ class _LinksCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 链接行 — 严格原生 M3 ListTile
+// 链接行
 // ─────────────────────────────────────────────────────────────────────────────
 class _LinkTile extends StatelessWidget {
   const _LinkTile({
@@ -434,54 +443,20 @@ class _LinkTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 辅助：信息键值行
+// 页脚
 // ─────────────────────────────────────────────────────────────────────────────
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
+class _FooterText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
+    return Center(
+      child: Text(
+        'M3Music · Built with Flutter & Material 3',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-        Text(
-          value,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: cs.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 辅助：自适应横向布局
-// ─────────────────────────────────────────────────────────────────────────────
-class _AdaptiveRow extends StatelessWidget {
-  const _AdaptiveRow({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: children,
+        textAlign: TextAlign.center,
       ),
     );
   }

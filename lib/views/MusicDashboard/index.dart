@@ -66,6 +66,8 @@ class _CompactLayout extends StatelessWidget {
         SizedBox(height: 12),
         _PlaybackControlCard(),
         SizedBox(height: 12),
+        _VolumeControlCard(),
+        SizedBox(height: 12),
         _AudioInfoCard(),
         SizedBox(height: 12),
         _OutputDeviceCard(),
@@ -87,6 +89,8 @@ class _WideLayout extends StatelessWidget {
               _NowPlayingCard(),
               SizedBox(height: 12),
               _PlaybackControlCard(),
+              SizedBox(height: 12),
+              _VolumeControlCard(),
             ],
           ),
         ),
@@ -378,5 +382,75 @@ class _OutputDeviceCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _VolumeControlCard extends StatefulWidget {
+  const _VolumeControlCard();
+
+  @override
+  State<_VolumeControlCard> createState() => _VolumeControlCardState();
+}
+
+class _VolumeControlCardState extends State<_VolumeControlCard> {
+  double _volume = 0.5;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: SliderTheme(
+        data: SliderTheme.of(context).copyWith(
+          trackHeight: 56,
+          trackShape: const RoundedRectSliderTrackShape(),
+          thumbShape: const NoThumbShape(),
+          overlayShape: SliderComponentShape.noOverlay,
+        ),
+        child: Stack(
+          children: [
+            Slider(
+              value: _volume,
+              onChanged: (v) {
+                setState(() {
+                  _volume = v;
+                });
+              },
+            ),
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 20,
+              child: Icon(Icons.volume_up_rounded, size: 36),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class NoThumbShape extends SliderComponentShape {
+  const NoThumbShape();
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    return const Size(0, 0);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    // 什么都不画 = 完全隐藏
   }
 }

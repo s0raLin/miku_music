@@ -36,12 +36,6 @@ class MusicDashboardPage extends StatelessWidget {
                         icon: const Icon(Icons.menu_rounded),
                       ),
                       title: const Text('M3Music'),
-                      actions: [
-                        IconButton(
-                          onPressed: () => context.push('/settings'),
-                          icon: const Icon(Icons.settings_rounded),
-                        ),
-                      ],
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),

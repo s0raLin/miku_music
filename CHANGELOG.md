@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.21.0](https://github.com/s0raLin/miku_music/compare/v1.20.0...v1.21.0) (2026-05-24)
+
+
+### Features
+
+* **music:** implement audio database management via Rust ([03dd62a](https://github.com/s0raLin/miku_music/commit/03dd62a5f1cd4c5a6aa900c1ee5748952bb4fc31))
+* **ui:** display playlist description in detail view ([84ef311](https://github.com/s0raLin/miku_music/commit/84ef311d242a3375c180779ae942a107c1ffd0d4))
+* **ui:** implement data-driven drawer and update playlist routing ([5363dbe](https://github.com/s0raLin/miku_music/commit/5363dbe6500684cef43580c948499b92e4940742))
+* **ui:** implement desktop window controls and custom header component ([ccb623a](https://github.com/s0raLin/miku_music/commit/ccb623a822bfd1e4a46d68d9c7d9b1ff4f124b54))
+
+
+### Bug Fixes
+
+* **music:** use metadata for title instead of file path ([b838643](https://github.com/s0raLin/miku_music/commit/b8386430fbb73a6f79af3b3f5b7c896443c7c273))
+
+
+### Performance Improvements
+
+* **music:** optimize library rendering and memory usage ([1412fa1](https://github.com/s0raLin/miku_music/commit/1412fa11e301745f0b5b5e9f4753017009b90182))
+
 ## [1.20.0](https://github.com/s0raLin/miku_music/compare/v1.19.0...v1.20.0) (2026-05-23)
 
 

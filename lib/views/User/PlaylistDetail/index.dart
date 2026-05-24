@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/views/Music/widgets/library_tab.dart';
 import 'package:provider/provider.dart';
 
 class PlaylistDetailPage extends StatefulWidget {
@@ -32,6 +35,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   void _showResponsiveActionMenu(BuildContext context, Playlist playlist) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 600;
+
+    final mp = context.read<MusicProvider>();
+    final library = mp.library;
 
     // 定义统一的菜单项数据结构，方便复用
     final menuItems = [
@@ -70,10 +76,11 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       Expanded(
                         child: ListView.builder(
                           // 假设你有一个歌曲数据列表，这里换成你自己的 List 长度即可
-                          itemCount: 50,
+                          itemCount: library.length,
                           // 开启预加载，提升鼠标滚动或手指滑动时的流畅度
                           cacheExtent: 100,
                           itemBuilder: (context, index) {
+                            final music = library[index];
                             // 每一个歌单行组件（支持懒加载，滑到屏幕内才会渲染）
                             return ListTile(
                               contentPadding: const EdgeInsets.symmetric(
@@ -90,16 +97,18 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 ),
                                 child: const Icon(Icons.music_note_rounded),
                               ),
-                              title: Text("测试歌曲名称 #$index"),
-                              subtitle: Text("歌手名字 - 专辑 $index"),
+                              title: Text(music.title),
+                              subtitle: Text(
+                                "${music.artist} - ${music.album}",
+                              ),
                               trailing: IconButton(
                                 icon: const Icon(
                                   Icons.add_circle_outline_rounded,
                                 ),
                                 color: Theme.of(context).colorScheme.primary,
                                 onPressed: () {
-                                  // TODO: 执行添加歌曲的逻辑
-                                  print("点击了添加第 $index 首歌曲");
+                                  debugPrint("点击了添加第 $index 首歌曲");
+                                  mp.addToPlaylist(widget.playlistId, music);
                                 },
                               ),
                             );

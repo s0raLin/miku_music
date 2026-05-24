@@ -1,5 +1,4 @@
 // ─── HomePage ─────────────────────────────────────────────────────────────────
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -7,11 +6,8 @@ import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
-import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/service/Music/index.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui' as ui;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -146,7 +142,7 @@ class _HomePageState extends State<HomePage> {
                       },
                       itemBuilder: (context, index) {
                         final item = history[index];
-                        return ObservableMusicListItem(
+                        return ObservableGridCard(
                           index: index,
                           music: item,
                           onTap: () {
@@ -168,119 +164,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class ObservableMusicListItem extends StatefulWidget {
-  final int index;
-  final MusicInfo music;
-  final VoidCallback? onTap;
-
-  const ObservableMusicListItem({
-    super.key,
-    required this.music,
-    this.onTap,
-    required this.index,
-  });
-
-  @override
-  State<ObservableMusicListItem> createState() =>
-      _ObservableMusicListItemState();
-}
-
-class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    debugPrint('initState: ${widget.music.title}');
-    _loadCover();
-  }
-
-  // 加这个方法
-  Future<Uint8List?> _resizeImage(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(
-      bytes,
-      targetWidth: 144,
-      targetHeight: 144,
-    );
-    final frame = await codec.getNextFrame();
-    final byteData = await frame.image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-    frame.image.dispose();
-    return byteData?.buffer.asUint8List();
-  }
-
-  void _loadCover() async {
-    if (widget.music.coverBytes != null &&
-        widget.music.coverBytes!.isNotEmpty) {
-      // 已有封面也压缩后再用
-      final small = await _resizeImage(widget.music.coverBytes!);
-      if (!mounted) return;
-      setState(() {
-        widget.music.coverBytes = small; // 回写小图，下次直接用
-      });
-      return;
-    }
-
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-
-    try {
-      final updatedMusic = await MusicService.parse(widget.music.id);
-      final small = await _resizeImage(updatedMusic.coverBytes!);
-      if (mounted) {
-        setState(() {
-          widget.music.coverBytes = small; // 回写小图
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final badgeBackground = colorScheme.surfaceContainerHigh.withValues(
-      alpha: colorScheme.brightness == Brightness.dark ? 0.88 : 0.82,
-    );
-
-    return SizedBox(
-      width: 156,
-      child: MediaGridCard(
-        title: widget.music.title,
-        subtitle: widget.music.artist,
-        coverBytes: widget.music.coverBytes,
-        fallbackIcon: Icon(Icons.music_note_rounded, size: 32),
-        coverAspectRatio: 1.28,
-        titleLines: 1,
-        contentSpacing: 2,
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        onTap: widget.onTap,
-        badge: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: badgeBackground,
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-            ),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            '#${widget.index + 1}',
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
 # M3Music
 
-基于 Flutter 的跨平台本地音乐播放器项目，当前代码已实现启动初始化、本地音乐扫描、播放控制、主题切换、歌单/收藏/历史恢复，以及可选的登录注册接口对接。
+基于 Flutter + Rust 的跨平台本地音乐播放器项目，当前代码已实现启动初始化、本地音乐扫描（Rust 并行）、播放控制、主题切换、歌单/收藏/历史恢复、歌词在线搜索、网易云歌单导入，以及可选的登录注册接口对接。
 
 ## 项目概览
 
@@ -39,18 +39,18 @@
 ### 3. 音乐播放与媒体库
 
 - `MusicProvider` 位于 [lib/providers/MusicProvider/index.dart](lib/providers/MusicProvider/index.dart)，负责：
-  - 播放/暂停
-  - 上一首/下一首
-  - 音量持久化
-  - 播放队列管理
-  - 收藏与历史记录
-  - 用户歌单恢复
-  - 歌词解析结果缓存
-  - 版本号读取
+  - 播放/暂停、上一首/下一首
+  - 三种播放模式：顺序播放、随机播放、单曲循环
+  - 音量持久化（SharedPreferences）
+  - 播放队列管理（增删、替换、清空）
+  - 收藏与播放历史（上限 200 条，持久化到本地）
+  - 用户歌单 CRUD（含系统歌单：我喜欢、最近播放）
+  - LRC 歌词解析与缓存，支持在线搜索与编辑保存
+  - 应用版本号读取（package_info_plus）
 - 本地扫描逻辑位于 [lib/service/Music/index.dart](lib/service/Music/index.dart)：
-  - 递归扫描已保存目录
-  - 通过 `mime` 判断音频文件
-  - 使用 `metadata_god` 读取标题、歌手、专辑、时长和封面
+  - 调用 Rust 层 [rust/src/api/scanner.rs](rust/src/api/scanner.rs) 使用 `jwalk` 并行递归扫描目录
+  - 通过 Rust 的 `lofty` 库读取标题、歌手、专辑、时长和封面图片
+  - 支持 MP3 / FLAC / M4A / OGG / WAV 等主流格式
   - 自动读取同名 `.lrc` 歌词文件
 - 文件目录管理位于 [lib/service/Files/index.dart](lib/service/Files/index.dart)，扫描目录会持久化到 `SharedPreferences`。
 
@@ -58,19 +58,32 @@
 
 - 主题状态位于 [lib/providers/ThemeProvider/index.dart](lib/providers/ThemeProvider/index.dart)。
 - 当前代码中可确认的设置项包括：
-  - 主题模式
-  - 主题种子色
-  - 列表密度
-  - 音质选项
+  - 主题模式（浅色/深色/跟随系统）
+  - 主题种子色（8 种预设色，含 Material 3 颜色调和 blend.harmonize）
+  - 列表密度（紧凑/正常/宽松）
+  - 音质选项（低/标准/高）
   - 歌词页是否显示封面
   - 启动时自动播放
   - 通知栏详情显示
   - 双击列表项快速播放
-  - 播放列表排序方式
-  - 最大历史记录数量
+  - 播放列表排序方式（添加时间/名称/随机）
+  - 最大历史记录数量（50/100/300/500）
 - 设置持久化由 [lib/service/Settings/index.dart](lib/service/Settings/index.dart) 完成。
 
-### 5. 登录与后端接口
+### 5. 歌词功能
+
+- 本地歌词：自动读取与音频文件同名的 `.lrc` 文件
+- 在线搜索：通过 [lrclib.net](https://lrclib.net) API 按歌手+歌名搜索滚动歌词
+- 歌词编辑：支持编辑当前歌词并保存到本地
+- 实时同步：歌词随播放进度实时高亮，自动滚动定位
+
+### 6. 网易云音乐集成
+
+- 位于 [lib/api/NeteaseCloudMusic/index.dart](lib/api/NeteaseCloudMusic/index.dart)
+- 支持通过用户 ID 导入网易云公开歌单
+- 歌单数据会合并到本地歌单管理中
+
+### 7. 登录与后端接口
 
 - 登录/注册页位于 [lib/views/Login/index.dart](lib/views/Login/index.dart)。
 - 认证接口封装位于 [lib/api/Client/Auth/index.dart](lib/api/Client/Auth/index.dart)。
@@ -81,12 +94,12 @@
 
 当前仓库还没有统一维护的正式截图，这里先放入占位图，后续可以直接替换同名文件。
 
-| 页面 | 占位图 |
-| --- | --- |
-| 启动页 | ![启动页占位](docs/previews/splash-placeholder.svg) |
-| 音乐库 | ![音乐库占位](docs/previews/library-placeholder.svg) |
+| 页面     | 占位图                                                |
+| -------- | ----------------------------------------------------- |
+| 启动页   | ![启动页占位](docs/previews/splash-placeholder.svg)   |
+| 音乐库   | ![音乐库占位](docs/previews/library-placeholder.svg)  |
 | 播放详情 | ![播放详情占位](docs/previews/player-placeholder.svg) |
-| 设置页 | ![设置页占位](docs/previews/settings-placeholder.svg) |
+| 设置页   | ![设置页占位](docs/previews/settings-placeholder.svg) |
 
 ## 目录结构
 

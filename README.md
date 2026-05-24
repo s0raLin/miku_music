@@ -96,10 +96,10 @@
 
 | 页面     | 占位图                                                |
 | -------- | ----------------------------------------------------- |
-| 启动页   | ![启动页占位](docs/previews/splash-placeholder.svg)   |
-| 音乐库   | ![音乐库占位](docs/previews/library-placeholder.svg)  |
-| 播放详情 | ![播放详情占位](docs/previews/player-placeholder.svg) |
-| 设置页   | ![设置页占位](docs/previews/settings-placeholder.svg) |
+| 启动页   | ![启动页占位](docs/previews/splash.png)   |
+| 音乐库   | ![音乐库占位](docs/previews/library.png)  |
+| 播放详情 | ![播放详情占位](docs/previews/player.png) |
+| 设置页   | ![设置页占位](docs/previews/settings.png) |
 
 ## 目录结构
 

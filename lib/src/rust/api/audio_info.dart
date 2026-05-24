@@ -15,6 +15,9 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 Future<AudioInfo> getAudioInfo({required String path}) =>
     RustLib.instance.api.crateApiAudioInfoGetAudioInfo(path: path);
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<str>>
+abstract class Str implements RustOpaqueInterface {}
+
 /// 从音频文件中读取到的完整元数据
 class AudioInfo {
   final String title;
@@ -32,6 +35,11 @@ class AudioInfo {
     required this.durationSeconds,
     this.coverArt,
   });
+
+  static Future<List<LyricLine>> parseLrc({Str? lrcContent}) => RustLib
+      .instance
+      .api
+      .crateApiAudioInfoAudioInfoParseLrc(lrcContent: lrcContent);
 
   @override
   int get hashCode =>
@@ -51,4 +59,22 @@ class AudioInfo {
           album == other.album &&
           durationSeconds == other.durationSeconds &&
           coverArt == other.coverArt;
+}
+
+class LyricLine {
+  final Duration time;
+  final String text;
+
+  const LyricLine({required this.time, required this.text});
+
+  @override
+  int get hashCode => time.hashCode ^ text.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LyricLine &&
+          runtimeType == other.runtimeType &&
+          time == other.time &&
+          text == other.text;
 }

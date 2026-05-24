@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:provider/provider.dart';
 
 // ─── 断点 ────────────────────────────────────────────────
 const double _kCompactBreakpoint = 700;
@@ -120,13 +122,8 @@ class _NowPlayingCard extends StatefulWidget {
 }
 
 class _NowPlayingCardState extends State<_NowPlayingCard> {
-  double _progress = 0.45;
-  static const double _totalSeconds = 225;
-
-  String _formatTime(double seconds) {
-    final d = Duration(seconds: seconds.toInt());
-    return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
-  }
+  // double _progress = 0.45;
+  // static const double _totalSeconds = 225;
 
   @override
   Widget build(BuildContext context) {
@@ -144,13 +141,7 @@ class _NowPlayingCardState extends State<_NowPlayingCard> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final narrow = constraints.maxWidth < _kCardBreakpoint;
-              final content = _NowPlayingContent(
-                theme: theme,
-                colorScheme: cs,
-                progress: _progress,
-                onProgressChanged: (v) => setState(() => _progress = v),
-                elapsed: _formatTime(_progress * _totalSeconds),
-              );
+              final content = _NowPlayingContent();
               return narrow
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,77 +193,91 @@ class _AlbumCover extends StatelessWidget {
 }
 
 class _NowPlayingContent extends StatelessWidget {
-  const _NowPlayingContent({
-    required this.theme,
-    required this.colorScheme,
-    required this.progress,
-    required this.onProgressChanged,
-    required this.elapsed,
-  });
+  const _NowPlayingContent();
 
-  final ThemeData theme;
-  final ColorScheme colorScheme;
-  final double progress;
-  final ValueChanged<double> onProgressChanged;
-  final String elapsed;
+  String _formatTime(double seconds) {
+    final d = Duration(seconds: seconds.toInt());
+    return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final cs = colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'NOW PLAYING',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: cs.onSecondaryContainer.withValues(alpha: 0.7),
-            letterSpacing: 1.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Blinding Lights',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: cs.onSecondaryContainer,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'The Weeknd',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: cs.onSecondaryContainer.withValues(alpha: 0.8),
-          ),
-        ),
-        const SizedBox(height: 20),
-        WavySlider(
-          value: progress,
-          onChanged: onProgressChanged,
-          activeColor: cs.primary,
-          inactiveColor: cs.outlineVariant,
-          thumbColor: cs.primary,
-        ),
-        const SizedBox(height: 6),
-        Row(
+    final cs = Theme.of(context).colorScheme;
+    final ts = Theme.of(context).textTheme;
+    final mp = context.read<MusicProvider>();
+    return StreamBuilder(
+      stream: mp.positionDataStream,
+      builder: (context, snapshot) {
+        final pos =
+            snapshot.data ??
+            PositionData(Duration.zero, Duration.zero, Duration.zero);
+        final value = pos.duration.inMilliseconds > 0
+            ? (pos.position.inMilliseconds / pos.duration.inMilliseconds).clamp(
+                0.0,
+                1.0,
+              )
+            : 0.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              elapsed,
-              style: theme.textTheme.bodySmall?.copyWith(
+              'NOW PLAYING',
+              style: ts.labelSmall?.copyWith(
                 color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+                letterSpacing: 1.5,
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 6),
             Text(
-              '3:45',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+              'Blinding Lights',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: ts.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: cs.onSecondaryContainer,
               ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'The Weeknd',
+              style: ts.bodyMedium?.copyWith(
+                color: cs.onSecondaryContainer.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(height: 20),
+            WavySlider(
+              value: value,
+              onChanged: (v) => mp.player.seek(
+                Duration(
+                  milliseconds: (pos.duration.inMilliseconds * v).toInt(),
+                ),
+              ),
+              activeColor: cs.primary,
+              inactiveColor: cs.outlineVariant,
+              thumbColor: cs.primary,
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Text(
+                  _formatTime(pos.position.inSeconds.toDouble()),
+                  style: ts.bodySmall?.copyWith(
+                    color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  _formatTime(pos.duration.inSeconds.toDouble()),
+                  style: ts.bodySmall?.copyWith(
+                    color: cs.onSecondaryContainer.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -393,10 +398,11 @@ class _VolumeControlCard extends StatefulWidget {
 }
 
 class _VolumeControlCardState extends State<_VolumeControlCard> {
-  double _volume = 0.5;
+  double _volume = 0;
 
   @override
   Widget build(BuildContext context) {
+    final mp = context.read<MusicProvider>();
     return Expanded(
       child: SliderTheme(
         data: SliderTheme.of(context).copyWith(
@@ -409,8 +415,10 @@ class _VolumeControlCardState extends State<_VolumeControlCard> {
           children: [
             Slider(
               value: _volume,
+
               onChanged: (v) {
                 setState(() {
+                  mp.setVolume(v);
                   _volume = v;
                 });
               },

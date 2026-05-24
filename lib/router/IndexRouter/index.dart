@@ -191,6 +191,8 @@ final _routes = [
       );
     },
   ),
+
+  
   GoRoute(
     name: "settings",
     path: "/settings",

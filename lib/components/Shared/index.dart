@@ -775,8 +775,8 @@ class WavySlider extends StatefulWidget {
     this.activeColor,
     this.inactiveColor,
     this.thumbColor,
-    this.amplitude = 5.0,
-    this.wavelength = 24.0,
+    this.amplitude = 2.5,
+    this.wavelength = 32.0,
     this.strokeWidth = 3.0,
     this.thumbRadius = 7.0,
     this.height = 44.0,
@@ -863,8 +863,9 @@ class _WavyPainter extends CustomPainter {
   final double strokeWidth;
   final double thumbRadius;
 
-  double _waveY(double x, double cy) {
-    return cy + math.sin(x / wavelength * math.pi * 2) * amplitude;
+  double _waveY(double x, double cy, double phaseOffset) {
+    return cy +
+        math.sin((x + phaseOffset) / wavelength * math.pi * 2) * amplitude;
   }
 
   @override
@@ -892,10 +893,10 @@ class _WavyPainter extends CustomPainter {
     // ── 已播放：正弦波 ──
     if (splitX > 0) {
       final path = Path();
-      path.moveTo(0, _waveY(0, cy));
+      path.moveTo(0, _waveY(0, cy, splitX));
       // 每 1px 采样一次，曲线足够平滑
       for (double x = 1; x <= splitX; x++) {
-        path.lineTo(x, _waveY(x, cy));
+        path.lineTo(x, _waveY(x, cy, splitX));
       }
       canvas.drawPath(path, activePaint);
     }
@@ -923,60 +924,6 @@ class _WavyPainter extends CustomPainter {
       old.wavelength != wavelength;
 }
 
-// ─────────────────────────────────────────────
-// 用法示例（接入原 MusicDashboardPage）
-// ─────────────────────────────────────────────
-
-class WavySliderDemo extends StatefulWidget {
-  const WavySliderDemo({super.key});
-
-  @override
-  State<WavySliderDemo> createState() => _WavySliderDemoState();
-}
-
-class _WavySliderDemoState extends State<WavySliderDemo> {
-  double _progress = 0.45;
-
-  String _formatTime(double progress) {
-    final totalSeconds = (progress * 225).toInt();
-    final m = totalSeconds ~/ 60;
-    final s = totalSeconds % 60;
-    return '$m:${s.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Column(
-      children: [
-        WavySlider(
-          value: _progress,
-          onChanged: (v) => setState(() => _progress = v),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Text(
-              _formatTime(_progress),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSecondaryContainer,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '3:45',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSecondaryContainer,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
 
 class ObservableGridCard extends StatefulWidget {
   final int index;

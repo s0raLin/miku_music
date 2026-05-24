@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.0](https://github.com/s0raLin/miku_music/compare/v1.21.0...v1.22.0) (2026-05-24)
+
+
+### Features
+
+* **audio:** add LRC lyric parsing functionality ([255d697](https://github.com/s0raLin/miku_music/commit/255d69772e803644c2c6e5db07ffd45972006a1f))
+* **playlist:** integrate music library for song selection ([f164abd](https://github.com/s0raLin/miku_music/commit/f164abd5848276ee7e3b01d6e4759073ab80e197))
+
 ## [1.21.0](https://github.com/s0raLin/miku_music/compare/v1.20.0...v1.21.0) (2026-05-24)
 
 

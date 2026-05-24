@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -18,7 +19,7 @@ class _LyricsSectionState extends State<LyricsSection>
     with AutomaticKeepAliveClientMixin {
   final ItemScrollController _scrollController = ItemScrollController();
   int _lastAutoScrollIndex = -1;
-  List<Map<String, dynamic>> _prevLyrics = [];
+  List<LyricLine> _prevLyrics = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -33,13 +34,10 @@ class _LyricsSectionState extends State<LyricsSection>
     }
   }
 
-  bool _lyricsEqual(
-    List<Map<String, dynamic>> a,
-    List<Map<String, dynamic>> b,
-  ) {
+  bool _lyricsEqual(List<LyricLine> a, List<LyricLine> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
-      if (a[i]['time'] != b[i]['time'] || a[i]['text'] != b[i]['text']) {
+      if (a[i].timeMs != b[i].timeMs || a[i].text != b[i].text) {
         return false;
       }
     }
@@ -87,11 +85,11 @@ class _LyricsSectionState extends State<LyricsSection>
     return StreamBuilder<PositionData>(
       stream: context.read<MusicProvider>().positionDataStream,
       builder: (context, snapshot) {
-        final position = snapshot.data?.position ?? Duration.zero;
+        final positionMs = snapshot.data?.position.inMilliseconds ?? 0;
 
         int currentIndex = 0;
         for (var i = 0; i < lyrics.length; i++) {
-          if (position >= (lyrics[i]['time'] as Duration)) {
+          if (positionMs >= lyrics[i].timeMs) {
             currentIndex = i;
           } else {
             break;
@@ -165,7 +163,8 @@ class _LyricsSectionState extends State<LyricsSection>
 
                 return InkWell(
                   onTap: () => context.read<MusicProvider>().player.seek(
-                    item['time'] as Duration,
+                    // item['time'] as Duration,
+                    Duration(milliseconds: item.timeMs),
                   ),
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
@@ -178,9 +177,7 @@ class _LyricsSectionState extends State<LyricsSection>
                       curve: Curves.easeOut,
                       style: style,
                       child: Text(
-                        (item['text'] as String).isEmpty
-                            ? '\u00a0'
-                            : item['text'] as String,
+                        item.text.isEmpty ? '\u00a0' : item.text,
                         textAlign: TextAlign.center,
                       ),
                     ),

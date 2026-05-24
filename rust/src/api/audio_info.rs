@@ -1,12 +1,13 @@
-use std::{sync::OnceLock, time::Duration};
+use std::{sync::OnceLock};
 
+
+// use chrono::Duration;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     probe::Probe,
-    tag::{Accessor, ItemKey},
+    tag::{Accessor},
 };
-use once_cell::sync::Lazy;
-use rayon::iter::Map;
+
 use regex::Regex;
 
 /// 从音频文件中读取到的完整元数据
@@ -21,7 +22,7 @@ pub struct AudioInfo {
 }
 
 pub struct LyricLine {
-    pub time: Duration,
+    pub time_ms: i64,
     pub text: String,
 }
 
@@ -78,7 +79,7 @@ pub fn get_audio_info(path: &str) -> Result<AudioInfo, String> {
 // 声明一个全局只编译一次的正则表达式对象
 static LRC_REGEX: OnceLock<Regex> = OnceLock::new();
 impl AudioInfo {
-    pub fn parse_lrc(lrc_content: Option<&str>) -> Vec<LyricLine> {
+    pub fn parse_lrc(lrc_content: Option<String>) -> Vec<LyricLine> {
         let content = match lrc_content {
             Some(value) => value,
             None => return Vec::new(),
@@ -95,17 +96,17 @@ impl AudioInfo {
 
                 let text = caps.get(3).unwrap().as_str().trim().to_string();
 
-                let total_ms = (min * 60_000) + (sec * 1000.0) as u64;
-                let duration = Duration::from_millis(total_ms);
+                let time_ms = (min * 60_000) + (sec * 1000.0) as i64;
+                // let duration = Duration::milliseconds(total_ms);
 
                 lyrics.push(LyricLine {
-                    time: duration,
+                    time_ms,
                     text,
                 });
             }
         }
 
-        lyrics.sort_by(|a, b| a.time.cmp(&b.time));
+        lyrics.sort_by_key(|line| line.time_ms);
 
         lyrics
     }

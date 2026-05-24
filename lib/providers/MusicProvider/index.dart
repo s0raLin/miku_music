@@ -8,6 +8,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/service/Audio/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -187,8 +188,8 @@ class MusicProvider extends ChangeNotifier {
   // ───────────────────────────
 
   /// 当前歌曲的歌词列表，每项包含 `time`（Duration）和 `text`（String）。
-  List<Map<String, dynamic>> _currentLyrics = [];
-  List<Map<String, dynamic>> get currentLyrics => _currentLyrics;
+  List<LyricLine> _currentLyrics = [];
+  List<LyricLine> get currentLyrics => _currentLyrics;
 
   // ─────────────────────────────────────────────
   // 构造函数
@@ -285,32 +286,10 @@ class MusicProvider extends ChangeNotifier {
   ///
   /// 支持标准 `[MM:SS.xx]` 时间标签格式，解析结果按时间升序排列。
   /// 若 [lrcContent] 为空则返回空列表。
-  List<Map<String, dynamic>> _parseLrc(String? lrcContent) {
+  Future<List<LyricLine>> _parseLrc(String? lrcContent) async {
     if (lrcContent == null || lrcContent.isEmpty) return [];
 
-    final lyrics = <Map<String, dynamic>>[];
-    final regExp = RegExp(r'\[(\d+):(\d+\.\d+)\](.*)');
-
-    for (final line in lrcContent.split('\n')) {
-      final match = regExp.firstMatch(line);
-      if (match != null) {
-        final min = int.parse(match.group(1)!);
-        final sec = double.parse(match.group(2)!);
-        final text = match.group(3)!.trim();
-
-        lyrics.add({
-          'time': Duration(milliseconds: (min * 60000 + sec * 1000).toInt()),
-          'text': text,
-        });
-      }
-    }
-
-    // 防止歌词文件中时间标签乱序
-    lyrics.sort(
-      (a, b) => (a['time'] as Duration).compareTo(b['time'] as Duration),
-    );
-
-    return lyrics;
+    return await MusicService.parseLyrics(lrcContent);
   }
 
   Future<void> setCurrentLrc(String? lrcContent) async {
@@ -320,7 +299,7 @@ class MusicProvider extends ChangeNotifier {
     final currentMusic = _queue[_currentIndex];
 
     //调用解析器,将String转化成List<Map>
-    _currentLyrics = _parseLrc(lrcContent);
+    _currentLyrics = await _parseLrc(lrcContent);
 
     notifyListeners();
 
@@ -432,7 +411,8 @@ class MusicProvider extends ChangeNotifier {
     final music = _queue[index];
 
     // 解析歌词（必须创建新列表实例，确保 Provider selector 能检测到变化）
-    _currentLyrics = _parseLrc(music.lyrics);
+    // _currentLyrics = _parseLrc(music.lyrics);
+    _currentLyrics = await _parseLrc(music.lyrics);
 
     // 先通知 UI 更新歌词，再执行耗时的音频加载
     notifyListeners();

@@ -116,6 +116,10 @@ class MusicService {
     }
   }
 
+  static Future<List<LyricLine>> parseLyrics(String? lrcContent) async {
+    return await AudioInfo.parseLrc(lrcContent: lrcContent);
+  }
+
   //保存歌词
   static Future<void> saveLyrics(String? lrcContent, String path) async {
     if (lrcContent == null || lrcContent.isEmpty) return;

@@ -12,6 +12,11 @@ class MyAssets {
   static const String prev = "assets/prev.png";
   static const String dashboard = "assets/dashboard.png";
 
+  static const String minimize = "assets/minimize.png";
+  static const String maximize = "assets/maximize.png";
+  static const String close = "assets/close.png";
+
+
   static const String equalizer = "assets/Equalizer.json";
 
   static const String background = "assets/background/1.png";

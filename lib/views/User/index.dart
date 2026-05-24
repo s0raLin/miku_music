@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/NeteaseCloudMusic/index.dart';
+import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
@@ -50,7 +51,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       body: CustomScrollView(
         slivers: [
           // 1. 沉浸式顶部栏
-          SliverAppBar(
+          Header(
             pinned: true,
             leading: IconButton(
               onPressed: () {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/views/Music/widgets/library_tab.dart'; // 整合后的乐库
 import 'package:myapp/views/Music/widgets/playlist_tab.dart';
 
@@ -19,7 +20,8 @@ class _MusicPageState extends State<MusicPage> {
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
-              SliverAppBar(
+
+              Header(
                 expandedHeight: 120.0,
                 floating: false,
                 pinned: true,

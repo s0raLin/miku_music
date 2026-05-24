@@ -47,6 +47,7 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
+
       body: Column(
         children: [
           Expanded(
@@ -77,21 +78,7 @@ class _MainPageState extends State<MainPage> {
       drawer: const MainDrawer(),
       body: Column(
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                //主内容区
-                Expanded(
-                  child: Column(
-                    children: [
-                      // Header(scaffoldKey: _scaffoldKey),
-                      Expanded(child: widget.navigationShell),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: widget.navigationShell),
           if (!isMiniMode) NowPlayingBar(),
         ],
       ),

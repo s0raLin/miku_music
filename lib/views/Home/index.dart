@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
@@ -53,7 +54,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
+          Header(
             leading: IconButton(
               onPressed: () {
                 rootScaffoldKey.currentState?.openDrawer();
@@ -63,14 +64,6 @@ class _HomePageState extends State<HomePage> {
             pinned: true,
             title: const Text('发现'),
             centerTitle: false,
-            actions: [
-              IconButton(
-                onPressed: () {
-                  context.push("/settings");
-                },
-                icon: const Icon(Icons.settings),
-              ),
-            ],
           ),
           // ── 轮播图区域 ──────────────────────────────────────
           SliverToBoxAdapter(

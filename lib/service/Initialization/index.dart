@@ -56,7 +56,7 @@ class InitializationService {
         size: Size(800, 600),
         center: true,
         skipTaskbar: false,
-        titleBarStyle: TitleBarStyle.normal,
+        titleBarStyle: TitleBarStyle.hidden,
       );
 
       await windowManager.waitUntilReadyToShow(windowOptions, () async {

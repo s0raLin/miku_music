@@ -1,4 +1,5 @@
 // import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -754,6 +755,221 @@ class AppEmptySliver extends StatelessWidget {
         padding: padding,
         compact: compact,
       ),
+    );
+  }
+}
+
+
+
+/// M3 蛇形进度条
+/// 已播放区域：正弦波曲线；未播放区域：水平直线；thumb：固定在中轴线的圆点。
+class WavySlider extends StatefulWidget {
+  const WavySlider({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.activeColor,
+    this.inactiveColor,
+    this.thumbColor,
+    this.amplitude = 5.0,
+    this.wavelength = 24.0,
+    this.strokeWidth = 3.0,
+    this.thumbRadius = 7.0,
+    this.height = 44.0,
+  });
+
+  final double value; // 0.0 ~ 1.0
+  final ValueChanged<double> onChanged;
+  final Color? activeColor;
+  final Color? inactiveColor;
+  final Color? thumbColor;
+  final double amplitude; // 波峰高度 px
+  final double wavelength; // 一个完整波形的宽度 px
+  final double strokeWidth;
+  final double thumbRadius;
+  final double height;
+
+  @override
+  State<WavySlider> createState() => _WavySliderState();
+}
+
+class _WavySliderState extends State<WavySlider> {
+  void _handleDrag(double localX, double totalWidth) {
+    final v = (localX / totalWidth).clamp(0.0, 1.0);
+    widget.onChanged(v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final activeColor = widget.activeColor ?? colorScheme.primary;
+    final inactiveColor = widget.inactiveColor ?? colorScheme.outlineVariant;
+    final thumbColor = widget.thumbColor ?? colorScheme.primary;
+
+    return SizedBox(
+      height: widget.height,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragStart: (d) =>
+                _handleDrag(d.localPosition.dx, totalWidth),
+            onHorizontalDragUpdate: (d) =>
+                _handleDrag(d.localPosition.dx, totalWidth),
+            onTapDown: (d) => _handleDrag(d.localPosition.dx, totalWidth),
+            child: CustomPaint(
+              size: Size(totalWidth, widget.height),
+              painter: _WavyPainter(
+                value: widget.value,
+                activeColor: activeColor,
+                inactiveColor: inactiveColor,
+                thumbColor: thumbColor,
+                amplitude: widget.amplitude,
+                wavelength: widget.wavelength,
+                strokeWidth: widget.strokeWidth,
+                thumbRadius: widget.thumbRadius,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _WavyPainter extends CustomPainter {
+  _WavyPainter({
+    required this.value,
+    required this.activeColor,
+    required this.inactiveColor,
+    required this.thumbColor,
+    required this.amplitude,
+    required this.wavelength,
+    required this.strokeWidth,
+    required this.thumbRadius,
+  });
+
+  final double value;
+  final Color activeColor;
+  final Color inactiveColor;
+  final Color thumbColor;
+  final double amplitude;
+  final double wavelength;
+  final double strokeWidth;
+  final double thumbRadius;
+
+  double _waveY(double x, double cy) {
+    return cy + math.sin(x / wavelength * math.pi * 2) * amplitude;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cy = size.height / 2;
+    final splitX = value * size.width;
+
+    final activePaint = Paint()
+      ..color = activeColor
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    final inactivePaint = Paint()
+      ..color = inactiveColor
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final thumbPaint = Paint()
+      ..color = thumbColor
+      ..style = PaintingStyle.fill;
+
+    // ── 已播放：正弦波 ──
+    if (splitX > 0) {
+      final path = Path();
+      path.moveTo(0, _waveY(0, cy));
+      // 每 1px 采样一次，曲线足够平滑
+      for (double x = 1; x <= splitX; x++) {
+        path.lineTo(x, _waveY(x, cy));
+      }
+      canvas.drawPath(path, activePaint);
+    }
+
+    // ── 未播放：水平直线 ──
+    if (splitX < size.width) {
+      canvas.drawLine(
+        Offset(splitX, cy),
+        Offset(size.width, cy),
+        inactivePaint,
+      );
+    }
+
+    // ── Thumb：固定在中轴线，盖住接缝 ──
+    canvas.drawCircle(Offset(splitX, cy), thumbRadius, thumbPaint);
+  }
+
+  @override
+  bool shouldRepaint(_WavyPainter old) =>
+      old.value != value ||
+      old.activeColor != activeColor ||
+      old.inactiveColor != inactiveColor ||
+      old.thumbColor != thumbColor ||
+      old.amplitude != amplitude ||
+      old.wavelength != wavelength;
+}
+
+// ─────────────────────────────────────────────
+// 用法示例（接入原 MusicDashboardPage）
+// ─────────────────────────────────────────────
+
+class WavySliderDemo extends StatefulWidget {
+  const WavySliderDemo({super.key});
+
+  @override
+  State<WavySliderDemo> createState() => _WavySliderDemoState();
+}
+
+class _WavySliderDemoState extends State<WavySliderDemo> {
+  double _progress = 0.45;
+
+  String _formatTime(double progress) {
+    final totalSeconds = (progress * 225).toInt();
+    final m = totalSeconds ~/ 60;
+    final s = totalSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      children: [
+        WavySlider(
+          value: _progress,
+          onChanged: (v) => setState(() => _progress = v),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Text(
+              _formatTime(_progress),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSecondaryContainer,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '3:45',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSecondaryContainer,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

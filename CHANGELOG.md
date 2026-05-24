@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/s0raLin/miku_music/compare/v1.22.0...v1.23.0) (2026-05-24)
+
+
+### Features
+
+* **ui:** add volume control card to music dashboard ([269b632](https://github.com/s0raLin/miku_music/commit/269b632d9fa698ca580a011fec2d9404b4b5abc3))
+
 ## [1.22.0](https://github.com/s0raLin/miku_music/compare/v1.21.0...v1.22.0) (2026-05-24)
 
 

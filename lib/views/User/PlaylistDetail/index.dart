@@ -1,4 +1,3 @@
-import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -7,7 +6,6 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/views/Music/widgets/library_tab.dart';
 import 'package:provider/provider.dart';
 
 class PlaylistDetailPage extends StatefulWidget {

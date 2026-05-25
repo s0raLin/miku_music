@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.0](https://github.com/s0raLin/miku_music/compare/v1.24.0...v1.25.0) (2026-05-25)
+
+
+### Features
+
+* **music:** implement queue view and optimize cover art synchronization ([f2124f6](https://github.com/s0raLin/miku_music/commit/f2124f61912e2178ee27bdfa84155230c4f77a79))
+
 ## [1.24.0](https://github.com/s0raLin/miku_music/compare/v1.23.0...v1.24.0) (2026-05-25)
 
 

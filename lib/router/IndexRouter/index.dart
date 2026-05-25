@@ -99,8 +99,8 @@ final List<AppNavItem> navItems = [
             builder: (context, state) {
               final data = state.extra as Map<String, dynamic>;
               final String albumName = data['albumName'] as String;
-              final List<MusicInfo> songs = data['songs'] as List<MusicInfo>;
-              return AlbumDetailPage(albumName: albumName, songs: songs);
+
+              return AlbumDetailPage(albumName: albumName);
             },
           ),
         ],
@@ -192,7 +192,7 @@ final _routes = [
     },
   ),
 
-  
+
   GoRoute(
     name: "settings",
     path: "/settings",

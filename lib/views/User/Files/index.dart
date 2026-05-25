@@ -8,10 +8,12 @@ import 'package:go_router/go_router.dart';
 
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
 
 import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -24,7 +26,8 @@ class _FilesPageState extends State<FilesPage>
   List<String> _paths = [];
 
   // Stream<List<MusicInfo>>? _musicStream;
-  List<MusicInfo> _musicList = [];
+  // List<MusicInfo> _musicList = [];
+  List<MusicInfo> _scannedSongs = [];
   bool _isScanning = false;
 
   StreamSubscription? _scanSubscription;
@@ -43,31 +46,44 @@ class _FilesPageState extends State<FilesPage>
 
   // 核心逻辑：将扫描流转换为“累加列表流”
   void _startScan() {
-    // if (Platform.isAndroid) return;
-
     _scanSubscription?.cancel(); //取消上一次扫描
     setState(() {
-      _musicList = [];
+      // _musicList = [];
       _isScanning = true;
+      _scannedSongs = [];
     });
+
     final scanProgressStream = MusicService.scanDirectories(_paths);
+    final musicProvider = context.read<MusicProvider>();
 
     _scanSubscription = scanProgressStream.listen(
       (s) {
         if (!mounted) return;
         if (s.music != null) {
-          setState(() {
-            _musicList.add(s.music!);
-          });
+          _scannedSongs.add(s.music!);
+
+          //每积累15首才刷新一次UI,避免频繁setState
+          if (_scannedSongs.length % 15 == 0) {
+            setState(() {
+              musicProvider.updateLibrary(List.from(_scannedSongs));
+            });
+          }
         }
       },
       onDone: () {
         if (!mounted) return;
+
+        // 扫描完成,把最后剩下不够15首度歌曲一次性倒进去
+        musicProvider.updateLibrary(List.from(_scannedSongs));
+
         setState(() {
           _isScanning = false;
         });
-        if (_musicList.isNotEmpty) {
-          AppToast.success(context, message: '扫描完成，共 ${_musicList.length} 首歌曲');
+        if (_scannedSongs.isNotEmpty) {
+          AppToast.success(
+            context,
+            message: '扫描完成，共 ${_scannedSongs.length} 首歌曲',
+          );
         } else {
           AppToast.neutral(context, message: '未发现音频文件');
         }
@@ -92,7 +108,12 @@ class _FilesPageState extends State<FilesPage>
   Widget build(BuildContext context) {
     super.build(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final songs = _musicList;
+    // 当扫描流调用 musicProvider.updateLibrary() 时，这里会自动感知并触发重绘
+    final songs = context.watch<MusicProvider>().library;
+
+    final folderGroups = _groupByFolder(songs);
+    final albumGroups = _groupByAlbum(songs);
+    final artistGroups = _groupByArtist(songs);
     return Scaffold(
       body: DefaultTabController(
         length: 3,
@@ -117,9 +138,9 @@ class _FilesPageState extends State<FilesPage>
           },
           body: TabBarView(
             children: [
-              _buildLeft(songs),
-              _buildCenter(songs),
-              _buildRight(songs),
+              _buildLeft(folderGroups),
+              _buildCenter(albumGroups),
+              _buildRight(artistGroups),
             ],
           ),
         ),
@@ -267,8 +288,8 @@ class _FilesPageState extends State<FilesPage>
     return groups;
   }
 
-  Widget _buildLeft(List<MusicInfo> songs) {
-    if (_isScanning && _musicList.isEmpty && _paths.isNotEmpty) {
+  Widget _buildLeft(Map<String, List<MusicInfo>> folderGroups) {
+    if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -281,7 +302,6 @@ class _FilesPageState extends State<FilesPage>
       );
     }
 
-    final folderGroups = _groupByFolder(songs);
     if (!_isScanning && folderGroups.isEmpty) {
       return const AppEmptyState(
         icon: Icons.audio_file_rounded,
@@ -300,14 +320,14 @@ class _FilesPageState extends State<FilesPage>
       onTap: (entry) {
         context.push(
           "/user/files/album-detail",
-          extra: {"albumName": entry.key, "songs": entry.value},
+          extra: {"albumName": entry.key},
         );
       },
     );
   }
 
-  Widget _buildCenter(List<MusicInfo> songs) {
-    if (_isScanning && _musicList.isEmpty && _paths.isNotEmpty) {
+  Widget _buildCenter(Map<String, List<MusicInfo>> albumGroups) {
+    if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -320,7 +340,6 @@ class _FilesPageState extends State<FilesPage>
       );
     }
 
-    final albumGroups = _groupByAlbum(songs);
     if (!_isScanning && albumGroups.isEmpty) {
       return const AppEmptyState(
         icon: Icons.audio_file_rounded,
@@ -339,14 +358,14 @@ class _FilesPageState extends State<FilesPage>
       onTap: (entry) {
         context.push(
           "/user/files/album-detail",
-          extra: {"albumName": entry.key, "songs": entry.value},
+          extra: {"albumName": entry.key},
         );
       },
     );
   }
 
-  Widget _buildRight(List<MusicInfo> songs) {
-    if (_isScanning && _musicList.isEmpty && _paths.isNotEmpty) {
+  Widget _buildRight(Map<String, List<MusicInfo>> artistGroups) {
+    if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -359,7 +378,6 @@ class _FilesPageState extends State<FilesPage>
       );
     }
 
-    final artistGroups = _groupByArtist(songs);
     if (!_isScanning && artistGroups.isEmpty) {
       return const AppEmptyState(
         icon: Icons.audio_file_rounded,
@@ -378,7 +396,7 @@ class _FilesPageState extends State<FilesPage>
       onTap: (entry) {
         context.push(
           "/user/files/album-detail",
-          extra: {"albumName": entry.key, "songs": entry.value},
+          extra: {"albumName": entry.key},
         );
       },
     );
@@ -445,4 +463,3 @@ class _FilesPageState extends State<FilesPage>
   @override
   bool get wantKeepAlive => true; // 返回 true 以保持状态
 }
-

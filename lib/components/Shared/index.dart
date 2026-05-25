@@ -924,7 +924,6 @@ class _WavyPainter extends CustomPainter {
       old.wavelength != wavelength;
 }
 
-
 class ObservableGridCard extends StatefulWidget {
   final int index;
   final MusicInfo music;
@@ -951,30 +950,9 @@ class _ObservableGridCardState extends State<ObservableGridCard> {
     _loadCover();
   }
 
-  // 加这个方法
-  Future<Uint8List?> _resizeImage(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(
-      bytes,
-      targetWidth: 144,
-      targetHeight: 144,
-    );
-    final frame = await codec.getNextFrame();
-    final byteData = await frame.image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-    frame.image.dispose();
-    return byteData?.buffer.asUint8List();
-  }
-
   void _loadCover() async {
     if (widget.music.coverBytes != null &&
         widget.music.coverBytes!.isNotEmpty) {
-      // 已有封面也压缩后再用
-      final small = await _resizeImage(widget.music.coverBytes!);
-      if (!mounted) return;
-      setState(() {
-        widget.music.coverBytes = small; // 回写小图，下次直接用
-      });
       return;
     }
 
@@ -983,10 +961,9 @@ class _ObservableGridCardState extends State<ObservableGridCard> {
 
     try {
       final updatedMusic = await MusicService.parse(widget.music.id);
-      final small = await _resizeImage(updatedMusic.coverBytes!);
       if (mounted) {
         setState(() {
-          widget.music.coverBytes = small; // 回写小图
+          widget.music.coverBytes = updatedMusic.coverBytes;
           _isLoading = false;
         });
       }
@@ -1095,30 +1072,9 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
     _loadCover();
   }
 
-  // 加这个方法
-  Future<Uint8List?> _resizeImage(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(
-      bytes,
-      targetWidth: 144,
-      targetHeight: 144,
-    );
-    final frame = await codec.getNextFrame();
-    final byteData = await frame.image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-    frame.image.dispose();
-    return byteData?.buffer.asUint8List();
-  }
-
   void _loadCover() async {
     if (widget.music.coverBytes != null &&
         widget.music.coverBytes!.isNotEmpty) {
-      // 已有封面也压缩后再用
-      final small = await _resizeImage(widget.music.coverBytes!);
-      if (!mounted) return;
-      setState(() {
-        widget.music.coverBytes = small; // 回写小图，下次直接用
-      });
       return;
     }
 
@@ -1127,10 +1083,9 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
 
     try {
       final updatedMusic = await MusicService.parse(widget.music.id);
-      final small = await _resizeImage(updatedMusic.coverBytes!);
       if (mounted) {
         setState(() {
-          widget.music.coverBytes = small; // 回写小图
+          widget.music.coverBytes = updatedMusic.coverBytes; 
           _isLoading = false;
         });
       }

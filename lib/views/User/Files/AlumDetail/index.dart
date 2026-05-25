@@ -1,22 +1,30 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/service/Music/index.dart';
-import 'dart:ui' as ui;
+import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
 
 class AlbumDetailPage extends StatelessWidget {
   final String albumName;
-  final List<MusicInfo> songs;
+  // final List<MusicInfo> songs;
   const AlbumDetailPage({
     super.key,
     required this.albumName,
-    required this.songs,
+    // required this.songs,
   });
 
   @override
   Widget build(BuildContext context) {
+    final mp = context.read<MusicProvider>();
+    final songs = mp.library.where((song) {
+      final currentAlbum = (song.album ?? '未知专辑').trim();
+      final currentArtist = song.artist.trim();
+      final folderPath = p.dirname(song.id); // 对应歌曲所在的文件夹路径
+
+      return currentAlbum == albumName.trim() ||
+          currentArtist == albumName.trim() ||
+          folderPath == albumName.trim();
+    }).toList();
     return Scaffold(
       appBar: AppBar(title: Text(albumName)),
       body: ListTileTheme(

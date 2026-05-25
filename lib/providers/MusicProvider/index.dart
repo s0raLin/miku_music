@@ -119,6 +119,27 @@ class MusicProvider extends ChangeNotifier {
   final List<MusicInfo> _library = [];
   List<MusicInfo> get library => _library;
 
+  /// 专为扫描设计的轻量追加/更新媒体库方法
+  void updateLibrary(List<MusicInfo> scannedSongs) {
+    // 采用 Map 去重：用 song.id 作为 key，确保即便重复扫描，同一首歌也不会在列表里出现两次
+    final Map<String, MusicInfo> uniqueMap = {};
+
+    // 先把现有的老歌塞进去
+    for (var song in _library) {
+      uniqueMap[song.id] = song;
+    }
+    // 再把新扫描到的歌覆盖或追加进去
+    for (var song in scannedSongs) {
+      uniqueMap[song.id] = song;
+    }
+
+    _library
+      ..clear()
+      ..addAll(uniqueMap.values);
+
+    notifyListeners(); // 📢 拍拍 UI：媒体库变大了，快去刷新！
+  }
+
   /// 当前播放队列。
   List<MusicInfo> _queue = [];
 

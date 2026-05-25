@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/s0raLin/miku_music/compare/v1.23.0...v1.24.0) (2026-05-25)
+
+
+### Features
+
+* **ui:** implement real-time playback synchronization in dashboard ([20e9edf](https://github.com/s0raLin/miku_music/commit/20e9edf8e4e0e77c13e83f20dbbaf0fe208d3984))
+
 ## [1.23.0](https://github.com/s0raLin/miku_music/compare/v1.22.0...v1.23.0) (2026-05-24)
 
 

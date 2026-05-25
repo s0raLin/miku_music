@@ -1,13 +1,9 @@
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/views/Music/widgets/album_card.dart';
 import 'package:provider/provider.dart';
 

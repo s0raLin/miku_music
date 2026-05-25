@@ -11,6 +11,8 @@ class MyAssets {
   static const String pause = "assets/pause.png";
   static const String prev = "assets/prev.png";
   static const String dashboard = "assets/dashboard.png";
+  static const String queue = "assets/queue.png";
+
 
   static const String minimize = "assets/minimize.png";
   static const String maximize = "assets/maximize.png";

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -438,12 +439,39 @@ class MusicProvider extends ChangeNotifier {
     // 先通知 UI 更新歌词，再执行耗时的音频加载
     notifyListeners();
 
+     // 封面懒加载
+    if (music.coverBytes == null || music.coverBytes!.isEmpty) {
+      MusicService.parse(music.id)
+          .then((updated) {
+            music.coverBytes = updated.coverBytes;
+            notifyListeners(); // 封面到了再刷一次
+          })
+          .catchError((_) {});
+    }
+
     if (autoPlay) {
       _addToHistory(music);
       audioHandler.playMusic(music);
     } else {
       audioHandler.playMusic(music, autoPlay: false);
     }
+  }
+
+  /// 一个更新封面的方法，同时更新 _library、_queue、_history、_favList 里的同一首歌：
+  void updateCoverBytes(String musicId, Uint8List? coverBytes) {
+    if (coverBytes == null || coverBytes.isEmpty) return;
+
+    void patch(List<MusicInfo> list) {
+      final index = list.indexWhere((m) => m.id == musicId);
+      if (index != -1) list[index].coverBytes = coverBytes;
+    }
+
+    patch(_library);
+    patch(_queue);
+    patch(_history);
+    patch(_favList);
+
+    notifyListeners();
   }
 
   /// 切换播放 / 暂停状态。

@@ -533,19 +533,61 @@ class _PlaybackControls extends StatelessWidget {
 }
 
 // ─── 音量按钮 ────────────────────────────────────────────────────
-
 class _VolumeButton extends StatefulWidget {
   final MusicProvider provider;
-
   const _VolumeButton({required this.provider});
 
   @override
   State<_VolumeButton> createState() => _VolumeButtonState();
 }
+class _VolumeButtonState extends State<_VolumeButton>
+    with SingleTickerProviderStateMixin {
+  // ── Overlay 定位 ──
+  final LayerLink _layerLink = LayerLink();
+  final OverlayPortalController _overlayCtrl = OverlayPortalController();
 
-class _VolumeButtonState extends State<_VolumeButton> {
-  final MenuController _menuController = MenuController();
+  bool _visible = false;
+  Timer? _hideTimer;
   double _lastNonZeroVolume = 1.0;
+
+  late final AnimationController _animCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 200),
+  );
+  late final Animation<double> _fadeAnim = CurvedAnimation(
+    parent: _animCtrl,
+    curve: Curves.easeOut,
+  );
+
+  void _show() {
+    if (!_visible) {
+      _overlayCtrl.show();
+      setState(() => _visible = true);
+      _animCtrl.forward();
+    }
+    _resetTimer();
+  }
+
+  void _hide() {
+    _animCtrl.reverse().then((_) {
+      if (mounted) {
+        _overlayCtrl.hide();
+        setState(() => _visible = false);
+      }
+    });
+  }
+
+  void _resetTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 2), _hide);
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    _animCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -563,66 +605,125 @@ class _VolumeButtonState extends State<_VolumeButton> {
             ? Icons.volume_down_rounded
             : Icons.volume_up_rounded;
 
-        return MenuAnchor(
-          controller: _menuController,
-          alignmentOffset: const Offset(-10, -10),
-          style: MenuStyle(
-            backgroundColor: WidgetStateProperty.all(cs.surfaceContainerHigh),
-            elevation: WidgetStateProperty.all(6),
-            shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-          ),
-          menuChildren: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              child: SizedBox(
-                height: 140,
-                child: RotatedBox(
-                  quarterTurns: -1,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 4,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 6,
+        return CompositedTransformTarget(
+          link: _layerLink,
+          child: OverlayPortal(
+            controller: _overlayCtrl,
+            overlayChildBuilder: (context) {
+              return CompositedTransformFollower(
+                link: _layerLink,
+                // 胶囊底部对齐按钮顶部，水平居中
+                followerAnchor: Alignment.bottomCenter,
+                targetAnchor: Alignment.topCenter,
+                offset: const Offset(0, -8),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: FadeTransition(
+                    opacity: _fadeAnim,
+                    child: ScaleTransition(
+                      scale: Tween(begin: 0.85, end: 1.0).animate(_fadeAnim),
+                      alignment: Alignment.bottomCenter,
+                      child: _VolumeCapsule(
+                        volume: volume,
+                        onChanged: (v) {
+                          widget.provider.setVolume(v);
+                          _resetTimer();
+                        },
+                        onInteract: _resetTimer,
                       ),
-                      overlayShape: const RoundSliderOverlayShape(
-                        overlayRadius: 12,
-                      ),
-                      inactiveTrackColor: cs.primary.withValues(alpha: 0.1),
-                      activeTrackColor: cs.primary,
-                      thumbColor: cs.primary,
-                    ),
-                    child: Slider(
-                      value: volume.clamp(0.0, 1.0),
-                      onChanged: (v) => widget.provider.setVolume(v),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-          child: GestureDetector(
-            onLongPress: () => _menuController.open(),
+              );
+            },
             child: IconButton(
-              tooltip: '单击静音/长按调音',
-              onPressed: () async {
-                final targetVol = volume == 0
-                    ? _lastNonZeroVolume.clamp(0.0, 1.0)
-                    : 0.0;
-                await widget.provider.setVolume(targetVol);
-              },
+              tooltip: '点击调音',
               icon: Icon(icon),
-              style: IconButton.styleFrom(
-                foregroundColor: cs.onSurfaceVariant,
-                backgroundColor: _menuController.isOpen
-                    ? cs.surfaceContainerHighest
-                    : Colors.transparent,
-              ),
+              color: cs.onSurfaceVariant,
+              onPressed: () {
+                if (!_visible) {
+                  _show();
+                } else {
+                  // 胶囊已显示时点击图标：静音 / 恢复
+                  final target = volume == 0 ? _lastNonZeroVolume : 0.0;
+                  widget.provider.setVolume(target);
+                  _resetTimer();
+                }
+              },
             ),
           ),
         );
       },
+    );
+  }
+}
+
+// ── 胶囊本体 ──────────────────────────────────────────────────────────────────
+
+class _VolumeCapsule extends StatelessWidget {
+  final double volume;
+  final ValueChanged<double> onChanged;
+  final VoidCallback onInteract;
+
+  const _VolumeCapsule({
+    required this.volume,
+    required this.onChanged,
+    required this.onInteract,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    const double capsuleW = 44;
+    const double capsuleH = 180;
+
+    return GestureDetector(
+      onVerticalDragUpdate: (d) {
+        final delta = -d.delta.dy / capsuleH;
+        onChanged((volume + delta).clamp(0.0, 1.0));
+      },
+      onTap: onInteract,
+      child: Container(
+        width: capsuleW,
+        height: capsuleH,
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(capsuleW / 2),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            // 填充
+            AnimatedFractionallySizedBox(
+              duration: const Duration(milliseconds: 80),
+              heightFactor: volume.clamp(0.0, 1.0),
+              widthFactor: 1.0,
+              child: Container(color: cs.primary.withValues(alpha: 0.28)),
+            ),
+            // 图标
+            Positioned(
+              bottom: 12,
+              child: Icon(
+                volume == 0
+                    ? Icons.volume_off_rounded
+                    : volume < 0.5
+                    ? Icons.volume_down_rounded
+                    : Icons.volume_up_rounded,
+                size: 20,
+                color: cs.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

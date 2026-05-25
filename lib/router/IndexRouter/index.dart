@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/constants/Assets/index.dart';
-import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
-import 'package:myapp/views/MusicDashboard/CoverFlow/index.dart';
-import 'package:myapp/views/MusicDashboard/index.dart';
+import 'package:myapp/views/Queue/index.dart';
 import 'package:myapp/views/SetupWizard/index.dart';
 import 'package:myapp/views/User/EditProfile/index.dart';
 import 'package:myapp/views/User/Files/index.dart';
@@ -65,19 +63,12 @@ final List<AppNavItem> navItems = [
     label: "音乐",
   ),
   AppNavItem(
-    name: "dashboard",
-    path: "/dashboard",
-    page: MusicDashboardPage(),
-    i: ImageIcon(AssetImage(MyAssets.dashboard)),
+    name: "queue",
+    path: "/queue",
+    page: const QueuePage(),
+    i: ImageIcon(AssetImage(MyAssets.queue)),
     icon: Icons.dashboard,
-    label: "仪表盘",
-    routes: [
-      GoRoute(
-        name: "coverFlow",
-        path: "/cover-flow",
-        builder: (context, state) => CoverFlowPage(),
-      ),
-    ],
+    label: "播放队列",
   ),
   AppNavItem(
     name: "user",
@@ -191,7 +182,6 @@ final _routes = [
       );
     },
   ),
-
 
   GoRoute(
     name: "settings",

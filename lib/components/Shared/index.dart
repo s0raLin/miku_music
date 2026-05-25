@@ -963,7 +963,10 @@ class _ObservableGridCardState extends State<ObservableGridCard> {
       final updatedMusic = await MusicService.parse(widget.music.id);
       if (mounted) {
         setState(() {
-          widget.music.coverBytes = updatedMusic.coverBytes;
+          context.read<MusicProvider>().updateCoverBytes(
+            widget.music.id,
+            updatedMusic.coverBytes,
+          );
           _isLoading = false;
         });
       }
@@ -1085,7 +1088,10 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
       final updatedMusic = await MusicService.parse(widget.music.id);
       if (mounted) {
         setState(() {
-          widget.music.coverBytes = updatedMusic.coverBytes; 
+          context.read<MusicProvider>().updateCoverBytes(
+            widget.music.id,
+            updatedMusic.coverBytes,
+          );
           _isLoading = false;
         });
       }

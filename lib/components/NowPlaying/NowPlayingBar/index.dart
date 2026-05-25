@@ -205,23 +205,13 @@ class _CompactLayout extends StatelessWidget {
           icon: const Icon(Icons.queue_music_rounded),
           iconSize: 24,
           tooltip: '播放队列',
-          onPressed: () => _showQueue(context),
+          onPressed: () => context.push("/queue"),
         ),
         IconButton(
           icon: const Icon(Icons.close_fullscreen_rounded, size: 16),
           onPressed: () => context.read<MusicProvider>().setMiniMode(true),
         ),
       ],
-    );
-  }
-
-  void _showQueue(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (_) => _QueueSheet(),
     );
   }
 }

@@ -63,14 +63,6 @@ final List<AppNavItem> navItems = [
     label: "音乐",
   ),
   AppNavItem(
-    name: "queue",
-    path: "/queue",
-    page: const QueuePage(),
-    i: ImageIcon(AssetImage(MyAssets.queue)),
-    icon: Icons.dashboard,
-    label: "播放队列",
-  ),
-  AppNavItem(
     name: "user",
     path: "/user",
     page: UserProfilePage(),
@@ -165,6 +157,29 @@ final _routes = [
     pageBuilder: (context, state) {
       return CustomTransitionPage(
         child: MusicDetailPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position:
+                Tween<Offset>(
+                  // Offset(1, 0) 表示屏幕右侧边缘外
+                  // Offset(0, 0) 表示屏幕中心位置
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutExpo),
+                ),
+            child: child,
+          );
+        },
+      );
+    },
+  ),
+  GoRoute(
+    name: "queue",
+    path: "/queue",
+    pageBuilder: (context, state) {
+      return CustomTransitionPage(
+        child: QueuePage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position:

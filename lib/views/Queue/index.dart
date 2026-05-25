@@ -21,10 +21,10 @@ class QueuePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cs.surface,
         scrolledUnderElevation: 0,
-        // leading: IconButton(
-        //   icon: const Icon(Icons.keyboard_arrow_down_rounded),
-        //   onPressed: () => context.pop(),
-        // ),
+        leading: IconButton(
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          onPressed: () => context.pop(),
+        ),
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

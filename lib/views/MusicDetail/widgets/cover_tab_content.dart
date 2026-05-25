@@ -428,15 +428,12 @@ class _WavySliderPainter extends CustomPainter {
 }
 
 // ─── 播放控制按钮组 ─────────────────────────────────────
-
 class _PlaybackControls extends StatelessWidget {
   final MusicProvider provider;
-
   const _PlaybackControls({required this.provider});
 
   @override
   Widget build(BuildContext context) {
-    // 💡 使用 watch 监听 MusicProvider，以便播放模式或状态改变时能及时重新渲染
     final mp = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
@@ -452,94 +449,170 @@ class _PlaybackControls extends StatelessWidget {
       PlayMode.repeat => "单曲循环",
     };
 
-    return StreamBuilder<ProcessingState>(
-      stream: mp.player.processingStateStream,
-      builder: (context, snapshot) {
-        final state = snapshot.data ?? ProcessingState.idle;
-        final playing = mp.player.playing;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
 
-        final isLoading =
-            state == ProcessingState.loading ||
-            state == ProcessingState.buffering;
+        // 可用宽度分五个按钮：模式 + 上一首 + 播放 + 下一首 + 音量
+        // 播放按钮比其他按钮大 1.5 倍，其余四个等宽
+        // 总宽 = 4 * btnSize + 1.5 * btnSize + 4 * gap
+        // 解方程：btnSize = w / (5.5 + 4 * gapRatio)
+        // 这里固定 gapRatio = 0.4（gap = 0.4 * btnSize），上限 btnSize 48
+        const double gapRatio = 0.4;
+        final double btnSize = (w / (5.5 + 4 * gapRatio)).clamp(28.0, 48.0);
+        final double gap = btnSize * gapRatio;
+        final double playSize = (btnSize * 1.5).clamp(42.0, 72.0);
+        final double iconSize = btnSize * 0.65;
+        final double playIconSize = playSize * 0.5;
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              onPressed: mp.togglePlayMode,
-              icon: Icon(modeIcon(mp.playMode)),
-              color: cs.onSurfaceVariant,
-              tooltip: modeTooltip(mp.playMode),
-            ),
-            const SizedBox(width: 20),
-            IconButton(
-              onPressed: mp.playPrev,
-              tooltip: '上一首',
-              icon: const Icon(Icons.skip_previous_rounded, size: 32),
-              color: cs.onSurface,
-            ),
-            const SizedBox(width: 20),
-            SizedBox(
-              width: 72,
-              height: 72,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (isLoading)
-                    Positioned.fill(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3.5,
-                        color: cs.primary,
-                      ),
-                    ),
-                  IconButton.filled(
-                    onPressed: mp.togglePlay,
-                    icon: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 150),
-                      child: Icon(
-                        playing
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        key: ValueKey<bool>(playing),
-                        size: 36,
-                      ),
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: cs.primaryContainer,
-                      foregroundColor: cs.onPrimaryContainer,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 0,
-                    ),
+        return StreamBuilder<ProcessingState>(
+          stream: mp.player.processingStateStream,
+          builder: (context, snapshot) {
+            final state = snapshot.data ?? ProcessingState.idle;
+            final playing = mp.player.playing;
+            final isLoading =
+                state == ProcessingState.loading ||
+                state == ProcessingState.buffering;
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 播放模式
+                _CtrlButton(
+                  size: btnSize,
+                  onPressed: mp.togglePlayMode,
+                  tooltip: modeTooltip(mp.playMode),
+                  child: Icon(
+                    modeIcon(mp.playMode),
+                    size: iconSize,
+                    color: cs.onSurfaceVariant,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 20),
-            IconButton(
-              onPressed: mp.playNext,
-              tooltip: '下一首',
-              icon: const Icon(Icons.skip_next_rounded, size: 32),
-              color: cs.onSurface,
-            ),
-            const SizedBox(width: 20),
-            _VolumeButton(provider: mp),
-          ],
+                ),
+                SizedBox(width: gap),
+
+                // 上一首
+                _CtrlButton(
+                  size: btnSize,
+                  onPressed: mp.playPrev,
+                  tooltip: '上一首',
+                  child: Icon(
+                    Icons.skip_previous_rounded,
+                    size: iconSize * 1.1,
+                    color: cs.onSurface,
+                  ),
+                ),
+                SizedBox(width: gap),
+
+                // 播放 / 暂停
+                SizedBox(
+                  width: playSize,
+                  height: playSize,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (isLoading)
+                        Positioned.fill(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: cs.primary,
+                          ),
+                        ),
+                      FilledButton(
+                        onPressed: mp.togglePlay,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: cs.primaryContainer,
+                          foregroundColor: cs.onPrimaryContainer,
+                          minimumSize: Size(playSize, playSize),
+                          maximumSize: Size(playSize, playSize),
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              playSize * 0.28,
+                            ),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 150),
+                          child: Icon(
+                            playing
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            key: ValueKey<bool>(playing),
+                            size: playIconSize,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: gap),
+
+                // 下一首
+                _CtrlButton(
+                  size: btnSize,
+                  onPressed: mp.playNext,
+                  tooltip: '下一首',
+                  child: Icon(
+                    Icons.skip_next_rounded,
+                    size: iconSize * 1.1,
+                    color: cs.onSurface,
+                  ),
+                ),
+                SizedBox(width: gap),
+
+                // 音量
+                _VolumeButton(provider: mp, size: btnSize),
+              ],
+            );
+          },
         );
       },
     );
   }
 }
 
+// ── 统一尺寸的控制按钮 ────────────────────────────────────────────────────────
+class _CtrlButton extends StatelessWidget {
+  final double size;
+  final VoidCallback onPressed;
+  final String tooltip;
+  final Widget child;
+
+  const _CtrlButton({
+    required this.size,
+    required this.onPressed,
+    required this.tooltip,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(size / 2),
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── 音量按钮 ────────────────────────────────────────────────────
 class _VolumeButton extends StatefulWidget {
+  final double size;
   final MusicProvider provider;
-  const _VolumeButton({required this.provider});
+  const _VolumeButton({required this.provider, required this.size});
 
   @override
   State<_VolumeButton> createState() => _VolumeButtonState();
 }
+
 class _VolumeButtonState extends State<_VolumeButton>
     with SingleTickerProviderStateMixin {
   // ── Overlay 定位 ──
@@ -636,20 +709,24 @@ class _VolumeButtonState extends State<_VolumeButton>
                 ),
               );
             },
-            child: IconButton(
+            child: _CtrlButton(
+              // ← 替换 IconButton
+              size: widget.size,
               tooltip: '点击调音',
-              icon: Icon(icon),
-              color: cs.onSurfaceVariant,
               onPressed: () {
                 if (!_visible) {
                   _show();
                 } else {
-                  // 胶囊已显示时点击图标：静音 / 恢复
                   final target = volume == 0 ? _lastNonZeroVolume : 0.0;
                   widget.provider.setVolume(target);
                   _resetTimer();
                 }
               },
+              child: Icon(
+                icon,
+                size: widget.size * 0.65,
+                color: cs.onSurfaceVariant,
+              ),
             ),
           ),
         );

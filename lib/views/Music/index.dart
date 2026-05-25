@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Header/index.dart';
-import 'package:myapp/views/Music/widgets/library_tab.dart'; // 整合后的乐库
-import 'package:myapp/views/Music/widgets/playlist_tab.dart';
+import 'package:myapp/views/Music/tabs/library_tab.dart'; // 整合后的乐库
+import 'package:myapp/views/Music/tabs/playlist_tab.dart';
 
 class MusicPage extends StatefulWidget {
   const MusicPage({super.key});

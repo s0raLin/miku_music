@@ -85,7 +85,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
         ),
         const SizedBox(height: 28),
 
-        // 歌曲元信息区域（M3 风格对齐）
+        // 歌曲元信息区域
         Row(
           children: [
             Expanded(
@@ -154,7 +154,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
         ),
         const SizedBox(height: 24),
 
-        // 进度条与播放控制流（更换为蛇形 M3 滑条）
+        // 💡 仅用于包裹进度条与时间文本的 StreamBuilder
         StreamBuilder<PositionData>(
           stream: provider.positionDataStream,
           builder: (context, snapshot) {
@@ -169,7 +169,6 @@ class _CoverTabContentState extends State<CoverTabContent> {
             final safeTotal = totalMs > 0 ? totalMs : 1.0;
 
             final sliderValue = _draggingValue ?? currentPosMs;
-            // 当音乐正在播放且用户没有拖动时，激活蛇形波浪动画
             final isWaving = provider.player.playing && _draggingValue == null;
 
             return Column(
@@ -224,12 +223,14 @@ class _CoverTabContentState extends State<CoverTabContent> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                _PlaybackControls(provider: provider),
               ],
             );
           },
         ),
+        const SizedBox(height: 20),
+
+        // 【核心修改位置】将控制台移出 StreamBuilder 外层，独立渲染
+        _PlaybackControls(provider: provider),
         const SizedBox(height: 28),
       ],
     );
@@ -272,7 +273,6 @@ class _M3WavySliderState extends State<M3WavySlider>
   @override
   void initState() {
     super.initState();
-    // 1. 【速度优化】将时间拉长到 2500ms（原 800ms），让波浪流动变得非常极其舒缓、平滑
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
@@ -368,7 +368,6 @@ class _WavySliderPainter extends CustomPainter {
     final double midY = size.height / 2;
     final double thumbX = size.width * percent;
 
-    // 1. 绘制后端（未播放部分：保持纯直线轨道）
     final inactivePaint = Paint()
       ..color = inactiveColor
       ..strokeWidth = 4
@@ -383,7 +382,6 @@ class _WavySliderPainter extends CustomPainter {
       );
     }
 
-    // 2. 绘制前端（已播放部分：双端收敛的完美呼吸波浪）
     final activePaint = Paint()
       ..color = activeColor
       ..strokeWidth = 4
@@ -394,20 +392,14 @@ class _WavySliderPainter extends CustomPainter {
       final path = Path();
       path.moveTo(0, midY);
 
-      const double maxAmplitude = 3.0; // 适当恢复一点振幅，因为两头收敛了，中间需要看得清
+      const double maxAmplitude = 3.0;
       const double waveLength = 54.0;
 
       for (double x = 0; x <= thumbX; x += 1.0) {
         final double relativeX = x / waveLength;
-
-        // 【左端收敛】靠近 0 的时候，振幅淡入 (0 ~ 48px 之间)
         final double fadeInFactor = (x / 48.0).clamp(0.0, 1.0);
-
-        // 【右端收敛】靠近滑块 thumbX 的时候，振幅淡出 (在距离滑块最后 32px 内收敛为 0)
         final double distanceFromThumb = thumbX - x;
         final double fadeOutFactor = (distanceFromThumb / 32.0).clamp(0.0, 1.0);
-
-        // 结合双端系数，计算当前点真正的振幅
         final double currentAmplitude =
             maxAmplitude * fadeInFactor * fadeOutFactor;
 
@@ -415,11 +407,10 @@ class _WavySliderPainter extends CustomPainter {
             midY + math.sin(relativeX * 2 * math.pi - phase) * currentAmplitude;
         path.lineTo(x, y);
       }
-      path.lineTo(thumbX, midY); // 确保最后一行完美对齐滑块中心线
+      path.lineTo(thumbX, midY);
       canvas.drawPath(path, activePaint);
     }
 
-    // 3. 绘制圆形滑块（Thumb）
     final thumbPaint = Paint()
       ..color = thumbColor
       ..style = PaintingStyle.fill;
@@ -436,7 +427,7 @@ class _WavySliderPainter extends CustomPainter {
   }
 }
 
-// ─── 播放控制按钮组（全面采用 M3 自带系统图标） ─────────────────────────────────────
+// ─── 播放控制按钮组 ─────────────────────────────────────
 
 class _PlaybackControls extends StatelessWidget {
   final MusicProvider provider;
@@ -445,9 +436,10 @@ class _PlaybackControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 💡 使用 watch 监听 MusicProvider，以便播放模式或状态改变时能及时重新渲染
+    final mp = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
-    // 完全使用 Flutter M3 自带的图标系统，免去图片断联风险
     IconData modeIcon(PlayMode mode) => switch (mode) {
       PlayMode.sequence => Icons.repeat_rounded,
       PlayMode.shuffle => Icons.shuffle_rounded,
@@ -461,10 +453,10 @@ class _PlaybackControls extends StatelessWidget {
     };
 
     return StreamBuilder<ProcessingState>(
-      stream: provider.player.processingStateStream,
+      stream: mp.player.processingStateStream,
       builder: (context, snapshot) {
         final state = snapshot.data ?? ProcessingState.idle;
-        final playing = provider.player.playing;
+        final playing = mp.player.playing;
 
         final isLoading =
             state == ProcessingState.loading ||
@@ -474,22 +466,19 @@ class _PlaybackControls extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-              onPressed: provider.togglePlayMode,
-              icon: Icon(modeIcon(provider.playMode)),
+              onPressed: mp.togglePlayMode,
+              icon: Icon(modeIcon(mp.playMode)),
               color: cs.onSurfaceVariant,
-              tooltip: modeTooltip(provider.playMode),
+              tooltip: modeTooltip(mp.playMode),
             ),
             const SizedBox(width: 20),
-            // 使用系统自带 M3 上一首图标
             IconButton(
-              onPressed: provider.playPrev,
+              onPressed: mp.playPrev,
               tooltip: '上一首',
               icon: const Icon(Icons.skip_previous_rounded, size: 32),
               color: cs.onSurface,
             ),
             const SizedBox(width: 20),
-
-            // 播放/暂停大按钮（标准 M3 FilledIconButton 变体）
             SizedBox(
               width: 72,
               height: 72,
@@ -504,7 +493,7 @@ class _PlaybackControls extends StatelessWidget {
                       ),
                     ),
                   IconButton.filled(
-                    onPressed: provider.togglePlay,
+                    onPressed: mp.togglePlay,
                     icon: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 150),
                       child: Icon(
@@ -521,22 +510,21 @@ class _PlaybackControls extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      elevation: 0, // M3 默认推荐扁平容器色，如果喜欢悬浮可以给 2
+                      elevation: 0,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 20),
-            // 使用系统自带 M3 下一首图标
             IconButton(
-              onPressed: provider.playNext,
+              onPressed: mp.playNext,
               tooltip: '下一首',
               icon: const Icon(Icons.skip_next_rounded, size: 32),
               color: cs.onSurface,
             ),
             const SizedBox(width: 20),
-            _VolumeButton(provider: provider),
+            _VolumeButton(provider: mp),
           ],
         );
       },
@@ -544,7 +532,7 @@ class _PlaybackControls extends StatelessWidget {
   }
 }
 
-// ─── 音量按钮（M3 风格化） ────────────────────────────────────────────────────
+// ─── 音量按钮 ────────────────────────────────────────────────────
 
 class _VolumeButton extends StatefulWidget {
   final MusicProvider provider;

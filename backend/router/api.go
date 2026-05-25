@@ -9,6 +9,7 @@ import (
 func Setup(r *gin.Engine) *gin.Engine {
 	authHandler := handler.NewAuthHandler()
 	musicHandler := handler.NewMusicHandler()
+	uploadSignHandler := handler.NewUploadSignHandler()
 
 	//限制上传大小
 	r.MaxMultipartMemory = 8 << 20 // 8MB
@@ -36,6 +37,11 @@ func Setup(r *gin.Engine) *gin.Engine {
 		playList := sandBox.Group("/playlist")
 		{
 			playList.POST("")
+		}
+
+		uploadSign := sandBox.Group("/upload-sign")
+		{
+			uploadSign.POST("", uploadSignHandler.GetUploadUrl)
 		}
 	}
 	return r

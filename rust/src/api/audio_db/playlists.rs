@@ -6,44 +6,50 @@ impl DbManager {
     // 1. 歌单自身的增删改查 (CRUD)
     // ─────────────────────────────────────────────
 
-    /// 创建一个新歌单
+    /// 创建一个新歌单（让 Rust 自动生成唯一 ID 并返回给前端）
     pub fn create_playlist(
         &self,
         name: &str,
         description: Option<String>,
+        cover_path: Option<String>, // 创建歌单时允许附带封面路径
         is_system: bool,
-    ) -> Result<()> {
+    ) -> Result<String> { // 🌟 建议返回 String (ID)，方便 Dart 创建完后直接拿着 ID 跳转
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp();
-
         let generated_id = uuid::Uuid::new_v4().to_string();
+
+        // 🌟 修复：SQL 显式指定 7 个字段
         conn.execute(
-            "INSERT INTO playlists (id, name, description, is_system, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6);",
+            "INSERT INTO playlists (id, name, description, cover_path, is_system, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7);",
             params![
                 &generated_id,
                 name,
                 description,
+                cover_path,
                 if is_system { 1 } else { 0 },
                 now,
                 now
             ],
         )?;
-        Ok(())
+        Ok(generated_id)
     }
 
     /// 修改歌单信息
     pub fn update_playlist(
         &self,
+        id: &str, // 🌟 必须传入歌单 ID，否则不知道更新谁！
         name: &str,
         description: Option<String>,
         cover_path: Option<String>,
     ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp();
+
+        // 🌟 修复：补上了缺少的逗号，并且带上了精准的 WHERE 子句
         conn.execute(
-            "UPDATE playlists SET name = ?1, description = ?2, cover_path=?3 updated_at = ?4 WHERE",
-            params![name, description, cover_path, now],
+            "UPDATE playlists SET name = ?1, description = ?2, cover_path = ?3, updated_at = ?4 WHERE id = ?5;",
+            params![name, description, cover_path, now, id],
         )?;
         Ok(())
     }
@@ -70,14 +76,15 @@ impl DbManager {
         let mut stmt = conn.prepare("SELECT id, name, description, cover_path, is_system, created_at, updated_at FROM playlists ORDER BY created_at DESC;")?;
 
         let rows = stmt.query_map([], |row| {
+            // 🌟 修复：拉直并完美对齐 0 ~ 6 的所有映射下标！
             Ok(PlaylistInfo {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 description: row.get(2)?,
                 cover_path: row.get(3)?,
-                is_system: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
+                is_system: row.get(4)?, // 从 3 修正为 4
+                created_at: row.get(5)?, // 从 4 修正为 5
+                updated_at: row.get(6)?, // 从 5 修正为 6
             })
         })?;
 

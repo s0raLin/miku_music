@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS playlists (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
+    cover_path TEXT,
     is_system INTEGER DEFAULT 0,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL

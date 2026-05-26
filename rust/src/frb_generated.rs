@@ -238,6 +238,7 @@ fn wire__crate__api__audio_db__DbManager_create_playlist_impl(
             >>::sse_decode(&mut deserializer);
             let api_name = <String>::sse_decode(&mut deserializer);
             let api_description = <Option<String>>::sse_decode(&mut deserializer);
+            let api_cover_path = <Option<String>>::sse_decode(&mut deserializer);
             let api_is_system = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
@@ -261,6 +262,7 @@ fn wire__crate__api__audio_db__DbManager_create_playlist_impl(
                             &*api_that_guard,
                             &api_name,
                             api_description,
+                            api_cover_path,
                             api_is_system,
                         )?;
                         Ok(output_ok)
@@ -1036,6 +1038,7 @@ fn wire__crate__api__audio_db__DbManager_update_playlist_impl(
             let api_that = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DbManager>,
             >>::sse_decode(&mut deserializer);
+            let api_id = <String>::sse_decode(&mut deserializer);
             let api_name = <String>::sse_decode(&mut deserializer);
             let api_description = <Option<String>>::sse_decode(&mut deserializer);
             let api_cover_path = <Option<String>>::sse_decode(&mut deserializer);
@@ -1059,6 +1062,7 @@ fn wire__crate__api__audio_db__DbManager_update_playlist_impl(
                         let api_that_guard = api_that_guard.unwrap();
                         let output_ok = crate::api::audio_db::DbManager::update_playlist(
                             &*api_that_guard,
+                            &api_id,
                             &api_name,
                             api_description,
                             api_cover_path,

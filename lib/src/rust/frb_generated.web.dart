@@ -63,6 +63,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AudioMetadata dco_decode_audio_metadata(dynamic raw);
 
   @protected
+  bool dco_decode_bool(dynamic raw);
+
+  @protected
   MusicInfo dco_decode_box_autoadd_music_info(dynamic raw);
 
   @protected
@@ -73,6 +76,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<LyricLine> dco_decode_list_lyric_line(dynamic raw);
+
+  @protected
+  List<MusicInfo> dco_decode_list_music_info(dynamic raw);
+
+  @protected
+  List<PlaylistInfo> dco_decode_list_playlist_info(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -91,6 +100,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  PlaylistInfo dco_decode_playlist_info(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -140,6 +152,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AudioMetadata sse_decode_audio_metadata(SseDeserializer deserializer);
 
   @protected
+  bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
   MusicInfo sse_decode_box_autoadd_music_info(SseDeserializer deserializer);
 
   @protected
@@ -150,6 +165,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<LyricLine> sse_decode_list_lyric_line(SseDeserializer deserializer);
+
+  @protected
+  List<MusicInfo> sse_decode_list_music_info(SseDeserializer deserializer);
+
+  @protected
+  List<PlaylistInfo> sse_decode_list_playlist_info(
+    SseDeserializer deserializer,
+  );
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -172,6 +195,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  PlaylistInfo sse_decode_playlist_info(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer);
 
   @protected
@@ -182,9 +208,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   BigInt sse_decode_usize(SseDeserializer deserializer);
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
   void sse_encode_AnyhowException(
@@ -229,6 +252,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_audio_metadata(AudioMetadata self, SseSerializer serializer);
 
   @protected
+  void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_music_info(
     MusicInfo self,
     SseSerializer serializer,
@@ -243,6 +269,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_lyric_line(
     List<LyricLine> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_music_info(
+    List<MusicInfo> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_playlist_info(
+    List<PlaylistInfo> self,
     SseSerializer serializer,
   );
 
@@ -274,6 +312,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_playlist_info(PlaylistInfo self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
 
   @protected
@@ -284,9 +325,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_usize(BigInt self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer);
 }
 
 // Section: wire_class

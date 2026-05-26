@@ -69,7 +69,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -938783631;
+  int get rustContentHash => 1505647324;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -81,9 +81,57 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<void> crateApiAudioDbDbManagerAddSongToPlaylist({
+    required DbManager that,
+    required String playlistId,
+    required String musicId,
+  });
+
+  Future<void> crateApiAudioDbDbManagerAddToHistory({
+    required DbManager that,
+    required String musicId,
+  });
+
+  Future<void> crateApiAudioDbDbManagerClearHistory({required DbManager that});
+
+  Future<void> crateApiAudioDbDbManagerCreatePlaylist({
+    required DbManager that,
+    required String id,
+    required String name,
+    String? description,
+    required bool isSystem,
+  });
+
+  Future<void> crateApiAudioDbDbManagerDeletePlaylist({
+    required DbManager that,
+    required String playlistId,
+  });
+
+  Future<void> crateApiAudioDbDbManagerDeleteSongCompletely({
+    required DbManager that,
+    required String musicId,
+  });
+
+  Future<List<PlaylistInfo>> crateApiAudioDbDbManagerGetAllPlaylists({
+    required DbManager that,
+  });
+
+  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetFavoriteSongs({
+    required DbManager that,
+  });
+
+  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetPlayHistory({
+    required DbManager that,
+  });
+
   Future<MusicInfo?> crateApiAudioDbDbManagerGetSong({
     required DbManager that,
     required String id,
+  });
+
+  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetSongsInPlaylist({
+    required DbManager that,
+    required String playlistId,
   });
 
   Future<void> crateApiAudioDbDbManagerInsertSong({
@@ -91,7 +139,33 @@ abstract class RustLibApi extends BaseApi {
     required MusicInfo music,
   });
 
-  Future<DbManager> crateApiAudioDbDbManagerNew({required String dbPath});
+  Future<void> crateApiAudioDbDbManagerInsertSongsBulk({
+    required DbManager that,
+    required List<MusicInfo> songs,
+  });
+
+  Future<bool> crateApiAudioDbDbManagerIsSongFavorited({
+    required DbManager that,
+    required String musicId,
+  });
+
+  Future<void> crateApiAudioDbDbManagerRemoveSongFromPlaylist({
+    required DbManager that,
+    required String playlistId,
+    required String musicId,
+  });
+
+  Future<bool> crateApiAudioDbDbManagerToggleSongFavorite({
+    required DbManager that,
+    required String musicId,
+  });
+
+  Future<void> crateApiAudioDbDbManagerUpdatePlaylist({
+    required DbManager that,
+    required String id,
+    required String name,
+    String? description,
+  });
 
   Future<List<LyricLine>> crateApiAudioInfoAudioInfoParseLrc({
     String? lrcContent,
@@ -125,6 +199,346 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  Future<void> crateApiAudioDbDbManagerAddSongToPlaylist({
+    required DbManager that,
+    required String playlistId,
+    required String musicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(playlistId, serializer);
+          sse_encode_String(musicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerAddSongToPlaylistConstMeta,
+        argValues: [that, playlistId, musicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerAddSongToPlaylistConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_add_song_to_playlist",
+        argNames: ["that", "playlistId", "musicId"],
+      );
+
+  @override
+  Future<void> crateApiAudioDbDbManagerAddToHistory({
+    required DbManager that,
+    required String musicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(musicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerAddToHistoryConstMeta,
+        argValues: [that, musicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerAddToHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_add_to_history",
+        argNames: ["that", "musicId"],
+      );
+
+  @override
+  Future<void> crateApiAudioDbDbManagerClearHistory({required DbManager that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerClearHistoryConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerClearHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_clear_history",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<void> crateApiAudioDbDbManagerCreatePlaylist({
+    required DbManager that,
+    required String id,
+    required String name,
+    String? description,
+    required bool isSystem,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(id, serializer);
+          sse_encode_String(name, serializer);
+          sse_encode_opt_String(description, serializer);
+          sse_encode_bool(isSystem, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerCreatePlaylistConstMeta,
+        argValues: [that, id, name, description, isSystem],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerCreatePlaylistConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_create_playlist",
+        argNames: ["that", "id", "name", "description", "isSystem"],
+      );
+
+  @override
+  Future<void> crateApiAudioDbDbManagerDeletePlaylist({
+    required DbManager that,
+    required String playlistId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(playlistId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerDeletePlaylistConstMeta,
+        argValues: [that, playlistId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerDeletePlaylistConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_delete_playlist",
+        argNames: ["that", "playlistId"],
+      );
+
+  @override
+  Future<void> crateApiAudioDbDbManagerDeleteSongCompletely({
+    required DbManager that,
+    required String musicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(musicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 6,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerDeleteSongCompletelyConstMeta,
+        argValues: [that, musicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerDeleteSongCompletelyConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_delete_song_completely",
+        argNames: ["that", "musicId"],
+      );
+
+  @override
+  Future<List<PlaylistInfo>> crateApiAudioDbDbManagerGetAllPlaylists({
+    required DbManager that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 7,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_playlist_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerGetAllPlaylistsConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerGetAllPlaylistsConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_get_all_playlists",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetFavoriteSongs({
+    required DbManager that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 8,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_music_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerGetFavoriteSongsConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerGetFavoriteSongsConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_get_favorite_songs",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetPlayHistory({
+    required DbManager that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 9,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_music_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerGetPlayHistoryConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerGetPlayHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_get_play_history",
+        argNames: ["that"],
+      );
+
+  @override
   Future<MusicInfo?> crateApiAudioDbDbManagerGetSong({
     required DbManager that,
     required String id,
@@ -141,7 +555,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 1,
+            funcId: 10,
             port: port_,
           );
         },
@@ -163,6 +577,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetSongsInPlaylist({
+    required DbManager that,
+    required String playlistId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(playlistId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_music_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerGetSongsInPlaylistConstMeta,
+        argValues: [that, playlistId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerGetSongsInPlaylistConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_get_songs_in_playlist",
+        argNames: ["that", "playlistId"],
+      );
+
+  @override
   Future<void> crateApiAudioDbDbManagerInsertSong({
     required DbManager that,
     required MusicInfo music,
@@ -179,7 +631,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 12,
             port: port_,
           );
         },
@@ -201,33 +653,200 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<DbManager> crateApiAudioDbDbManagerNew({required String dbPath}) {
+  Future<void> crateApiAudioDbDbManagerInsertSongsBulk({
+    required DbManager that,
+    required List<MusicInfo> songs,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_list_music_info(songs, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 13,
             port: port_,
           );
         },
         codec: SseCodec(
-          decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager,
+          decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateApiAudioDbDbManagerNewConstMeta,
-        argValues: [dbPath],
+        constMeta: kCrateApiAudioDbDbManagerInsertSongsBulkConstMeta,
+        argValues: [that, songs],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiAudioDbDbManagerNewConstMeta =>
-      const TaskConstMeta(debugName: "DbManager_new", argNames: ["dbPath"]);
+  TaskConstMeta get kCrateApiAudioDbDbManagerInsertSongsBulkConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_insert_songs_bulk",
+        argNames: ["that", "songs"],
+      );
+
+  @override
+  Future<bool> crateApiAudioDbDbManagerIsSongFavorited({
+    required DbManager that,
+    required String musicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(musicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 14,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerIsSongFavoritedConstMeta,
+        argValues: [that, musicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerIsSongFavoritedConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_is_song_favorited",
+        argNames: ["that", "musicId"],
+      );
+
+  @override
+  Future<void> crateApiAudioDbDbManagerRemoveSongFromPlaylist({
+    required DbManager that,
+    required String playlistId,
+    required String musicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(playlistId, serializer);
+          sse_encode_String(musicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerRemoveSongFromPlaylistConstMeta,
+        argValues: [that, playlistId, musicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerRemoveSongFromPlaylistConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_remove_song_from_playlist",
+        argNames: ["that", "playlistId", "musicId"],
+      );
+
+  @override
+  Future<bool> crateApiAudioDbDbManagerToggleSongFavorite({
+    required DbManager that,
+    required String musicId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(musicId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerToggleSongFavoriteConstMeta,
+        argValues: [that, musicId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerToggleSongFavoriteConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_toggle_song_favorite",
+        argNames: ["that", "musicId"],
+      );
+
+  @override
+  Future<void> crateApiAudioDbDbManagerUpdatePlaylist({
+    required DbManager that,
+    required String id,
+    required String name,
+    String? description,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(id, serializer);
+          sse_encode_String(name, serializer);
+          sse_encode_opt_String(description, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 17,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta,
+        argValues: [that, id, name, description],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_update_playlist",
+        argNames: ["that", "id", "name", "description"],
+      );
 
   @override
   Future<List<LyricLine>> crateApiAudioInfoAudioInfoParseLrc({
@@ -241,7 +860,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 18,
             port: port_,
           );
         },
@@ -272,7 +891,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 19,
             port: port_,
           );
         },
@@ -300,7 +919,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 20,
             port: port_,
           );
         },
@@ -327,7 +946,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 21,
             port: port_,
           );
         },
@@ -360,7 +979,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 8,
+              funcId: 22,
               port: port_,
             );
           },
@@ -469,6 +1088,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool dco_decode_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as bool;
+  }
+
+  @protected
   MusicInfo dco_decode_box_autoadd_music_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_music_info(raw);
@@ -490,6 +1115,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<LyricLine> dco_decode_list_lyric_line(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_lyric_line).toList();
+  }
+
+  @protected
+  List<MusicInfo> dco_decode_list_music_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_music_info).toList();
+  }
+
+  @protected
+  List<PlaylistInfo> dco_decode_list_playlist_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_playlist_info).toList();
   }
 
   @protected
@@ -519,7 +1156,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return MusicInfo(
       id: dco_decode_String(arr[0]),
       title: dco_decode_String(arr[1]),
-      artist: dco_decode_String(arr[2]),
+      artist: dco_decode_opt_String(arr[2]),
       album: dco_decode_opt_String(arr[3]),
       durationMs: dco_decode_i_64(arr[4]),
       coverPath: dco_decode_opt_String(arr[5]),
@@ -544,6 +1181,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_list_prim_u_8_strict(raw);
+  }
+
+  @protected
+  PlaylistInfo dco_decode_playlist_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return PlaylistInfo(
+      id: dco_decode_String(arr[0]),
+      name: dco_decode_String(arr[1]),
+      description: dco_decode_opt_String(arr[2]),
+      isSystem: dco_decode_i_32(arr[3]),
+      createdAt: dco_decode_i_64(arr[4]),
+      updatedAt: dco_decode_i_64(arr[5]),
+    );
   }
 
   @protected
@@ -663,6 +1316,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool sse_decode_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
   MusicInfo sse_decode_box_autoadd_music_info(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_music_info(deserializer));
@@ -693,6 +1352,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<MusicInfo> sse_decode_list_music_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <MusicInfo>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_music_info(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<PlaylistInfo> sse_decode_list_playlist_info(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <PlaylistInfo>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_playlist_info(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
@@ -712,7 +1397,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_id = sse_decode_String(deserializer);
     var var_title = sse_decode_String(deserializer);
-    var var_artist = sse_decode_String(deserializer);
+    var var_artist = sse_decode_opt_String(deserializer);
     var var_album = sse_decode_opt_String(deserializer);
     var var_durationMs = sse_decode_i_64(deserializer);
     var var_coverPath = sse_decode_opt_String(deserializer);
@@ -766,6 +1451,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PlaylistInfo sse_decode_playlist_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_name = sse_decode_String(deserializer);
+    var var_description = sse_decode_opt_String(deserializer);
+    var var_isSystem = sse_decode_i_32(deserializer);
+    var var_createdAt = sse_decode_i_64(deserializer);
+    var var_updatedAt = sse_decode_i_64(deserializer);
+    return PlaylistInfo(
+      id: var_id,
+      name: var_name,
+      description: var_description,
+      isSystem: var_isSystem,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+    );
+  }
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint32();
@@ -786,12 +1490,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   BigInt sse_decode_usize(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getBigUint64();
-  }
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8() != 0;
   }
 
   @protected
@@ -886,6 +1584,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_bool(bool self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
   void sse_encode_box_autoadd_music_info(
     MusicInfo self,
     SseSerializer serializer,
@@ -919,6 +1623,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_music_info(
+    List<MusicInfo> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_music_info(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_playlist_info(
+    List<PlaylistInfo> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_playlist_info(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
@@ -940,7 +1668,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
     sse_encode_String(self.title, serializer);
-    sse_encode_String(self.artist, serializer);
+    sse_encode_opt_String(self.artist, serializer);
     sse_encode_opt_String(self.album, serializer);
     sse_encode_i_64(self.durationMs, serializer);
     sse_encode_opt_String(self.coverPath, serializer);
@@ -985,6 +1713,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_playlist_info(PlaylistInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.name, serializer);
+    sse_encode_opt_String(self.description, serializer);
+    sse_encode_i_32(self.isSystem, serializer);
+    sse_encode_i_64(self.createdAt, serializer);
+    sse_encode_i_64(self.updatedAt, serializer);
+  }
+
+  @protected
   void sse_encode_u_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint32(self);
@@ -1005,12 +1744,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_usize(BigInt self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putBigUint64(self);
-  }
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self ? 1 : 0);
   }
 }
 
@@ -1033,10 +1766,121 @@ class DbManagerImpl extends RustOpaque implements DbManager {
         RustLib.instance.api.rust_arc_decrement_strong_count_DbManagerPtr,
   );
 
+  /// 向歌单中添加一首歌曲（附带排序权重）
+  Future<void> addSongToPlaylist({
+    required String playlistId,
+    required String musicId,
+  }) => RustLib.instance.api.crateApiAudioDbDbManagerAddSongToPlaylist(
+    that: this,
+    playlistId: playlistId,
+    musicId: musicId,
+  );
+
+  /// 记录一次播放历史，并自动执行“滑动窗口”裁剪
+  Future<void> addToHistory({required String musicId}) => RustLib.instance.api
+      .crateApiAudioDbDbManagerAddToHistory(that: this, musicId: musicId);
+
+  /// 清空播放历史
+  Future<void> clearHistory() =>
+      RustLib.instance.api.crateApiAudioDbDbManagerClearHistory(that: this);
+
+  /// 创建一个新歌单
+  Future<void> createPlaylist({
+    required String id,
+    required String name,
+    String? description,
+    required bool isSystem,
+  }) => RustLib.instance.api.crateApiAudioDbDbManagerCreatePlaylist(
+    that: this,
+    id: id,
+    name: name,
+    description: description,
+    isSystem: isSystem,
+  );
+
+  /// 删除指定歌单
+  /// ⚠️ 无外键约束，必须手动用事务清除该歌单下的关联映射记录
+  Future<void> deletePlaylist({required String playlistId}) =>
+      RustLib.instance.api.crateApiAudioDbDbManagerDeletePlaylist(
+        that: this,
+        playlistId: playlistId,
+      );
+
+  /// 核心逻辑：从媒体库彻底删除歌曲
+  /// ⚠️ 由于无外键约束，需要手动清理交叉连接表和播放历史
+  Future<void> deleteSongCompletely({required String musicId}) =>
+      RustLib.instance.api.crateApiAudioDbDbManagerDeleteSongCompletely(
+        that: this,
+        musicId: musicId,
+      );
+
+  /// 获取所有歌单（包括自建和系统歌单）
+  Future<List<PlaylistInfo>> getAllPlaylists() =>
+      RustLib.instance.api.crateApiAudioDbDbManagerGetAllPlaylists(that: this);
+
+  /// 3. 获取所有收藏的歌曲列表
+  /// ✨ 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
+  Future<List<MusicInfo>> getFavoriteSongs() =>
+      RustLib.instance.api.crateApiAudioDbDbManagerGetFavoriteSongs(that: this);
+
+  /// 获取最近播放的历史歌曲列表
+  Future<List<MusicInfo>> getPlayHistory() =>
+      RustLib.instance.api.crateApiAudioDbDbManagerGetPlayHistory(that: this);
+
+  /// 获取单首歌曲
   Future<MusicInfo?> getSong({required String id}) =>
       RustLib.instance.api.crateApiAudioDbDbManagerGetSong(that: this, id: id);
 
-  /// 插入一首新歌
+  /// 核心查询：基于 INNER JOIN 获取特定歌单内的所有歌曲
+  /// ✨ 即使数据由于没有外键产生了残留不一致，INNER JOIN 也会自动过滤非法的 music_id
+  Future<List<MusicInfo>> getSongsInPlaylist({required String playlistId}) =>
+      RustLib.instance.api.crateApiAudioDbDbManagerGetSongsInPlaylist(
+        that: this,
+        playlistId: playlistId,
+      );
+
+  /// 插入或更新单首歌曲
   Future<void> insertSong({required MusicInfo music}) => RustLib.instance.api
       .crateApiAudioDbDbManagerInsertSong(that: this, music: music);
+
+  /// 批量增量扫描歌曲（高效率事务处理）
+  Future<void> insertSongsBulk({required List<MusicInfo> songs}) => RustLib
+      .instance
+      .api
+      .crateApiAudioDbDbManagerInsertSongsBulk(that: this, songs: songs);
+
+  /// 1. 检查某首歌曲是否已被收藏
+  Future<bool> isSongFavorited({required String musicId}) => RustLib
+      .instance
+      .api
+      .crateApiAudioDbDbManagerIsSongFavorited(that: this, musicId: musicId);
+
+  /// 从指定歌单中移除一首歌曲
+  Future<void> removeSongFromPlaylist({
+    required String playlistId,
+    required String musicId,
+  }) => RustLib.instance.api.crateApiAudioDbDbManagerRemoveSongFromPlaylist(
+    that: this,
+    playlistId: playlistId,
+    musicId: musicId,
+  );
+
+  /// 2. 切换收藏状态 (Toggle 逻辑)
+  /// 如果已收藏则取消收藏，如果未收藏则加入收藏
+  Future<bool> toggleSongFavorite({required String musicId}) => RustLib
+      .instance
+      .api
+      .crateApiAudioDbDbManagerToggleSongFavorite(that: this, musicId: musicId);
+
+  /// 修改歌单信息
+  Future<void> updatePlaylist({
+    required String id,
+    required String name,
+    String? description,
+  }) => RustLib.instance.api.crateApiAudioDbDbManagerUpdatePlaylist(
+    that: this,
+    id: id,
+    name: name,
+    description: description,
+  );
 }

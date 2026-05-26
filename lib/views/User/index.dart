@@ -116,15 +116,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   AppSectionHeader(title: "我的音乐"),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 120,
+                    height: 96,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal, // 设置为横向滚动
                       itemBuilder: (BuildContext context, int index) =>
                           quickCards[index],
                       separatorBuilder: (BuildContext context, int index) =>
-                          const SizedBox(width: 12.0),
+                          const SizedBox(width: 10.0),
                       itemCount: quickCards.length,
-
                       // spacing: 12.0,
                       // runSpacing: 12.0,
                     ),
@@ -386,7 +385,7 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
   });
 }
 
-// --- 优化后的快捷入口卡片 ---
+// --- 快捷入口卡片 ---
 class _PlaylistQuickCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -401,8 +400,8 @@ class _PlaylistQuickCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 116,
-      height: 116,
+      width: 92,
+      height: 92,
       child: QuickActionCard(title: title, icon: icon, onTap: onTap),
     );
   }

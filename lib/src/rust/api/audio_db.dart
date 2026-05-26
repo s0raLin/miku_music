@@ -6,25 +6,86 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DbManager>>
 abstract class DbManager implements RustOpaqueInterface {
+  /// 向歌单中添加一首歌曲（附带排序权重）
+  Future<void> addSongToPlaylist({
+    required String playlistId,
+    required String musicId,
+  });
+
+  /// 记录一次播放历史，并自动执行“滑动窗口”裁剪
+  Future<void> addToHistory({required String musicId});
+
+  /// 清空播放历史
+  Future<void> clearHistory();
+
+  /// 创建一个新歌单
+  Future<void> createPlaylist({
+    required String id,
+    required String name,
+    String? description,
+    required bool isSystem,
+  });
+
+  /// 删除指定歌单
+  /// ⚠️ 无外键约束，必须手动用事务清除该歌单下的关联映射记录
+  Future<void> deletePlaylist({required String playlistId});
+
+  /// 核心逻辑：从媒体库彻底删除歌曲
+  /// ⚠️ 由于无外键约束，需要手动清理交叉连接表和播放历史
+  Future<void> deleteSongCompletely({required String musicId});
+
+  /// 获取所有歌单（包括自建和系统歌单）
+  Future<List<PlaylistInfo>> getAllPlaylists();
+
+  /// 3. 获取所有收藏的歌曲列表
+  /// ✨ 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
+  Future<List<MusicInfo>> getFavoriteSongs();
+
+  /// 获取最近播放的历史歌曲列表
+  Future<List<MusicInfo>> getPlayHistory();
+
+  /// 获取单首歌曲
   Future<MusicInfo?> getSong({required String id});
 
-  /// 插入一首新歌
+  /// 核心查询：基于 INNER JOIN 获取特定歌单内的所有歌曲
+  /// ✨ 即使数据由于没有外键产生了残留不一致，INNER JOIN 也会自动过滤非法的 music_id
+  Future<List<MusicInfo>> getSongsInPlaylist({required String playlistId});
+
+  /// 插入或更新单首歌曲
   Future<void> insertSong({required MusicInfo music});
 
-  // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
-  /// 初始化数据库并建表
-  static Future<DbManager> newInstance({required String dbPath}) =>
-      RustLib.instance.api.crateApiAudioDbDbManagerNew(dbPath: dbPath);
+  /// 批量增量扫描歌曲（高效率事务处理）
+  Future<void> insertSongsBulk({required List<MusicInfo> songs});
+
+  /// 1. 检查某首歌曲是否已被收藏
+  Future<bool> isSongFavorited({required String musicId});
+
+  /// 从指定歌单中移除一首歌曲
+  Future<void> removeSongFromPlaylist({
+    required String playlistId,
+    required String musicId,
+  });
+
+  /// 2. 切换收藏状态 (Toggle 逻辑)
+  /// 如果已收藏则取消收藏，如果未收藏则加入收藏
+  Future<bool> toggleSongFavorite({required String musicId});
+
+  /// 修改歌单信息
+  Future<void> updatePlaylist({
+    required String id,
+    required String name,
+    String? description,
+  });
 }
 
 class MusicInfo {
   final String id;
   final String title;
-  final String artist;
+  final String? artist;
   final String? album;
   final PlatformInt64 durationMs;
   final String? coverPath;
@@ -34,7 +95,7 @@ class MusicInfo {
   const MusicInfo({
     required this.id,
     required this.title,
-    required this.artist,
+    this.artist,
     this.album,
     required this.durationMs,
     this.coverPath,
@@ -66,4 +127,43 @@ class MusicInfo {
           coverPath == other.coverPath &&
           lyrics == other.lyrics &&
           path == other.path;
+}
+
+class PlaylistInfo {
+  final String id;
+  final String name;
+  final String? description;
+  final int isSystem;
+  final PlatformInt64 createdAt;
+  final PlatformInt64 updatedAt;
+
+  const PlaylistInfo({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.isSystem,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      name.hashCode ^
+      description.hashCode ^
+      isSystem.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlaylistInfo &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          description == other.description &&
+          isSystem == other.isSystem &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt;
 }

@@ -20,7 +20,6 @@ class _MusicPageState extends State<MusicPage> {
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
-
               Header(
                 expandedHeight: 120.0,
                 floating: false,
@@ -40,47 +39,12 @@ class _MusicPageState extends State<MusicPage> {
                     Tab(text: "歌单"), // 包含原歌单和收藏
                   ],
                 ),
-                actions: [
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) {
-                      if (value == "edit") {
-                        context.push("/user/edit-profile");
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => [
-                      const PopupMenuItem(
-                        value: "share",
-                        child: ListTile(
-                          leading: Icon(Icons.share_outlined),
-                          title: Text('分享'),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: ListTile(
-                          leading: Icon(Icons.edit),
-                          title: Text('编辑'),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ];
           },
-          body: const TabBarView(
-            children: [
-              LibraryTab(),
-              PlaylistTab(),
-            ],
-          ),
+          body: const TabBarView(children: [LibraryTab(), PlaylistTab()]),
         ),
       ),
     );
   }
 }
-
-

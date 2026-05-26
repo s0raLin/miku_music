@@ -618,42 +618,46 @@ class QuickActionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12), // ↓ 从 14 收紧到 12，减少白边
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 图标容器：secondaryContainer 与 ListTile 选中态色系统一
+              // 图标容器：放大到 56×56，图标 28px，视觉存在感更强
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer,
                   borderRadius: AppRadius.innerBR,
                 ),
                 child: SizedBox(
-                  width: 48,
-                  height: 48,
+                  width: 56, // ↑ 从 48 → 56
+                  height: 56, // ↑ 从 48 → 56
                   child: Icon(
                     icon,
                     color: colorScheme.onSecondaryContainer,
-                    size: 24,
+                    size: 28, // ↑ 从 24 → 28，图标更突出
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 6), // 固定间距替代 Spacer，避免图标贴顶/文字贴底
               Text(
                 title,
+                textAlign: TextAlign.center, //居中
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700, // 加重到 w700，与 icon 对比更明确
                   fontSize: 13,
+                  letterSpacing: -0.1, // 微收字间距，标题更紧实
+                  color: colorScheme.onSurface, // 明确用 onSurface，避免跟随默认灰
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 3), // ↑ 从 2 → 3，标题与副标题层次更清晰
                 Text(
                   subtitle!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                    fontSize: 11, // 略微收小，强化标题/副标题的大小层次
                   ),
                 ),
               ],
@@ -1125,7 +1129,6 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
     );
   }
 }
-
 
 class AdaptiveMenuItem {
   final IconData? icon;

@@ -107,7 +107,6 @@ class _FilesPageState extends State<FilesPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final colorScheme = Theme.of(context).colorScheme;
     // 当扫描流调用 musicProvider.updateLibrary() 时，这里会自动感知并触发重绘
     final songs = context.watch<MusicProvider>().library;
 
@@ -133,6 +132,18 @@ class _FilesPageState extends State<FilesPage>
                     Tab(text: "艺术家"),
                   ],
                 ),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      tooltip: "选择目录",
+                      onPressed: () {
+                        _showPickDialog();
+                      },
+                      icon: Icon(Icons.folder_open_rounded),
+                    ),
+                  ),
+                ],
               ),
             ];
           },
@@ -144,56 +155,6 @@ class _FilesPageState extends State<FilesPage>
             ],
           ),
         ),
-      ),
-
-      floatingActionButton: SpeedDial(
-        icon: Icons.menu, // 未展开时的图标
-        activeIcon: Icons.close, // 展开时的图标
-        backgroundColor: colorScheme.primaryContainer,
-        foregroundColor: colorScheme.onPrimaryContainer,
-        overlayColor: colorScheme.scrim,
-        overlayOpacity: 0.5,
-        spacing: 12, // 子按钮之间的间距
-        children: [
-          SpeedDialChild(
-            // child: const Icon(Icons.folder_open),
-            backgroundColor: colorScheme.secondaryContainer,
-            labelWidget: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 10.0,
-              ),
-              decoration: BoxDecoration(
-                // Stadium 形状的关键：使用 StadiumBorder 或者设置很大的圆角
-                borderRadius: BorderRadius.circular(28.0),
-                color: Theme.of(context).colorScheme.secondaryContainer,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min, // 紧凑
-                mainAxisAlignment: MainAxisAlignment.center, // 内容居中
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.folder_open,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                  const SizedBox(width: 8.0),
-                  Text(
-                    '选择目录',
-                    style: TextStyle(
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.w500,
-                      // 关键：标签的字体颜色
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            onTap: () => _showPickDialog(),
-          ),
-        ],
       ),
     );
   }

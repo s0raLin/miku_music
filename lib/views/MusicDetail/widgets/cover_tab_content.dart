@@ -509,14 +509,9 @@ class _PlaybackControls extends StatelessWidget {
                   height: playSize,
                   child: Stack(
                     alignment: Alignment.center,
+                    clipBehavior: Clip.none, // 允许微调的外圈指示器稍微溢出一点
                     children: [
-                      if (isLoading)
-                        Positioned.fill(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            color: cs.primary,
-                          ),
-                        ),
+                      // 1. 底层放实心按钮
                       FilledButton(
                         onPressed: mp.togglePlay,
                         style: FilledButton.styleFrom(
@@ -543,6 +538,24 @@ class _PlaybackControls extends StatelessWidget {
                           ),
                         ),
                       ),
+
+                      // 2. 顶层放加载圈，并往外扩张 4 像素，形成优雅的“外环包裹”效果
+                      if (isLoading)
+                        Positioned.fill(
+                          top: -2,
+                          bottom: -2,
+                          left: -2,
+                          right: -2,
+                          child: IgnorePointer(
+                            // 防止阻挡按钮的点击事件
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: cs.primary,
+                              // 稍微带有一点平滑边缘
+                              strokeCap: StrokeCap.round,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),

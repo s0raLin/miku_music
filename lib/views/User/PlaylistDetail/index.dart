@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:go_router/go_router.dart';
@@ -444,6 +443,13 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             scrolledUnderElevation: 2,
             leading: const BackButton(),
             actions: [
+              IconButton(
+                tooltip: "上传歌单",
+                onPressed: () {
+                  _showConfirmSyncDialog(context);
+                },
+                icon: const Icon(Icons.upload_rounded),
+              ),
               if (!isSystem)
                 Listener(
                   onPointerDown: (event) {
@@ -610,52 +616,52 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton: SpeedDial(
-        icon: Icons.menu,
-        activeIcon: Icons.close,
-        backgroundColor: colorScheme.primaryContainer,
-        foregroundColor: colorScheme.onPrimaryContainer,
-        overlayColor: colorScheme.scrim,
-        overlayOpacity: 0.5,
-        spacing: 12,
-        children: [
-          SpeedDialChild(
-            backgroundColor: colorScheme.secondaryContainer,
-            labelWidget: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 10.0,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28.0),
-                color: Theme.of(context).colorScheme.secondaryContainer,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.folder_open,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                  const SizedBox(width: 8.0),
-                  Text(
-                    '上传',
-                    style: TextStyle(
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            onTap: () => _showConfirmSyncDialog(context),
-          ),
-        ],
-      ),
+      // floatingActionButton: SpeedDial(
+      //   icon: Icons.menu,
+      //   activeIcon: Icons.close,
+      //   backgroundColor: colorScheme.primaryContainer,
+      //   foregroundColor: colorScheme.onPrimaryContainer,
+      //   overlayColor: colorScheme.scrim,
+      //   overlayOpacity: 0.5,
+      //   spacing: 12,
+      //   children: [
+      //     SpeedDialChild(
+      //       backgroundColor: colorScheme.secondaryContainer,
+      //       labelWidget: Container(
+      //         padding: const EdgeInsets.symmetric(
+      //           horizontal: 16.0,
+      //           vertical: 10.0,
+      //         ),
+      //         decoration: BoxDecoration(
+      //           borderRadius: BorderRadius.circular(28.0),
+      //           color: Theme.of(context).colorScheme.secondaryContainer,
+      //         ),
+      //         child: Row(
+      //           mainAxisSize: MainAxisSize.min,
+      //           mainAxisAlignment: MainAxisAlignment.center,
+      //           crossAxisAlignment: CrossAxisAlignment.center,
+      //           children: [
+      //             Icon(
+      //               Icons.folder_open,
+      //               size: 20,
+      //               color: Theme.of(context).colorScheme.onSecondaryContainer,
+      //             ),
+      //             const SizedBox(width: 8.0),
+      //             Text(
+      //               '上传',
+      //               style: TextStyle(
+      //                 fontSize: 14.0,
+      //                 fontWeight: FontWeight.w500,
+      //                 color: Theme.of(context).colorScheme.onSecondaryContainer,
+      //               ),
+      //             ),
+      //           ],
+      //         ),
+      //       ),
+      //       onTap: () => _showConfirmSyncDialog(context),
+      //     ),
+      //   ],
+      // ),
     );
   }
 

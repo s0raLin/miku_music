@@ -1125,3 +1125,146 @@ class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
     );
   }
 }
+
+
+class AdaptiveMenuItem {
+  final IconData? icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool isDestructive; // 是否为危险操作（如删除，M3风格下通常会变红）
+
+  const AdaptiveMenuItem({
+    required this.title,
+    required this.onTap,
+    this.icon,
+    this.isDestructive = false,
+  });
+}
+
+class AdaptiveMenu {
+  /// 弹出自适应菜单
+  static void show(
+    BuildContext context, {
+    required List<AdaptiveMenuItem> items,
+    required TapDownDetails details, // 用于精确定位桌面端的弹出位置
+    String? title, // 底部菜单可以带一个标题
+  }) {
+    // 阈值设为 600dp（Material 3 标准的大屏分界线）
+    final isCompact = MediaQuery.of(context).size.width < 600;
+
+    if (isCompact) {
+      _showBottomSheet(context, items, title);
+    } else {
+      _showPopupMenu(context, items, details);
+    }
+  }
+
+  /// 1. 移动端：Material 3 底部弹出菜单
+  static void _showBottomSheet(
+    BuildContext context,
+    List<AdaptiveMenuItem> items,
+    String? title,
+  ) {
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      // M3 默认支持圆角和拖拽条
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (title != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+              ...items.map(
+                (item) => ListTile(
+                  leading: item.icon != null ? Icon(item.icon) : null,
+                  title: Text(item.title),
+                  textColor: item.isDestructive
+                      ? theme.colorScheme.error
+                      : null,
+                  iconColor: item.isDestructive
+                      ? theme.colorScheme.error
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context); // 先关闭菜单
+                    item.onTap(); // 再执行事件
+                  },
+                ),
+              ),
+              const SizedBox(height: 16), // 底部留白
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 2. 桌面端：Material 3 下拉菜单
+  static void _showPopupMenu(
+    BuildContext context,
+    List<AdaptiveMenuItem> items,
+    TapDownDetails details,
+  ) {
+    final theme = Theme.of(context);
+    final position = details.globalPosition;
+
+    // 使用 showMenu 原生组件，它会自动应用 M3 的 Menu 样式（如阴影和高亮）
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: items.map((item) {
+        return PopupMenuItem<VoidCallback>(
+          value: item.onTap,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (item.icon != null) ...[
+                Icon(
+                  item.icon,
+                  color: item.isDestructive
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+              ],
+              Text(
+                item.title,
+                style: TextStyle(
+                  color: item.isDestructive
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    ).then((action) {
+      // 点击菜单项后执行对应回调
+      if (action != null) action();
+    });
+  }
+}

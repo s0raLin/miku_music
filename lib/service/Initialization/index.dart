@@ -78,6 +78,7 @@ class InitializationService {
     final results = await Future.wait([
       SettingService.loadColor(),
       SettingService.loadThemeMode(),
+      SettingService.loadSliderStyle(),
       SettingService.loadListDensity(),
       SettingService.loadAudioQuality(),
       SettingService.loadShowLyricCover(),
@@ -91,14 +92,15 @@ class InitializationService {
     return {
       'seedColor': results[0],
       'themeMode': results[1],
-      'listDensity': results[2],
-      'audioQuality': results[3],
-      'showLyricCover': results[4],
-      'autoPlayOnStart': results[5],
-      'showNotificationDetail': results[6],
-      'doubleTapToPlay': results[7],
-      'playlistSortBy': results[8],
-      'maxHistoryCount': results[9],
+      "sliderStyle": results[2],
+      'listDensity': results[3],
+      'audioQuality': results[4],
+      'showLyricCover': results[5],
+      'autoPlayOnStart': results[6],
+      'showNotificationDetail': results[7],
+      'doubleTapToPlay': results[8],
+      'playlistSortBy': results[9],
+      'maxHistoryCount': results[10],
     };
   }
 

@@ -47,6 +47,20 @@ class SettingService {
     return false;
   }
 
+  static Future<void> setSliderStyle(String sliderStyle) async {
+    final pfs = await SharedPreferences.getInstance();
+    await pfs.setString("sliderStyle", "straight");
+  }
+
+  static Future<String> loadSliderStyle() async {
+    final pfs = await SharedPreferences.getInstance();
+    final sliderStyle = pfs.getString("sliderStyle");
+    if (sliderStyle != null && sliderStyle.isNotEmpty) {
+      return sliderStyle;
+    }
+    return "straight";
+  }
+
   // 列表显示密度设置 (compact: 紧凑, normal: 正常, loose: 宽松)
   static Future setListDensity(String density) async {
     final pfs = await SharedPreferences.getInstance();

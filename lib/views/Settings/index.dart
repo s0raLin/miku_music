@@ -74,6 +74,34 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
+                    ListTile(
+                      leading: const Icon(Icons.linear_scale_rounded),
+                      title: const Text("进度条样式"),
+                      subtitle: Text(
+                        _getSliderStyleName(themeProvider.sliderStyle),
+                      ),
+                      trailing: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: "straight",
+                            icon: Icon(Icons.horizontal_rule_rounded),
+                          ),
+                          ButtonSegment(
+                            value: "wavy",
+                            icon: Icon(Icons.waves_rounded),
+                          ),
+                        ],
+                        selected: {themeProvider.sliderStyle},
+                        onSelectionChanged: (Set<String> newSelection) {
+                          themeProvider.setSliderStyle(newSelection.first);
+                        },
+                        showSelectedIcon: false,
+                        style: const ButtonStyle(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
 
                     Padding(
                       padding: const EdgeInsets.all(16),
@@ -396,6 +424,17 @@ class SettingsPage extends StatelessWidget {
         return "浅色模式";
       case ThemeMode.dark:
         return "深色模式";
+    }
+  }
+
+  String _getSliderStyleName(String style) {
+    switch (style) {
+      case "straight":
+        return "直线型";
+      case "wavy":
+        return "蛇形波浪";
+      default:
+        return "直线型";
     }
   }
 

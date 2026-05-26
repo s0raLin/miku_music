@@ -23,6 +23,7 @@ class ThemeProvider extends ChangeNotifier {
   // 设置默认值，防止在数据加载完成前出现空引用
   ThemeMode _themeMode = ThemeMode.system;
   Color _seedColor = const Color(0xFF6750A4);
+  String _sliderStyle = "straight";
   String _listDensity = "normal";
   String _audioQuality = "normal";
   bool _showLyricCover = true;
@@ -36,6 +37,7 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
   Color get seedColor => _seedColor;
+  String get sliderStyle => _sliderStyle;
   String get listDensity => _listDensity;
   String get audioQuality => _audioQuality;
   bool get showLyricCover => _showLyricCover;
@@ -49,6 +51,7 @@ class ThemeProvider extends ChangeNotifier {
     // 使用 ?? 语法确保如果 Map 里的值缺失，保留当前的默认值
     _seedColor = data['seedColor'] ?? _seedColor;
     _themeMode = data['themeMode'] ?? _themeMode;
+    _sliderStyle = data['sliderStyle'] ?? _sliderStyle;
     _listDensity = data['listDensity'] ?? _listDensity;
     _audioQuality = data['audioQuality'] ?? _audioQuality;
     _showLyricCover = data['showLyricCover'] ?? _showLyricCover;
@@ -75,6 +78,12 @@ class ThemeProvider extends ChangeNotifier {
     _seedColor = color;
     notifyListeners();
     SettingService.setColor(color);
+  }
+
+  void setSliderStyle(String sliderStyle) {
+    _sliderStyle = sliderStyle;
+    notifyListeners();
+    SettingService.setSliderStyle(sliderStyle);
   }
 
   void setListDensity(String density) {

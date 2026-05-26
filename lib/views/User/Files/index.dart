@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:myapp/components/Shared/index.dart';
@@ -25,6 +24,16 @@ class _FilesPageState extends State<FilesPage>
     with AutomaticKeepAliveClientMixin {
   List<String> _paths = [];
 
+  @override
+  void initState() {
+    super.initState();
+    FileService.loadPaths().then((p) {
+      setState(() {
+        _paths = p;
+      });
+    });
+  }
+
   // Stream<List<MusicInfo>>? _musicStream;
   // List<MusicInfo> _musicList = [];
   List<MusicInfo> _scannedSongs = [];
@@ -32,20 +41,8 @@ class _FilesPageState extends State<FilesPage>
 
   StreamSubscription? _scanSubscription;
 
-  @override
-  void initState() {
-    super.initState();
-    FileService.loadPaths().then((p) {
-      if (!mounted) return;
-      setState(() {
-        _paths = p;
-      });
-      _startScan();
-    });
-  }
-
   // 核心逻辑：将扫描流转换为“累加列表流”
-  void _startScan() {
+  void _startScan(List<String> paths) {
     _scanSubscription?.cancel(); //取消上一次扫描
     setState(() {
       // _musicList = [];
@@ -53,7 +50,7 @@ class _FilesPageState extends State<FilesPage>
       _scannedSongs = [];
     });
 
-    final scanProgressStream = MusicService.scanDirectories(_paths);
+    final scanProgressStream = MusicService.scanDirectories(paths);
     final musicProvider = context.read<MusicProvider>();
 
     //在进入流监听之前，死死锁住当前的页面级上下文
@@ -220,9 +217,9 @@ class _FilesPageState extends State<FilesPage>
       }
       await FileService.savePaths(result);
       setState(() {
-        _paths = result;
+        _paths = tmp;
       });
-      _startScan();
+      _startScan(tmp);
     }
   }
 
@@ -383,43 +380,48 @@ class _FilesPageState extends State<FilesPage>
             : constraints.maxWidth >= 1000
             ? 200.0
             : 220.0;
-        return CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-              sliver: SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: maxExtent,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.9,
+        return RefreshIndicator(
+          onRefresh: () async {
+            _startScan(_paths);
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                sliver: SliverGrid.builder(
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: maxExtent,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: entries.length,
+                  itemBuilder: (context, i) {
+                    final entry = entries[i];
+                    final cover = entry.value
+                        .firstWhere(
+                          (song) =>
+                              song.coverBytes != null &&
+                              song.coverBytes!.isNotEmpty,
+                          orElse: () => entry.value.first,
+                        )
+                        .coverBytes;
+                    return MediaGridCard(
+                      title: titleBuilder(entry),
+                      subtitle: subtitleBuilder(entry),
+                      coverBytes: cover,
+                      fallbackIcon: Icon(emptyIcon, size: 32),
+                      onTap: () => onTap(entry),
+                      coverAspectRatio: 1.22,
+                      titleLines: 1,
+                      contentSpacing: 4,
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+                    );
+                  },
                 ),
-                itemCount: entries.length,
-                itemBuilder: (context, i) {
-                  final entry = entries[i];
-                  final cover = entry.value
-                      .firstWhere(
-                        (song) =>
-                            song.coverBytes != null &&
-                            song.coverBytes!.isNotEmpty,
-                        orElse: () => entry.value.first,
-                      )
-                      .coverBytes;
-                  return MediaGridCard(
-                    title: titleBuilder(entry),
-                    subtitle: subtitleBuilder(entry),
-                    coverBytes: cover,
-                    fallbackIcon: Icon(emptyIcon, size: 32),
-                    onTap: () => onTap(entry),
-                    coverAspectRatio: 1.22,
-                    titleLines: 1,
-                    contentSpacing: 4,
-                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-                  );
-                },
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

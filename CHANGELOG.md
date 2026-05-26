@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.26.0](https://github.com/s0raLin/miku_music/compare/v1.25.0...v1.26.0) (2026-05-26)
+
+
+### Features
+
+* **backend:** implement upload signing functionality ([b338b2c](https://github.com/s0raLin/miku_music/commit/b338b2c508563f9cd7130864ceffcaa6ef95f1eb))
+* **db:** add cover path support to playlists ([c575a72](https://github.com/s0raLin/miku_music/commit/c575a7271bb5e6135735981c79c193a16d320db6))
+* **db:** implement playlist and history management in Rust ([3ab4de8](https://github.com/s0raLin/miku_music/commit/3ab4de874e5537b9261ebb3b9abb28b4771c699a))
+* **playlist:** implement server-side ID generation and lightweight song retrieval ([d0a70e9](https://github.com/s0raLin/miku_music/commit/d0a70e966b5a99d048c78f90f372214cbbd54ec6))
+* **ui:** add playback queue drawer to music detail view ([25d0c8c](https://github.com/s0raLin/miku_music/commit/25d0c8c2652dc14fba2c3bda2331bfe374794c18))
+* **ui:** implement adaptive Material 3 menus ([45dfc14](https://github.com/s0raLin/miku_music/commit/45dfc148e5b84609f93bb5368ac0445a0052ff92))
+* **ui:** improve playback controls and refactor action buttons ([5b5bff5](https://github.com/s0raLin/miku_music/commit/5b5bff516e6ccdc583c204a74b6b4132847a2003))
+
+
+### Bug Fixes
+
+* **db:** repair playlist CRUD operations and schema mismatch ([82667b5](https://github.com/s0raLin/miku_music/commit/82667b5831dc46e5b5c83cc2132a414bed379202))
+* **music:** improve error handling and stability in music module ([913421c](https://github.com/s0raLin/miku_music/commit/913421ca8c946d7d6803e822dac619cc26b30b87))
+
 ## [1.25.0](https://github.com/s0raLin/miku_music/compare/v1.24.0...v1.25.0) (2026-05-25)
 
 

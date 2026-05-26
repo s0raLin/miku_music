@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.0](https://github.com/s0raLin/miku_music/compare/v1.26.0...v1.27.0) (2026-05-26)
+
+
+### Features
+
+* **settings:** implement slider style customization ([4cc31f2](https://github.com/s0raLin/miku_music/commit/4cc31f282534eaf376ca59fd277d63d159b9e862))
+
 ## [1.26.0](https://github.com/s0raLin/miku_music/compare/v1.25.0...v1.26.0) (2026-05-26)
 
 

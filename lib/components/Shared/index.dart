@@ -638,7 +638,7 @@ class QuickActionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 4), // 固定间距替代 Spacer，避免图标贴顶/文字贴底
+              const SizedBox(height: 6), // 固定间距替代 Spacer，避免图标贴顶/文字贴底
               Text(
                 title,
                 textAlign: TextAlign.center, //居中

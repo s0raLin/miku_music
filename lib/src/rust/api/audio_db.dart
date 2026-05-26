@@ -64,6 +64,10 @@ abstract class DbManager implements RustOpaqueInterface {
   /// 1. 检查某首歌曲是否已被收藏
   Future<bool> isSongFavorited({required String musicId});
 
+  // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
+  static Future<DbManager> newInstance({required String dbPath}) =>
+      RustLib.instance.api.crateApiAudioDbDbManagerNew(dbPath: dbPath);
+
   /// 从指定歌单中移除一首歌曲
   Future<void> removeSongFromPlaylist({
     required String playlistId,

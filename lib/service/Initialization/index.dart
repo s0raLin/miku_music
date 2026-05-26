@@ -7,6 +7,7 @@ import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:myapp/service/MusicDb/index.dart';
 import 'package:myapp/service/Settings/index.dart';
 import 'package:myapp/src/rust/frb_generated.dart';
 import 'package:window_manager/window_manager.dart';
@@ -35,6 +36,9 @@ class InitializationService {
     if (!kIsWeb) {
       await RustLib.init();
     }
+
+    // 本地sqlite初始化
+    MusicDbService().init();
 
     // 加载环境变量
     try {

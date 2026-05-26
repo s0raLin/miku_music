@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS playlists (
     updated_at INTEGER NOT NULL
 );
 
--- 3. 歌单-歌曲 交叉连接表（无外键版）
+-- 3. 歌单-歌曲 交叉连接表
 CREATE TABLE IF NOT EXISTS playlist_songs (
     playlist_id TEXT,
     music_id TEXT,

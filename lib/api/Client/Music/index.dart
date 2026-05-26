@@ -83,7 +83,7 @@ class MusicApi {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        syncedLyrics = data['syncedLyrics'];
+        syncedLyrics = data['syncedLyrics'] ?? '';
         if (syncedLyrics.isEmpty) return ("", false);
       }
     } on DioException catch (e) {

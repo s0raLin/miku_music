@@ -56,6 +56,9 @@ class _FilesPageState extends State<FilesPage>
     final scanProgressStream = MusicService.scanDirectories(_paths);
     final musicProvider = context.read<MusicProvider>();
 
+    //在进入流监听之前，死死锁住当前的页面级上下文
+    final pageContext = context;
+
     _scanSubscription = scanProgressStream.listen(
       (s) {
         if (!mounted) return;
@@ -64,14 +67,12 @@ class _FilesPageState extends State<FilesPage>
 
           //每积累15首才刷新一次UI,避免频繁setState
           if (_scannedSongs.length % 15 == 0) {
-            setState(() {
-              musicProvider.updateLibrary(List.from(_scannedSongs));
-            });
+            musicProvider.updateLibrary(List.from(_scannedSongs));
           }
         }
       },
       onDone: () {
-        if (!mounted) return;
+        if (!pageContext.mounted) return;
 
         // 扫描完成,把最后剩下不够15首度歌曲一次性倒进去
         musicProvider.updateLibrary(List.from(_scannedSongs));
@@ -81,11 +82,11 @@ class _FilesPageState extends State<FilesPage>
         });
         if (_scannedSongs.isNotEmpty) {
           AppToast.success(
-            context,
+            pageContext,
             message: '扫描完成，共 ${_scannedSongs.length} 首歌曲',
           );
         } else {
-          AppToast.neutral(context, message: '未发现音频文件');
+          AppToast.neutral(pageContext, message: '未发现音频文件');
         }
       },
       onError: (e) {
@@ -93,7 +94,8 @@ class _FilesPageState extends State<FilesPage>
         setState(() {
           _isScanning = false;
         });
-        AppToast.error(context, message: '扫描出错: $e', title: '扫描失败');
+        if (!pageContext.mounted) return;
+        AppToast.error(pageContext, message: '扫描出错: $e', title: '扫描失败');
       },
     );
   }
@@ -108,7 +110,9 @@ class _FilesPageState extends State<FilesPage>
   Widget build(BuildContext context) {
     super.build(context);
     // 当扫描流调用 musicProvider.updateLibrary() 时，这里会自动感知并触发重绘
-    final songs = context.watch<MusicProvider>().library;
+    final songs = context.select<MusicProvider, List<MusicInfo>>(
+      (p) => p.library,
+    );
 
     final folderGroups = _groupByFolder(songs);
     final albumGroups = _groupByAlbum(songs);

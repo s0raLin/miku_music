@@ -122,18 +122,23 @@ class _LyricsSectionState extends State<LyricsSection>
         action: FilledButton.icon(
           onPressed: () async {
             AppToast.neutral(context, message: "正在查找中...");
-            final result = await MusicApi.searchLyrics(
-              music?.artist,
-              music?.title,
-            );
-            final isOk = result.$2;
-            if (!context.mounted) return;
-            if (!isOk) {
-              AppToast.neutral(context, message: "暂未找到歌词");
-              return;
+            try {
+              final result = await MusicApi.searchLyrics(
+                music?.artist,
+                music?.title,
+              );
+              final isOk = result.$2;
+
+              if (!context.mounted) return;
+              if (!isOk) {
+                AppToast.neutral(context, message: "暂未找到歌词");
+                return;
+              }
+              mp.setCurrentLrc(result.$1);
+              AppToast.neutral(context, message: "歌词获取成功");
+            } catch (e) {
+              AppToast.error(context, message: "歌词获取失败");
             }
-            mp.setCurrentLrc(result.$1);
-            AppToast.neutral(context, message: "歌词获取成功");
           },
           label: const Text("下载歌词"),
           icon: const Icon(Icons.download_rounded),

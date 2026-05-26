@@ -22,7 +22,7 @@ pub struct AudioInfo {
 }
 
 pub struct LyricLine {
-    pub time_ms: i64,
+    pub time_ms: i32,
     pub text: String,
 }
 
@@ -96,7 +96,7 @@ impl AudioInfo {
 
                 let text = caps.get(3).unwrap().as_str().trim().to_string();
 
-                let time_ms = (min * 60_000) + (sec * 1000.0) as i64;
+                let time_ms = (min * 60_000) + (sec * 1000.0) as i32;
                 // let duration = Duration::milliseconds(total_ms);
 
                 lyrics.push(LyricLine {

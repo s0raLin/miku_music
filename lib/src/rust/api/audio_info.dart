@@ -59,7 +59,7 @@ class AudioInfo {
 }
 
 class LyricLine {
-  final PlatformInt64 timeMs;
+  final int timeMs;
   final String text;
 
   const LyricLine({required this.timeMs, required this.text});

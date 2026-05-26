@@ -32,7 +32,9 @@ class InitializationService {
     WidgetsFlutterBinding.ensureInitialized();
 
     // 环境好了，放心初始化 Rust 库和本地配置
-    await RustLib.init();
+    if (!kIsWeb) {
+      await RustLib.init();
+    }
 
     // 加载环境变量
     try {

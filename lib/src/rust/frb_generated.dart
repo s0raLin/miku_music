@@ -69,7 +69,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 1850747705;
+  int get rustContentHash => 791080442;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -96,7 +96,6 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiAudioDbDbManagerCreatePlaylist({
     required DbManager that,
-    required String id,
     required String name,
     String? description,
     required bool isSystem,
@@ -127,6 +126,11 @@ abstract class RustLibApi extends BaseApi {
   Future<MusicInfo?> crateApiAudioDbDbManagerGetSong({
     required DbManager that,
     required String id,
+  });
+
+  Future<List<String>> crateApiAudioDbDbManagerGetSongIdsInPlaylist({
+    required DbManager that,
+    required String playlistId,
   });
 
   Future<List<MusicInfo>> crateApiAudioDbDbManagerGetSongsInPlaylist({
@@ -164,7 +168,6 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiAudioDbDbManagerUpdatePlaylist({
     required DbManager that,
-    required String id,
     required String name,
     String? description,
     String? coverPath,
@@ -316,7 +319,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<void> crateApiAudioDbDbManagerCreatePlaylist({
     required DbManager that,
-    required String id,
     required String name,
     String? description,
     required bool isSystem,
@@ -329,7 +331,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          sse_encode_String(id, serializer);
           sse_encode_String(name, serializer);
           sse_encode_opt_String(description, serializer);
           sse_encode_bool(isSystem, serializer);
@@ -345,7 +346,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerCreatePlaylistConstMeta,
-        argValues: [that, id, name, description, isSystem],
+        argValues: [that, name, description, isSystem],
         apiImpl: this,
       ),
     );
@@ -354,7 +355,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAudioDbDbManagerCreatePlaylistConstMeta =>
       const TaskConstMeta(
         debugName: "DbManager_create_playlist",
-        argNames: ["that", "id", "name", "description", "isSystem"],
+        argNames: ["that", "name", "description", "isSystem"],
       );
 
   @override
@@ -580,7 +581,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetSongsInPlaylist({
+  Future<List<String>> crateApiAudioDbDbManagerGetSongIdsInPlaylist({
     required DbManager that,
     required String playlistId,
   }) {
@@ -597,6 +598,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             generalizedFrbRustBinding,
             serializer,
             funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerGetSongIdsInPlaylistConstMeta,
+        argValues: [that, playlistId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerGetSongIdsInPlaylistConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_get_song_ids_in_playlist",
+        argNames: ["that", "playlistId"],
+      );
+
+  @override
+  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetSongsInPlaylist({
+    required DbManager that,
+    required String playlistId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(playlistId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
             port: port_,
           );
         },
@@ -634,7 +673,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 13,
             port: port_,
           );
         },
@@ -672,7 +711,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 14,
             port: port_,
           );
         },
@@ -710,7 +749,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 15,
             port: port_,
           );
         },
@@ -741,7 +780,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 16,
             port: port_,
           );
         },
@@ -779,7 +818,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 17,
             port: port_,
           );
         },
@@ -817,7 +856,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 18,
             port: port_,
           );
         },
@@ -841,7 +880,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<void> crateApiAudioDbDbManagerUpdatePlaylist({
     required DbManager that,
-    required String id,
     required String name,
     String? description,
     String? coverPath,
@@ -854,14 +892,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          sse_encode_String(id, serializer);
           sse_encode_String(name, serializer);
           sse_encode_opt_String(description, serializer);
           sse_encode_opt_String(coverPath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 19,
             port: port_,
           );
         },
@@ -870,7 +907,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta,
-        argValues: [that, id, name, description, coverPath],
+        argValues: [that, name, description, coverPath],
         apiImpl: this,
       ),
     );
@@ -879,7 +916,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta =>
       const TaskConstMeta(
         debugName: "DbManager_update_playlist",
-        argNames: ["that", "id", "name", "description", "coverPath"],
+        argNames: ["that", "name", "description", "coverPath"],
       );
 
   @override
@@ -894,7 +931,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -925,7 +962,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -953,7 +990,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -980,7 +1017,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -1013,7 +1050,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 23,
+              funcId: 24,
               port: port_,
             );
           },
@@ -1143,6 +1180,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 dco_decode_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeI64(raw);
+  }
+
+  @protected
+  List<String> dco_decode_list_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_String).toList();
   }
 
   @protected
@@ -1372,6 +1415,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getPlatformInt64();
+  }
+
+  @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <String>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_String(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -1648,6 +1703,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_String(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_lyric_line(
     List<LyricLine> self,
     SseSerializer serializer,
@@ -1824,13 +1888,11 @@ class DbManagerImpl extends RustOpaque implements DbManager {
 
   /// 创建一个新歌单
   Future<void> createPlaylist({
-    required String id,
     required String name,
     String? description,
     required bool isSystem,
   }) => RustLib.instance.api.crateApiAudioDbDbManagerCreatePlaylist(
     that: this,
-    id: id,
     name: name,
     description: description,
     isSystem: isSystem,
@@ -1868,6 +1930,13 @@ class DbManagerImpl extends RustOpaque implements DbManager {
   /// 获取单首歌曲
   Future<MusicInfo?> getSong({required String id}) =>
       RustLib.instance.api.crateApiAudioDbDbManagerGetSong(that: this, id: id);
+
+  /// 获取某个歌单内所有歌曲的 ID 列表（轻量级查询）
+  Future<List<String>> getSongIdsInPlaylist({required String playlistId}) =>
+      RustLib.instance.api.crateApiAudioDbDbManagerGetSongIdsInPlaylist(
+        that: this,
+        playlistId: playlistId,
+      );
 
   /// 核心查询：基于 INNER JOIN 获取特定歌单内的所有歌曲
   /// ✨ 即使数据由于没有外键产生了残留不一致，INNER JOIN 也会自动过滤非法的 music_id
@@ -1912,13 +1981,11 @@ class DbManagerImpl extends RustOpaque implements DbManager {
 
   /// 修改歌单信息
   Future<void> updatePlaylist({
-    required String id,
     required String name,
     String? description,
     String? coverPath,
   }) => RustLib.instance.api.crateApiAudioDbDbManagerUpdatePlaylist(
     that: this,
-    id: id,
     name: name,
     description: description,
     coverPath: coverPath,

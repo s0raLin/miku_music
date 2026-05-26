@@ -38,7 +38,7 @@ class InitializationService {
     }
 
     // 本地sqlite初始化
-    MusicDbService().init();
+    await MusicDbService().init();
 
     // 加载环境变量
     try {

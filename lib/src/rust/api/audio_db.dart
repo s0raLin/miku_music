@@ -24,7 +24,6 @@ abstract class DbManager implements RustOpaqueInterface {
 
   /// 创建一个新歌单
   Future<void> createPlaylist({
-    required String id,
     required String name,
     String? description,
     required bool isSystem,
@@ -50,6 +49,9 @@ abstract class DbManager implements RustOpaqueInterface {
 
   /// 获取单首歌曲
   Future<MusicInfo?> getSong({required String id});
+
+  /// 获取某个歌单内所有歌曲的 ID 列表（轻量级查询）
+  Future<List<String>> getSongIdsInPlaylist({required String playlistId});
 
   /// 核心查询：基于 INNER JOIN 获取特定歌单内的所有歌曲
   /// ✨ 即使数据由于没有外键产生了残留不一致，INNER JOIN 也会自动过滤非法的 music_id
@@ -80,7 +82,6 @@ abstract class DbManager implements RustOpaqueInterface {
 
   /// 修改歌单信息
   Future<void> updatePlaylist({
-    required String id,
     required String name,
     String? description,
     String? coverPath,

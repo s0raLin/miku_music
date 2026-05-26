@@ -9,18 +9,19 @@ impl DbManager {
     /// 创建一个新歌单
     pub fn create_playlist(
         &self,
-        id: &str,
         name: &str,
         description: Option<String>,
         is_system: bool,
     ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp();
+
+        let generated_id = uuid::Uuid::new_v4().to_string();
         conn.execute(
             "INSERT INTO playlists (id, name, description, is_system, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6);",
             params![
-                id,
+                &generated_id,
                 name,
                 description,
                 if is_system { 1 } else { 0 },
@@ -32,12 +33,17 @@ impl DbManager {
     }
 
     /// 修改歌单信息
-    pub fn update_playlist(&self, id: &str, name: &str, description: Option<String>, cover_path: Option<String>) -> Result<()> {
+    pub fn update_playlist(
+        &self,
+        name: &str,
+        description: Option<String>,
+        cover_path: Option<String>,
+    ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp();
         conn.execute(
-            "UPDATE playlists SET name = ?1, description = ?2, cover_path=?3 updated_at = ?4 WHERE id = ?5;",
-            params![name, description, cover_path, now, id],
+            "UPDATE playlists SET name = ?1, description = ?2, cover_path=?3 updated_at = ?4 WHERE",
+            params![name, description, cover_path, now],
         )?;
         Ok(())
     }
@@ -72,7 +78,6 @@ impl DbManager {
                 is_system: row.get(3)?,
                 created_at: row.get(4)?,
                 updated_at: row.get(5)?,
-
             })
         })?;
 
@@ -107,6 +112,19 @@ impl DbManager {
             params![playlist_id, music_id, max_order + 1],
         )?;
         Ok(())
+    }
+
+    /// 获取某个歌单内所有歌曲的 ID 列表（轻量级查询）
+    pub fn get_song_ids_in_playlist(&self, playlist_id: &str) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT music_id FROM playlist_songs WHERE playlist_id = ?1 ORDER BY sort_order ASC;"
+        )?;
+
+        let ids = stmt.query_map([playlist_id], |row| row.get::<_, String>(0))?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(ids)
     }
 
     /// 从指定歌单中移除一首歌曲

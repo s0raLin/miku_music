@@ -439,7 +439,7 @@ class MusicProvider extends ChangeNotifier {
     // 先通知 UI 更新歌词，再执行耗时的音频加载
     notifyListeners();
 
-     // 封面懒加载
+    // 封面懒加载
     if (music.coverBytes == null || music.coverBytes!.isEmpty) {
       MusicService.parse(music.id)
           .then((updated) {
@@ -689,6 +689,7 @@ class MusicProvider extends ChangeNotifier {
           songIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+          coverPath: '',
         ),
       );
     }
@@ -703,6 +704,7 @@ class MusicProvider extends ChangeNotifier {
           songIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+          coverPath: '',
         ),
       );
     }
@@ -733,6 +735,7 @@ class MusicProvider extends ChangeNotifier {
         songIds: [],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        coverPath: '',
       ),
     );
     _savePlaylists();

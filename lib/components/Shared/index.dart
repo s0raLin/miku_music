@@ -629,22 +629,22 @@ class QuickActionCard extends StatelessWidget {
                   borderRadius: AppRadius.innerBR,
                 ),
                 child: SizedBox(
-                  width: 56, // ↑ 从 48 → 56
-                  height: 56, // ↑ 从 48 → 56
+                  width: 46, // ↑ 从 48 → 56
+                  height: 46, // ↑ 从 48 → 56
                   child: Icon(
                     icon,
                     color: colorScheme.onSecondaryContainer,
-                    size: 28, // ↑ 从 24 → 28，图标更突出
+                    size: 24, // ↑ 从 24 → 28，图标更突出
                   ),
                 ),
               ),
-              const SizedBox(height: 6), // 固定间距替代 Spacer，避免图标贴顶/文字贴底
+              const SizedBox(height: 4), // 固定间距替代 Spacer，避免图标贴顶/文字贴底
               Text(
                 title,
                 textAlign: TextAlign.center, //居中
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700, // 加重到 w700，与 icon 对比更明确
-                  fontSize: 13,
+                  fontSize: 12,
                   letterSpacing: -0.1, // 微收字间距，标题更紧实
                   color: colorScheme.onSurface, // 明确用 onSurface，避免跟随默认灰
                 ),
@@ -657,7 +657,7 @@ class QuickActionCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
-                    fontSize: 11, // 略微收小，强化标题/副标题的大小层次
+                    fontSize: 11,
                   ),
                 ),
               ],

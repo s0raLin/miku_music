@@ -6,6 +6,7 @@ class Playlist {
   final String name;
   final String? description;
   final Uint8List? coverBytes;
+  final String? coverPath;
   final List<String> songIds;
   final bool isSystem;
   final DateTime createdAt;
@@ -16,6 +17,7 @@ class Playlist {
     required this.name,
     this.description,
     this.coverBytes,
+    required this.coverPath,
     required this.songIds,
     this.isSystem = false,
     required this.createdAt,
@@ -27,6 +29,7 @@ class Playlist {
     String? name,
     String? description,
     Uint8List? coverBytes,
+    String? coverPath,
     List<String>? songIds,
     bool? isSystem,
     DateTime? createdAt,
@@ -37,6 +40,7 @@ class Playlist {
       name: name ?? this.name,
       description: description ?? this.description,
       coverBytes: coverBytes ?? this.coverBytes,
+      coverPath: coverPath ?? this.coverPath,
       songIds: songIds ?? this.songIds,
       isSystem: isSystem ?? this.isSystem,
       createdAt: createdAt ?? this.createdAt,
@@ -49,7 +53,7 @@ class Playlist {
       'id': id,
       'name': name,
       'description': description,
-      'songIds': songIds,
+      // 'songIds': songIds,
       'isSystem': isSystem,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -63,6 +67,7 @@ class Playlist {
       description: json['description'],
       // 封面需要异步下载，这里先初始化为空，或者修改模型支持 URL
       coverBytes: null,
+      coverPath: '',
       // 原始数据里没给歌曲列表，先给个空集
       songIds: [],
       // specialType 为 5 通常是网易云的“我喜欢的音乐”系统歌单
@@ -77,6 +82,7 @@ class Playlist {
       id: json['id'],
       name: json['name'],
       description: json['description'],
+      coverPath: '',
       songIds: List<String>.from(json['songIds'] ?? []),
       isSystem: json['isSystem'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/src/rust/api/audio_db.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -34,5 +35,44 @@ class MusicDbService {
     }
   }
 
-  
+  Future<void> createPlaylist(String? coverPath, String name) async {
+    await _dbManager?.createPlaylist(name: name, isSystem: false);
+  }
+
+  Future<List<Playlist>> getAllRustPlaylists() async {
+    final rustPlaylists = await _dbManager?.getAllPlaylists();
+    if (rustPlaylists == null || rustPlaylists.isEmpty) {
+      debugPrint("歌单列表为空");
+      return [];
+    }
+
+    final List<Playlist> finalPlaylists = [];
+
+    for (var rp in rustPlaylists) {
+      final songIds =
+          await _dbManager?.getSongIdsInPlaylist(playlistId: rp.id) ?? [];
+
+      // 3. 拼装成前端最喜欢的完全体 Model
+      finalPlaylists.add(
+        Playlist(
+          id: rp.id,
+          name: rp.name,
+          description: rp.description,
+          coverPath: rp.coverPath,
+          isSystem: rp.isSystem == 1,
+          songIds: songIds,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(
+            rp.createdAt.toInt() * 1000, // 因为 Rust 存的是秒，Dart 需要毫秒，所以乘以 1000
+            isUtc: true, // 如果你 Rust 存的是 Utc 时间戳，建议带上
+          ).toLocal(), // 自动转换为用户 Arch Linux / 手机系统所在的本地时区
+          updatedAt: DateTime.fromMillisecondsSinceEpoch(
+            rp.updatedAt.toInt() * 1000,
+            isUtc: true,
+          ).toLocal(),
+        ),
+      );
+    }
+
+    return finalPlaylists;
+  }
 }

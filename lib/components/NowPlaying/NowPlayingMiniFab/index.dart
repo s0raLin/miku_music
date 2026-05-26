@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -11,51 +10,69 @@ class NowPlayingMiniFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final mp = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
-    final music = context.select<MusicProvider, MusicInfo?>(
-      (p) => p.currentMusic,
-    );
-    final isPlaying = context.select<MusicProvider, bool>(
-      (p) => p.player.playing,
-    );
-    if (music == null) {
-      return SizedBox.shrink();
-    }
-    return GestureDetector(
-      // 1. 长按：恢复成 Bar 模式
-      onLongPress: () {
-        mp.setMiniMode(false);
-        Feedback.forLongPress(context);
-      },
-      // 2. 双击：跳转到详情页 (或者你可以把单击设为跳转，长按设为模式切换)
-      onDoubleTap: () {
-        context.push('/music-detail');
-      },
-      child: FloatingActionButton(
-        onPressed: () {
-          // 2. 短击：播放暂停
-          mp.togglePlay();
+    final music = mp.currentMusic;
+
+    // 1. 无歌曲播放时直接消失
+    if (music == null) return const SizedBox.shrink();
+
+    final isPlaying = mp.player.playing;
+
+    return Tooltip(
+      message: isPlaying ? '长按恢复播放条' : '播放/暂停',
+      child: GestureDetector(
+        // M3 推荐：双击进入详情页，长按切换 Mini 模式，单击控制播放
+        onLongPress: () {
+          mp.setMiniMode(false);
+          Feedback.forLongPress(context);
         },
-        backgroundColor: cs.primaryContainer,
-        elevation: 6,
-        shape: const CircleBorder(),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            _MiniCircularProgress(),
-            Icon(
-              isPlaying
-                  ? Icons.music_note_rounded
-                  : Icons.play_arrow_rounded,
-              color: cs.onPrimaryContainer,
-            ),
-          ],
+        onDoubleTap: () => context.push('/music-detail'),
+        child: SizedBox(
+          width: 56,
+          height: 56,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 2. 环绕在最外圈的 M3 进度条
+              const _FabCircularProgress(),
+
+              // 3. 核心 M3 按钮：使用 FilledTonalIconButton（色调图标按钮），比标准 primaryContainer 更温和现代
+              IconButton.filledTonal(
+                onPressed: () => mp.togglePlay(),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  maximumSize: const Size(44, 44),
+                  backgroundColor: cs.primaryContainer,
+                  foregroundColor: cs.onPrimaryContainer,
+                  elevation: 3, // 赋予轻微悬浮感
+                ),
+                // 使用带有平滑缩放过渡的图标切换
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, anim) =>
+                      ScaleTransition(scale: anim, child: child),
+                  child: Icon(
+                    isPlaying
+                        ? Icons.music_note_rounded
+                        : Icons.play_arrow_rounded,
+                    key: ValueKey<bool>(isPlaying),
+                    size: 22,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _MiniCircularProgress extends StatelessWidget {
+// ============================================================
+// 统一收纳的 M3 环绕式进度条
+// ============================================================
+class _FabCircularProgress extends StatelessWidget {
+  const _FabCircularProgress();
+
   @override
   Widget build(BuildContext context) {
     final mp = context.read<MusicProvider>();
@@ -75,13 +92,14 @@ class _MiniCircularProgress extends StatelessWidget {
             : 0.0;
 
         return SizedBox(
-          width: 48,
-          height: 48,
+          width: 54, // 刚好包裹在 44dp 按钮外侧，形成精美外环
+          height: 54,
           child: CircularProgressIndicator(
             value: value,
-            strokeWidth: 2,
+            strokeWidth: 2.5, // 稍微加粗，符合 M3 明确的几何线条感
             color: cs.primary,
-            backgroundColor: cs.primary.withOpacity(0.1),
+            backgroundColor: cs.primary.withValues(alpha: 0.12),
+            strokeCap: StrokeCap.round, // 圆头进度条，视觉极佳
           ),
         );
       },

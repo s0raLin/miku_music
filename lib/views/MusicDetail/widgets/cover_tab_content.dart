@@ -434,6 +434,7 @@ class _PlaybackControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pageContext = context;
     final mp = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
@@ -574,8 +575,19 @@ class _PlaybackControls extends StatelessWidget {
                 ),
                 SizedBox(width: gap),
 
-                // 音量
-                _VolumeButton(provider: mp, size: btnSize),
+                _CtrlButton(
+                  size: btnSize,
+                  tooltip: '当前播放队列',
+                  onPressed: () {
+                    // 顺着 context 往上找最近的 Scaffold，并优雅地拉出 EndDrawer 侧边栏
+                    Scaffold.of(pageContext).openEndDrawer();
+                  },
+                  child: Icon(
+                    Icons.queue_music_rounded,
+                    size: iconSize,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
               ],
             );
           },
@@ -610,208 +622,6 @@ class _CtrlButton extends StatelessWidget {
           width: size,
           height: size,
           child: Center(child: child),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── 音量按钮 ────────────────────────────────────────────────────
-class _VolumeButton extends StatefulWidget {
-  final double size;
-  final MusicProvider provider;
-  const _VolumeButton({required this.provider, required this.size});
-
-  @override
-  State<_VolumeButton> createState() => _VolumeButtonState();
-}
-
-class _VolumeButtonState extends State<_VolumeButton>
-    with SingleTickerProviderStateMixin {
-  // ── Overlay 定位 ──
-  final LayerLink _layerLink = LayerLink();
-  final OverlayPortalController _overlayCtrl = OverlayPortalController();
-
-  bool _visible = false;
-  Timer? _hideTimer;
-  double _lastNonZeroVolume = 1.0;
-
-  late final AnimationController _animCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 200),
-  );
-  late final Animation<double> _fadeAnim = CurvedAnimation(
-    parent: _animCtrl,
-    curve: Curves.easeOut,
-  );
-
-  void _show() {
-    if (!_visible) {
-      _overlayCtrl.show();
-      setState(() => _visible = true);
-      _animCtrl.forward();
-    }
-    _resetTimer();
-  }
-
-  void _hide() {
-    _animCtrl.reverse().then((_) {
-      if (mounted) {
-        _overlayCtrl.hide();
-        setState(() => _visible = false);
-      }
-    });
-  }
-
-  void _resetTimer() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 2), _hide);
-  }
-
-  @override
-  void dispose() {
-    _hideTimer?.cancel();
-    _animCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return StreamBuilder<double>(
-      stream: widget.provider.player.volumeStream,
-      builder: (context, snapshot) {
-        final volume = snapshot.data ?? widget.provider.volume;
-        if (volume > 0) _lastNonZeroVolume = volume;
-
-        final icon = volume == 0
-            ? Icons.volume_off_rounded
-            : volume < 0.5
-            ? Icons.volume_down_rounded
-            : Icons.volume_up_rounded;
-
-        return CompositedTransformTarget(
-          link: _layerLink,
-          child: OverlayPortal(
-            controller: _overlayCtrl,
-            overlayChildBuilder: (context) {
-              return CompositedTransformFollower(
-                link: _layerLink,
-                // 胶囊底部对齐按钮顶部，水平居中
-                followerAnchor: Alignment.bottomCenter,
-                targetAnchor: Alignment.topCenter,
-                offset: const Offset(0, -8),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: FadeTransition(
-                    opacity: _fadeAnim,
-                    child: ScaleTransition(
-                      scale: Tween(begin: 0.85, end: 1.0).animate(_fadeAnim),
-                      alignment: Alignment.bottomCenter,
-                      child: _VolumeCapsule(
-                        volume: volume,
-                        onChanged: (v) {
-                          widget.provider.setVolume(v);
-                          _resetTimer();
-                        },
-                        onInteract: _resetTimer,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-            child: _CtrlButton(
-              // ← 替换 IconButton
-              size: widget.size,
-              tooltip: '点击调音',
-              onPressed: () {
-                if (!_visible) {
-                  _show();
-                } else {
-                  final target = volume == 0 ? _lastNonZeroVolume : 0.0;
-                  widget.provider.setVolume(target);
-                  _resetTimer();
-                }
-              },
-              child: Icon(
-                icon,
-                size: widget.size * 0.65,
-                color: cs.onSurfaceVariant,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ── 胶囊本体 ──────────────────────────────────────────────────────────────────
-
-class _VolumeCapsule extends StatelessWidget {
-  final double volume;
-  final ValueChanged<double> onChanged;
-  final VoidCallback onInteract;
-
-  const _VolumeCapsule({
-    required this.volume,
-    required this.onChanged,
-    required this.onInteract,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    const double capsuleW = 44;
-    const double capsuleH = 180;
-
-    return GestureDetector(
-      onVerticalDragUpdate: (d) {
-        final delta = -d.delta.dy / capsuleH;
-        onChanged((volume + delta).clamp(0.0, 1.0));
-      },
-      onTap: onInteract,
-      child: Container(
-        width: capsuleW,
-        height: capsuleH,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(capsuleW / 2),
-          boxShadow: [
-            BoxShadow(
-              color: cs.shadow.withValues(alpha: 0.25),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            // 填充
-            AnimatedFractionallySizedBox(
-              duration: const Duration(milliseconds: 80),
-              heightFactor: volume.clamp(0.0, 1.0),
-              widthFactor: 1.0,
-              child: Container(color: cs.primary.withValues(alpha: 0.28)),
-            ),
-            // 图标
-            Positioned(
-              bottom: 12,
-              child: Icon(
-                volume == 0
-                    ? Icons.volume_off_rounded
-                    : volume < 0.5
-                    ? Icons.volume_down_rounded
-                    : Icons.volume_up_rounded,
-                size: 20,
-                color: cs.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -32,12 +32,12 @@ impl DbManager {
     }
 
     /// 修改歌单信息
-    pub fn update_playlist(&self, id: &str, name: &str, description: Option<String>) -> Result<()> {
+    pub fn update_playlist(&self, id: &str, name: &str, description: Option<String>, cover_path: Option<String>) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp();
         conn.execute(
-            "UPDATE playlists SET name = ?1, description = ?2, updated_at = ?3 WHERE id = ?4;",
-            params![name, description, now, id],
+            "UPDATE playlists SET name = ?1, description = ?2, cover_path=?3 updated_at = ?4 WHERE id = ?5;",
+            params![name, description, cover_path, now, id],
         )?;
         Ok(())
     }
@@ -61,16 +61,18 @@ impl DbManager {
     /// 获取所有歌单（包括自建和系统歌单）
     pub fn get_all_playlists(&self) -> Result<Vec<PlaylistInfo>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT id, name, description, is_system, created_at, updated_at FROM playlists ORDER BY created_at DESC;")?;
+        let mut stmt = conn.prepare("SELECT id, name, description, cover_path, is_system, created_at, updated_at FROM playlists ORDER BY created_at DESC;")?;
 
         let rows = stmt.query_map([], |row| {
             Ok(PlaylistInfo {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 description: row.get(2)?,
+                cover_path: row.get(3)?,
                 is_system: row.get(3)?,
                 created_at: row.get(4)?,
                 updated_at: row.get(5)?,
+
             })
         })?;
 

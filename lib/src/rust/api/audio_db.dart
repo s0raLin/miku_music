@@ -83,6 +83,7 @@ abstract class DbManager implements RustOpaqueInterface {
     required String id,
     required String name,
     String? description,
+    String? coverPath,
   });
 }
 
@@ -137,6 +138,7 @@ class PlaylistInfo {
   final String id;
   final String name;
   final String? description;
+  final String? coverPath;
   final int isSystem;
   final PlatformInt64 createdAt;
   final PlatformInt64 updatedAt;
@@ -145,6 +147,7 @@ class PlaylistInfo {
     required this.id,
     required this.name,
     this.description,
+    this.coverPath,
     required this.isSystem,
     required this.createdAt,
     required this.updatedAt,
@@ -155,6 +158,7 @@ class PlaylistInfo {
       id.hashCode ^
       name.hashCode ^
       description.hashCode ^
+      coverPath.hashCode ^
       isSystem.hashCode ^
       createdAt.hashCode ^
       updatedAt.hashCode;
@@ -167,6 +171,7 @@ class PlaylistInfo {
           id == other.id &&
           name == other.name &&
           description == other.description &&
+          coverPath == other.coverPath &&
           isSystem == other.isSystem &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt;

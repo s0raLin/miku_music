@@ -167,6 +167,7 @@ abstract class RustLibApi extends BaseApi {
     required String id,
     required String name,
     String? description,
+    String? coverPath,
   });
 
   Future<List<LyricLine>> crateApiAudioInfoAudioInfoParseLrc({
@@ -843,6 +844,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String id,
     required String name,
     String? description,
+    String? coverPath,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -855,6 +857,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(id, serializer);
           sse_encode_String(name, serializer);
           sse_encode_opt_String(description, serializer);
+          sse_encode_opt_String(coverPath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -867,7 +870,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta,
-        argValues: [that, id, name, description],
+        argValues: [that, id, name, description, coverPath],
         apiImpl: this,
       ),
     );
@@ -876,7 +879,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta =>
       const TaskConstMeta(
         debugName: "DbManager_update_playlist",
-        argNames: ["that", "id", "name", "description"],
+        argNames: ["that", "id", "name", "description", "coverPath"],
       );
 
   @override
@@ -1218,15 +1221,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlaylistInfo dco_decode_playlist_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return PlaylistInfo(
       id: dco_decode_String(arr[0]),
       name: dco_decode_String(arr[1]),
       description: dco_decode_opt_String(arr[2]),
-      isSystem: dco_decode_i_32(arr[3]),
-      createdAt: dco_decode_i_64(arr[4]),
-      updatedAt: dco_decode_i_64(arr[5]),
+      coverPath: dco_decode_opt_String(arr[3]),
+      isSystem: dco_decode_i_32(arr[4]),
+      createdAt: dco_decode_i_64(arr[5]),
+      updatedAt: dco_decode_i_64(arr[6]),
     );
   }
 
@@ -1487,6 +1491,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_id = sse_decode_String(deserializer);
     var var_name = sse_decode_String(deserializer);
     var var_description = sse_decode_opt_String(deserializer);
+    var var_coverPath = sse_decode_opt_String(deserializer);
     var var_isSystem = sse_decode_i_32(deserializer);
     var var_createdAt = sse_decode_i_64(deserializer);
     var var_updatedAt = sse_decode_i_64(deserializer);
@@ -1494,6 +1499,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       id: var_id,
       name: var_name,
       description: var_description,
+      coverPath: var_coverPath,
       isSystem: var_isSystem,
       createdAt: var_createdAt,
       updatedAt: var_updatedAt,
@@ -1749,6 +1755,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.id, serializer);
     sse_encode_String(self.name, serializer);
     sse_encode_opt_String(self.description, serializer);
+    sse_encode_opt_String(self.coverPath, serializer);
     sse_encode_i_32(self.isSystem, serializer);
     sse_encode_i_64(self.createdAt, serializer);
     sse_encode_i_64(self.updatedAt, serializer);
@@ -1908,10 +1915,12 @@ class DbManagerImpl extends RustOpaque implements DbManager {
     required String id,
     required String name,
     String? description,
+    String? coverPath,
   }) => RustLib.instance.api.crateApiAudioDbDbManagerUpdatePlaylist(
     that: this,
     id: id,
     name: name,
     description: description,
+    coverPath: coverPath,
   );
 }

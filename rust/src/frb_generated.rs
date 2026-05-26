@@ -986,6 +986,7 @@ fn wire__crate__api__audio_db__DbManager_update_playlist_impl(
             let api_id = <String>::sse_decode(&mut deserializer);
             let api_name = <String>::sse_decode(&mut deserializer);
             let api_description = <Option<String>>::sse_decode(&mut deserializer);
+            let api_cover_path = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -1009,6 +1010,7 @@ fn wire__crate__api__audio_db__DbManager_update_playlist_impl(
                             &api_id,
                             &api_name,
                             api_description,
+                            api_cover_path,
                         )?;
                         Ok(output_ok)
                     })(),
@@ -1430,6 +1432,7 @@ impl SseDecode for crate::api::audio_db::PlaylistInfo {
         let mut var_id = <String>::sse_decode(deserializer);
         let mut var_name = <String>::sse_decode(deserializer);
         let mut var_description = <Option<String>>::sse_decode(deserializer);
+        let mut var_coverPath = <Option<String>>::sse_decode(deserializer);
         let mut var_isSystem = <i32>::sse_decode(deserializer);
         let mut var_createdAt = <i64>::sse_decode(deserializer);
         let mut var_updatedAt = <i64>::sse_decode(deserializer);
@@ -1437,6 +1440,7 @@ impl SseDecode for crate::api::audio_db::PlaylistInfo {
             id: var_id,
             name: var_name,
             description: var_description,
+            cover_path: var_coverPath,
             is_system: var_isSystem,
             created_at: var_createdAt,
             updated_at: var_updatedAt,
@@ -1730,6 +1734,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::audio_db::PlaylistInfo {
             self.id.into_into_dart().into_dart(),
             self.name.into_into_dart().into_dart(),
             self.description.into_into_dart().into_dart(),
+            self.cover_path.into_into_dart().into_dart(),
             self.is_system.into_into_dart().into_dart(),
             self.created_at.into_into_dart().into_dart(),
             self.updated_at.into_into_dart().into_dart(),
@@ -1931,6 +1936,7 @@ impl SseEncode for crate::api::audio_db::PlaylistInfo {
         <String>::sse_encode(self.id, serializer);
         <String>::sse_encode(self.name, serializer);
         <Option<String>>::sse_encode(self.description, serializer);
+        <Option<String>>::sse_encode(self.cover_path, serializer);
         <i32>::sse_encode(self.is_system, serializer);
         <i64>::sse_encode(self.created_at, serializer);
         <i64>::sse_encode(self.updated_at, serializer);

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
-import 'package:myapp/views/Queue/index.dart';
 import 'package:myapp/views/SetupWizard/index.dart';
 import 'package:myapp/views/User/EditProfile/index.dart';
 import 'package:myapp/views/User/Files/index.dart';
@@ -174,30 +173,6 @@ final _routes = [
       );
     },
   ),
-  GoRoute(
-    name: "queue",
-    path: "/queue",
-    pageBuilder: (context, state) {
-      return CustomTransitionPage(
-        child: QueuePage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position:
-                Tween<Offset>(
-                  // Offset(1, 0) 表示屏幕右侧边缘外
-                  // Offset(0, 0) 表示屏幕中心位置
-                  begin: const Offset(0, 1),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeOutExpo),
-                ),
-            child: child,
-          );
-        },
-      );
-    },
-  ),
-
   GoRoute(
     name: "settings",
     path: "/settings",

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/views/Music/tabs/library_tab.dart'; // 整合后的乐库
 import 'package:myapp/views/Music/tabs/playlist_tab.dart';
@@ -15,7 +14,7 @@ class _MusicPageState extends State<MusicPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // 从 4 个缩减到 2 个
+      length: 2, 
       child: Scaffold(
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {

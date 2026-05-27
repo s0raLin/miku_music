@@ -12,13 +12,10 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  // 🌟 核心控制器：控制输入框的文本、焦点以及主动赋值
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-
   String _searchQuery = "";
 
-  // 💡 系统推荐的搜索建议标签列表
   final List<String> _suggestedTags = [
     "初音ミク",
     "VOCALOID",
@@ -33,7 +30,6 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     super.initState();
-    // 监听输入框文本变化，实时过滤内容
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.trim();
@@ -48,24 +44,20 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
-  /// 🌟 联动核心：点击标签后，将文本塞入输入框，并聚焦
   void _handleTagTap(String tag) {
     setState(() {
       _searchController.text = tag;
       _searchQuery = tag;
     });
-    // 让输入框重新获得焦点（唤起键盘）
     FocusScope.of(context).requestFocus(_focusNode);
   }
 
   @override
   Widget build(BuildContext context) {
-    // 监听全局乐库，用于本地搜索过滤
     final musicProvider = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // 🔍 核心过滤逻辑：同时匹配歌名、艺术家、专辑名
     final filteredSongs = musicProvider.library.where((song) {
       if (_searchQuery.isEmpty) return false;
       final query = _searchQuery.toLowerCase();
@@ -79,14 +71,24 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. M3 标准 SearchBar 区域
+            // 1. M3 标准 SearchBar 区域（已整合返回按钮）
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: SearchBar(
                 controller: _searchController,
                 focusNode: _focusNode,
                 hintText: "搜索歌曲、歌手、专辑...",
-                leading: const Icon(Icons.search_rounded),
+
+                // 🌟 核心修改：将默认的搜索图标替换为符合路由返回逻辑的后退按钮
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () {
+                    // 如果键盘醒着，先收起键盘防止顶起上一页的底栏
+                    _focusNode.unfocus();
+                    context.pop();
+                  },
+                ),
+
                 trailing: [
                   if (_searchQuery.isNotEmpty)
                     IconButton(
@@ -96,12 +98,14 @@ class _SearchPageState extends State<SearchPage> {
                       },
                     ),
                 ],
-                elevation: WidgetStateProperty.all(0),
+                elevation: WidgetStateProperty.all(0.0),
                 backgroundColor: WidgetStateProperty.all(
                   cs.surfaceContainerHigh,
                 ),
-                padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
-                  EdgeInsets.symmetric(horizontal: 16),
+                padding: WidgetStateProperty.all(
+                  const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                  ), // 👈 稍微调小一点，配合 IconButton 视觉更平衡
                 ),
                 shape: WidgetStateProperty.all(
                   RoundedRectangleBorder(
@@ -111,7 +115,7 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
 
-            // 2. 动态内容区：未输入时显示“搜索建议”，输入后显示“搜索结果”
+            // 2. 动态内容区
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
@@ -131,7 +135,6 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  /// 建议标签布局组件
   Widget _buildSuggestionsSection(TextTheme textTheme, ColorScheme cs) {
     return ListView(
       key: const ValueKey("suggestions"),
@@ -145,10 +148,9 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
         const SizedBox(height: 12),
-        // 🌟 流式标签布局，自动换行
         Wrap(
-          spacing: 8.0, // 左右间距
-          runSpacing: 4.0, // 上下行间距
+          spacing: 8.0,
+          runSpacing: 4.0,
           children: _suggestedTags.map((tag) {
             return FilterChip(
               label: Text(tag),
@@ -166,7 +168,6 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  /// 搜索结果列表组件
   Widget _buildResultsSection(
     List<Music> results,
     MusicProvider musicProvider,
@@ -204,7 +205,6 @@ class _SearchPageState extends State<SearchPage> {
 
         return ListTile(
           onTap: () {
-            // 点击直接播放，并打开详情页
             musicProvider.playFromLibrary(song);
             context.push("/music-detail", extra: song);
           },

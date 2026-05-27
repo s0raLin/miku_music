@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.28.0](https://github.com/s0raLin/miku_music/compare/v1.27.0...v1.28.0) (2026-05-27)
+
+
+### Features
+
+* **playlist:** implement dedicated PlaylistProvider and refactor playlist management ([555139a](https://github.com/s0raLin/miku_music/commit/555139aa627a6157a7a64325437ebb34f74c1950))
+
+
+### Bug Fixes
+
+* **ui:** update navigation route and refine recently played text ([35a1925](https://github.com/s0raLin/miku_music/commit/35a1925beb817f948afeccadde488959ab623743))
+
 ## [1.27.0](https://github.com/s0raLin/miku_music/compare/v1.26.0...v1.27.0) (2026-05-26)
 
 

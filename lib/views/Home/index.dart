@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage> {
                 title: '最近播放',
                 subtitle: '继续你最近在听的内容',
                 action: TextButton(
-                  onPressed: () => context.push('/user/playlist/recent'),
+                  onPressed: () => context.push('/user/recent'),
                   child: const Text('查看更多'),
                 ),
               ),

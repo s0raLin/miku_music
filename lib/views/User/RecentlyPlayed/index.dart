@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/components/Shared/index.dart'; 
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
@@ -157,7 +157,7 @@ class RecentlyPlayedPage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "系统自动记录的本地播放历史（最多留存200首）",
+                                  "系统自动记录的本地播放历史",
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
                                     height: 1.4,
@@ -196,7 +196,7 @@ class RecentlyPlayedPage extends StatelessWidget {
                                     Icons.play_arrow_rounded,
                                     size: 24,
                                   ),
-                                  label: const Text("播放历史歌曲"),
+                                  label: const Text("播放全部"),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: colorScheme.tertiary,
                                     foregroundColor: colorScheme.onTertiary,

@@ -31,7 +31,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         icon: Icons.favorite_rounded,
       ),
       _PlaylistQuickCard(
-        onTap: () => context.push("/user/playlist/recent"),
+        onTap: () => context.push("/user/recent"),
         title: "最近",
         icon: Icons.history_rounded,
       ),

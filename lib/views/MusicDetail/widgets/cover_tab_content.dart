@@ -11,7 +11,7 @@ import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:provider/provider.dart';
 
 class CoverTabContent extends StatefulWidget {
-  final MusicInfo music;
+  final Music music;
   final bool isLiked;
 
   const CoverTabContent({
@@ -244,7 +244,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
 
   Future<void> _showAddToPlaylistSheet(
     BuildContext context,
-    MusicInfo song,
+    Music song,
   ) async {
     // TODO
   }

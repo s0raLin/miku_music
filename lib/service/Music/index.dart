@@ -18,7 +18,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 class ScanProgress {
   final String currentPath; //正在处理的路径
-  final MusicInfo? music; //如果解析了音乐,则返回对象
+  final Music? music; //如果解析了音乐,则返回对象
   // final int currentIndex; // 新增：当前第几首
   // final int totalCount; // 新增：总共多少首
 
@@ -40,7 +40,7 @@ class MusicService {
     return audioStatus.isGranted && storageStatus.isGranted;
   }
 
-  static Future<MusicInfo> parse(String path) async {
+  static Future<Music> parse(String path) async {
     final song = await getAudioInfo(path: path);
     final title = song.title;
     final artist = song.artist;
@@ -62,7 +62,7 @@ class MusicService {
       lyrics = await file.readAsString();
     }
 
-    return MusicInfo(
+    return Music(
       id: path,
       title: title,
       artist: artist,
@@ -96,8 +96,8 @@ class MusicService {
             lyrics = await lrcFile.readAsString();
           }
 
-          // 4. 组装成前端需要的 MusicInfo
-          final music = MusicInfo(
+          // 4. 组装成前端需要的 Music
+          final music = Music(
             id: rustMeta.path,
             title: rustMeta.title,
             artist: rustMeta.artist,

@@ -30,8 +30,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 600;
 
-    // 依赖各自各司其职的 Provider
-    final playlistProvider = context.read<PlaylistProvider>();
     final musicProvider = context.read<MusicProvider>();
 
     final menuItems = [
@@ -130,7 +128,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   // 侧边栏添加歌曲逻辑重构
   void _showModalSideSheet({
     required BuildContext context,
-    required List<MusicInfo> library,
+    required List<Music> library,
     double width = 320,
   }) {
     showGeneralDialog(
@@ -302,10 +300,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     }
   }
 
-  Future<void> _showAddToPlaylistSheet(
-    BuildContext context,
-    MusicInfo song,
-  ) async {
+  Future<void> _showAddToPlaylistSheet(BuildContext context, Music song) async {
     final playlistProvider = context.read<PlaylistProvider>();
     if (playlistProvider.userPlaylists.isEmpty) return;
 
@@ -621,7 +616,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 }
 
 class _M3SongTile extends StatelessWidget {
-  final MusicInfo song;
+  final Music song;
   final PlaylistProvider playlistProvider;
   final MusicProvider musicProvider;
   final VoidCallback onTap;

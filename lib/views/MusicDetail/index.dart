@@ -22,9 +22,7 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
   Widget build(BuildContext context) {
     final musicProvider = context.read<MusicProvider>();
     final playlistProvider = context.read<PlaylistProvider>();
-    final music = context.select<MusicProvider, MusicInfo?>(
-      (p) => p.currentMusic,
-    );
+    final music = context.select<MusicProvider, Music?>((p) => p.currentMusic);
 
     if (music == null) {
       return AppEmptyState(

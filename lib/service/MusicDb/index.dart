@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/src/rust/api/audio_db.dart';
 import 'package:path_provider/path_provider.dart';
@@ -85,6 +86,26 @@ class MusicDbService {
     }
 
     return finalPlaylists;
+  }
+
+  Future<List<Music>> getHistory() async {
+    final rustHistory = await _dbManager?.getPlayHistory();
+    if (rustHistory == null || rustHistory.isEmpty) return [];
+    final List<Music> finalHistory = [];
+    for (var rh in rustHistory) {
+      finalHistory.add(
+        Music(
+          id: rh.id,
+          title: rh.title,
+          artist: rh.artist ?? "未知歌手",
+          album: rh.album,
+          duration: Duration(milliseconds: rh.durationMs),
+          coverBytes: null,
+          lyrics: rh.lyrics,
+        ),
+      );
+    }
+    return finalHistory;
   }
 
   Future<void> deletePlaylist(String id) async {

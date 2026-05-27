@@ -1,7 +1,7 @@
 // import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
-import 'dart:ui' as ui;
+
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -920,7 +920,7 @@ class _WavyPainter extends CustomPainter {
 
 class ObservableGridCard extends StatefulWidget {
   final int index;
-  final MusicInfo music;
+  final Music music;
   final VoidCallback? onTap;
 
   const ObservableGridCard({
@@ -1012,7 +1012,7 @@ class _ObservableGridCardState extends State<ObservableGridCard> {
 }
 
 class SongTile extends StatelessWidget {
-  final MusicInfo music;
+  final Music music;
   final bool isCurrent;
   final VoidCallback onTap;
   final VoidCallback onPressed;
@@ -1050,7 +1050,7 @@ class SongTile extends StatelessWidget {
 }
 
 class ObservableMusicListItem extends StatefulWidget {
-  final MusicInfo music;
+  final Music music;
 
   const ObservableMusicListItem({super.key, required this.music});
 

@@ -12,7 +12,7 @@ class NowPlayingBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final music = context.select<MusicProvider, MusicInfo?>(
+    final music = context.select<MusicProvider, Music?>(
       (p) => p.currentMusic,
     );
 
@@ -64,7 +64,7 @@ class NowPlayingBar extends StatelessWidget {
 // 歌曲信息块（支持响应式挤压缩略）
 // ============================================================
 class _TrackInfoTile extends StatelessWidget {
-  final MusicInfo music;
+  final Music music;
   const _TrackInfoTile({required this.music});
 
   @override

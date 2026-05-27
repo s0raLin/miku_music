@@ -12,12 +12,12 @@ import 'package:myapp/views/User/Files/AlumDetail/index.dart';
 import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/MusicDetail/index.dart';
 import 'package:myapp/views/User/Network/index.dart';
-import 'package:myapp/views/User/PlaylistDetail/Recent/index.dart';
 import 'package:myapp/views/NotFound/index.dart';
 import 'package:myapp/views/Settings/index.dart';
 import 'package:myapp/views/Splash/index.dart';
 import 'package:myapp/views/User/PlaylistDetail/Favorites/index.dart';
 import 'package:myapp/views/User/PlaylistDetail/index.dart';
+import 'package:myapp/views/User/RecentlyPlayed/index.dart';
 import 'package:myapp/views/User/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
@@ -92,7 +92,11 @@ final List<AppNavItem> navItems = [
         path: "/network",
         builder: (context, state) => NetWorkPage(),
       ),
-
+      GoRoute(
+        name: "recent",
+        path: "/recent",
+        builder: (context, state) => RecentlyPlayedPage(),
+      ),
       GoRoute(
         name: "playlist",
         path: "/playlist",
@@ -101,11 +105,6 @@ final List<AppNavItem> navItems = [
             name: "favorites",
             path: "/favorites",
             builder: (context, state) => const FavoritesPage(),
-          ),
-          GoRoute(
-            name: "recent",
-            path: "/recent", //访问路径为/user/playlist/recent
-            builder: (context, state) => const RecentlyPlayedPage(),
           ),
           GoRoute(
             path: "/:id",

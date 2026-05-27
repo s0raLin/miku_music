@@ -16,7 +16,7 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   /// 供 Provider 调用：切换歌曲并播放
-  Future<void> playMusic(MusicInfo music, {bool autoPlay = true}) async {
+  Future<void> playMusic(Music music, {bool autoPlay = true}) async {
     // preload: true 会在后台把这首歌的音轨、时长、缓冲提前备好，但不会自发响起来
     await _player.setAudioSource(AudioSource.file(music.id), preload: true);
     final uri = await MusicService.getAudioServiceCoverFromBytes(

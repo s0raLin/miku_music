@@ -8,7 +8,7 @@ import 'package:myapp/views/MusicDetail/widgets/lyrics_section.dart';
 import 'package:provider/provider.dart';
 
 class WideLayout extends StatelessWidget {
-  final MusicInfo music;
+  final Music music;
   final bool isLiked;
 
   const WideLayout({super.key, required this.music, required this.isLiked});
@@ -19,10 +19,10 @@ class WideLayout extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     // final mp = context.read<MusicProvider>();
 
-    final songs = context.select<MusicProvider, List<MusicInfo>>(
+    final songs = context.select<MusicProvider, List<Music>>(
       (p) => [...p.queue],
     );
-    final currentMusic = context.select<MusicProvider, MusicInfo?>(
+    final currentMusic = context.select<MusicProvider, Music?>(
       (p) => p.currentMusic,
     );
 

@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Audio/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:myapp/src/rust/api/audio_db.dart';
 import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:rxdart/rxdart.dart';
@@ -42,14 +43,14 @@ class MusicProvider extends ChangeNotifier {
   // ───────────────────────────
   // 歌曲库 & 核心播放队列
   // ───────────────────────────
-  final List<MusicInfo> _library = [];
-  List<MusicInfo> get library => _library;
+  final List<Music> _library = [];
+  List<Music> get library => _library;
 
-  List<MusicInfo> _queue = [];
+  List<Music> _queue = [];
   int _currentIndex = -1;
-  List<MusicInfo> get queue => _queue;
+  List<Music> get queue => _queue;
 
-  MusicInfo? get currentMusic {
+  Music? get currentMusic {
     if (_currentIndex < 0 || _currentIndex >= _queue.length) return null;
     return _queue[_currentIndex];
   }
@@ -60,11 +61,11 @@ class MusicProvider extends ChangeNotifier {
   // static const _historyKey = 'play_history';
   // static const _favListKey = 'fav_list';
 
-  // List<MusicInfo> _history = [];
-  // List<MusicInfo> get history => _history;
+  // List<Music> _history = [];
+  // List<Music> get history => _history;
 
-  // List<MusicInfo> _favList = [];
-  // List<MusicInfo> get favList => _favList;
+  // List<Music> _favList = [];
+  // List<Music> get favList => _favList;
 
   List<LyricLine> _currentLyrics = [];
   List<LyricLine> get currentLyrics => _currentLyrics;
@@ -82,7 +83,7 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Future<void> bootstrap({
-    required List<MusicInfo> scannedSongs,
+    required List<Music> scannedSongs,
     void Function(String module, String detail)? onProgress,
   }) async {
     onProgress?.call('恢复媒体库', '已载入 ${scannedSongs.length} 首歌曲');
@@ -104,8 +105,8 @@ class MusicProvider extends ChangeNotifier {
     await _loadAppInfo();
   }
 
-  void updateLibrary(List<MusicInfo> scannedSongs) {
-    final Map<String, MusicInfo> uniqueMap = {};
+  void updateLibrary(List<Music> scannedSongs) {
+    final Map<String, Music> uniqueMap = {};
     for (var song in _library) {
       uniqueMap[song.id] = song;
     }
@@ -157,7 +158,7 @@ class MusicProvider extends ChangeNotifier {
 
   bool isInQueue(String id) => _queue.any((m) => m.id == id);
 
-  void addToQueue(MusicInfo music) {
+  void addToQueue(Music music) {
     _queue.add(music);
     notifyListeners();
   }
@@ -177,10 +178,10 @@ class MusicProvider extends ChangeNotifier {
   }
 
   // 1. 定义一个切歌时的通知钩子
-  void Function(MusicInfo song)? onMusicPlayed;
+  void Function(Music song)? onMusicPlayed;
 
   Future<void> replaceQueue(
-    List<MusicInfo> songs, {
+    List<Music> songs, {
     int startIndex = 0,
     bool autoPlay = true,
   }) async {
@@ -191,7 +192,7 @@ class MusicProvider extends ChangeNotifier {
     await playByIndex(startIndex, autoPlay: autoPlay);
   }
 
-  void playFromLibrary(MusicInfo music, {bool autoPlay = true}) {
+  void playFromLibrary(Music music, {bool autoPlay = true}) {
     final isCurrentMusic =
         _currentIndex != -1 && _queue[_currentIndex].id == music.id;
     if (isCurrentMusic) return;
@@ -236,7 +237,7 @@ class MusicProvider extends ChangeNotifier {
 
   void updateCoverBytes(String musicId, Uint8List? coverBytes) {
     if (coverBytes == null || coverBytes.isEmpty) return;
-    void patch(List<MusicInfo> list) {
+    void patch(List<Music> list) {
       final index = list.indexWhere((m) => m.id == musicId);
       if (index != -1) list[index].coverBytes = coverBytes;
     }
@@ -311,7 +312,7 @@ class MusicProvider extends ChangeNotifier {
   // ─────────────────────────────────────────────
   // 喜好与历史基础存储
   // ─────────────────────────────────────────────
-  // Future<void> toggleFav(MusicInfo music) async {
+  // Future<void> toggleFav(Music music) async {
   //   final isExist = _favList.any((m) => m.id == music.id);
   //   if (isExist) {
   //     _favList.removeWhere((m) => m.id == music.id);
@@ -326,7 +327,7 @@ class MusicProvider extends ChangeNotifier {
   //   final ids = pfs.getStringList(_favListKey) ?? [];
   //   _favList = ids
   //       .map((id) => _library.firstWhereOrNull((m) => m.id == id))
-  //       .whereType<MusicInfo>()
+  //       .whereType<Music>()
   //       .toList();
   //   notifyListeners();
   // }
@@ -336,12 +337,12 @@ class MusicProvider extends ChangeNotifier {
   //   final ids = pfs.getStringList(_historyKey) ?? [];
   //   _history = ids
   //       .map((id) => _library.firstWhereOrNull((m) => m.id == id))
-  //       .whereType<MusicInfo>()
+  //       .whereType<Music>()
   //       .toList();
   //   notifyListeners();
   // }
 
-  // Future<void> _addToHistory(MusicInfo music) async {
+  // Future<void> _addToHistory(Music music) async {
   //   _history.removeWhere((m) => m.id == music.id);
   //   _history.insert(0, music);
   //   if (_history.length > 200) _history.removeLast();

@@ -40,12 +40,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final musicProvider = context.watch<MusicProvider>();
-    final playlistProvider = context.watch<PlaylistProvider>();
-    final history = playlistProvider.getPlaylistSongs(
-      PlaylistProvider.recentPlaylistId,
-      musicProvider.library,
-    );
+
+
+    final history = context.read<PlaylistProvider>().history;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 

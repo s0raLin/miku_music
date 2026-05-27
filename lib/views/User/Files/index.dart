@@ -34,9 +34,9 @@ class _FilesPageState extends State<FilesPage>
     });
   }
 
-  // Stream<List<MusicInfo>>? _musicStream;
-  // List<MusicInfo> _musicList = [];
-  List<MusicInfo> _scannedSongs = [];
+  // Stream<List<Music>>? _musicStream;
+  // List<Music> _musicList = [];
+  List<Music> _scannedSongs = [];
   bool _isScanning = false;
 
   StreamSubscription? _scanSubscription;
@@ -107,7 +107,7 @@ class _FilesPageState extends State<FilesPage>
   Widget build(BuildContext context) {
     super.build(context);
     // 当扫描流调用 musicProvider.updateLibrary() 时，这里会自动感知并触发重绘
-    final songs = context.select<MusicProvider, List<MusicInfo>>(
+    final songs = context.select<MusicProvider, List<Music>>(
       (p) => p.library,
     );
 
@@ -223,16 +223,16 @@ class _FilesPageState extends State<FilesPage>
     }
   }
 
-  Map<String, List<MusicInfo>> _groupByFolder(List<MusicInfo> songs) {
-    final groups = <String, List<MusicInfo>>{};
+  Map<String, List<Music>> _groupByFolder(List<Music> songs) {
+    final groups = <String, List<Music>>{};
     for (final song in songs) {
       groups.putIfAbsent(p.dirname(song.id), () => []).add(song);
     }
     return groups;
   }
 
-  Map<String, List<MusicInfo>> _groupByAlbum(List<MusicInfo> songs) {
-    final groups = <String, List<MusicInfo>>{};
+  Map<String, List<Music>> _groupByAlbum(List<Music> songs) {
+    final groups = <String, List<Music>>{};
     for (final song in songs) {
       final album = song.album?.trim();
       groups
@@ -242,15 +242,15 @@ class _FilesPageState extends State<FilesPage>
     return groups;
   }
 
-  Map<String, List<MusicInfo>> _groupByArtist(List<MusicInfo> songs) {
-    final groups = <String, List<MusicInfo>>{};
+  Map<String, List<Music>> _groupByArtist(List<Music> songs) {
+    final groups = <String, List<Music>>{};
     for (final song in songs) {
       groups.putIfAbsent(song.artist, () => []).add(song);
     }
     return groups;
   }
 
-  Widget _buildLeft(Map<String, List<MusicInfo>> folderGroups) {
+  Widget _buildLeft(Map<String, List<Music>> folderGroups) {
     if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -288,7 +288,7 @@ class _FilesPageState extends State<FilesPage>
     );
   }
 
-  Widget _buildCenter(Map<String, List<MusicInfo>> albumGroups) {
+  Widget _buildCenter(Map<String, List<Music>> albumGroups) {
     if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -326,7 +326,7 @@ class _FilesPageState extends State<FilesPage>
     );
   }
 
-  Widget _buildRight(Map<String, List<MusicInfo>> artistGroups) {
+  Widget _buildRight(Map<String, List<Music>> artistGroups) {
     if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -365,13 +365,13 @@ class _FilesPageState extends State<FilesPage>
   }
 
   Widget _buildCollectionGrid(
-    List<MapEntry<String, List<MusicInfo>>> entries, {
+    List<MapEntry<String, List<Music>>> entries, {
     required IconData emptyIcon,
-    required String Function(MapEntry<String, List<MusicInfo>> entry)
+    required String Function(MapEntry<String, List<Music>> entry)
     titleBuilder,
-    required String Function(MapEntry<String, List<MusicInfo>> entry)
+    required String Function(MapEntry<String, List<Music>> entry)
     subtitleBuilder,
-    required void Function(MapEntry<String, List<MusicInfo>> entry) onTap,
+    required void Function(MapEntry<String, List<Music>> entry) onTap,
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {

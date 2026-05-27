@@ -13,7 +13,7 @@ class LibraryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // final musicProvider = context.watch<MusicProvider>();
-    final library = context.select<MusicProvider, List<MusicInfo>>(
+    final library = context.select<MusicProvider, List<Music>>(
       (p) => p.library,
     );
     // final currentMusic = musicProvider.currentMusic;
@@ -50,7 +50,7 @@ class LibraryTab extends StatelessWidget {
     }
 
     // 1. 核心整合：在乐库内部直接计算专辑分类
-    final albumsMap = <String, List<MusicInfo>>{};
+    final albumsMap = <String, List<Music>>{};
     for (final song in library) {
       final albumName = song.album ?? "未知专辑";
       albumsMap.putIfAbsent(albumName, () => []).add(song);

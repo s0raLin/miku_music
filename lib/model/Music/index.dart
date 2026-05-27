@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-class MusicInfo {
+class Music {
   final String id;
   final String title; // 标题
   final String artist; // 歌手
@@ -10,7 +10,7 @@ class MusicInfo {
   String? lyrics; // 歌词
   final String? album;
 
-  MusicInfo({
+  Music({
     required this.id,
     required this.title,
     required this.artist,

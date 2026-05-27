@@ -104,10 +104,10 @@ class InitializationService {
     };
   }
 
-  static Future<List<MusicInfo>> scanInitialMusic({
+  static Future<List<Music>> scanInitialMusic({
     void Function(StartupScanProgress progress)? onProgress,
   }) async {
-    final List<MusicInfo> fetchedLibrary = [];
+    final List<Music> fetchedLibrary = [];
     final paths = await FileService.loadPaths();
     final isAndroid = !kIsWeb && Platform.isAndroid;
     final hasSelectedPaths = paths.isNotEmpty;

@@ -35,8 +35,8 @@ class _CoverTabContentState extends State<CoverTabContent> {
 
   @override
   Widget build(BuildContext context) {
-    final playlistProvider = context.read<PlaylistProvider>();
-    final musicProvider = context.read<MusicProvider>();
+    final playlistProvider = context.watch<PlaylistProvider>();
+    final musicProvider = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
     return Column(

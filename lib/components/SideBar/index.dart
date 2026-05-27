@@ -26,7 +26,9 @@ class _SideBarState extends State<SideBar> {
       // 顶部标题栏
       leading: FloatingActionButton(
         elevation: 0,
-        onPressed: () {},
+        onPressed: () {
+          context.push("/search");
+        },
         child: const Icon(Icons.search),
       ),
 

@@ -22,10 +22,11 @@ abstract class DbManager implements RustOpaqueInterface {
   /// 清空播放历史
   Future<void> clearHistory();
 
-  /// 创建一个新歌单
-  Future<void> createPlaylist({
+  /// 创建一个新歌单（让 Rust 自动生成唯一 ID 并返回给前端）
+  Future<String> createPlaylist({
     required String name,
     String? description,
+    String? coverPath,
     required bool isSystem,
   });
 
@@ -37,7 +38,8 @@ abstract class DbManager implements RustOpaqueInterface {
   /// ⚠️ 由于无外键约束，需要手动清理交叉连接表和播放历史
   Future<void> deleteSongCompletely({required String musicId});
 
-  /// 获取所有歌单（包括自建和系统歌单）
+  /// 获取所有歌单（包含每张歌单的歌曲 ID 列表）
+  /// 获取所有歌单（包含每张歌单的歌曲 ID 列表）
   Future<List<PlaylistInfo>> getAllPlaylists();
 
   /// 3. 获取所有收藏的歌曲列表
@@ -82,6 +84,7 @@ abstract class DbManager implements RustOpaqueInterface {
 
   /// 修改歌单信息
   Future<void> updatePlaylist({
+    required String id,
     required String name,
     String? description,
     String? coverPath,
@@ -141,6 +144,7 @@ class PlaylistInfo {
   final String? description;
   final String? coverPath;
   final int isSystem;
+  final List<String> ids;
   final PlatformInt64 createdAt;
   final PlatformInt64 updatedAt;
 
@@ -150,6 +154,7 @@ class PlaylistInfo {
     this.description,
     this.coverPath,
     required this.isSystem,
+    required this.ids,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -161,6 +166,7 @@ class PlaylistInfo {
       description.hashCode ^
       coverPath.hashCode ^
       isSystem.hashCode ^
+      ids.hashCode ^
       createdAt.hashCode ^
       updatedAt.hashCode;
 
@@ -174,6 +180,7 @@ class PlaylistInfo {
           description == other.description &&
           coverPath == other.coverPath &&
           isSystem == other.isSystem &&
+          ids == other.ids &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt;
 }

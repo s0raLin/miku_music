@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/src/rust/api/audio_db.dart';
@@ -15,6 +17,10 @@ class MusicDbService {
 
   // 4. 内部唯一的 _dbManager，在 init() 里只被初始化一次
   DbManager? _dbManager;
+
+  //创建一个全局控制器,用来广播数据库表改变的信号
+  final _playlistUpdateController = StreamController<void>.broadcast();
+  Stream<void> get playlistUpdates => _playlistUpdateController.stream;
 
   Future<void> init() async {
     if (_dbManager != null) return; // 已经初始化过，直接拦截
@@ -35,8 +41,17 @@ class MusicDbService {
     }
   }
 
-  Future<void> createPlaylist(String? coverPath, String name) async {
-    await _dbManager?.createPlaylist(name: name, isSystem: false);
+  Future<void> createPlaylist(
+    String name, {
+    String? coverPath = "",
+    String? description = "",
+  }) async {
+    await _dbManager?.createPlaylist(
+      name: name,
+      description: description,
+      isSystem: false,
+    );
+    _playlistUpdateController.add(null);
   }
 
   Future<List<Playlist>> getAllRustPlaylists() async {
@@ -49,10 +64,6 @@ class MusicDbService {
     final List<Playlist> finalPlaylists = [];
 
     for (var rp in rustPlaylists) {
-      final songIds =
-          await _dbManager?.getSongIdsInPlaylist(playlistId: rp.id) ?? [];
-
-      // 3. 拼装成前端最喜欢的完全体 Model
       finalPlaylists.add(
         Playlist(
           id: rp.id,
@@ -60,7 +71,7 @@ class MusicDbService {
           description: rp.description,
           coverPath: rp.coverPath,
           isSystem: rp.isSystem == 1,
-          songIds: songIds,
+          songIds: rp.ids,
           createdAt: DateTime.fromMillisecondsSinceEpoch(
             rp.createdAt.toInt() * 1000, // 因为 Rust 存的是秒，Dart 需要毫秒，所以乘以 1000
             isUtc: true, // 如果你 Rust 存的是 Utc 时间戳，建议带上
@@ -74,5 +85,32 @@ class MusicDbService {
     }
 
     return finalPlaylists;
+  }
+
+  Future<void> deletePlaylist(String id) async {
+    await _dbManager?.deletePlaylist(playlistId: id);
+    _playlistUpdateController.add(null);
+  }
+
+  Future<void> renamePlaylist(String id, String newName) async {
+    await _dbManager?.updatePlaylist(id: id, name: newName);
+    _playlistUpdateController.add(null); //发射信号
+  }
+
+  Future<void> addMusicToPlaylist(String playlistId, String musicId) async {
+    await _dbManager?.addSongToPlaylist(
+      playlistId: playlistId,
+      musicId: musicId,
+    );
+    _playlistUpdateController.add(null);
+  }
+
+  Future<void> removeFromPlaylist(String playlistId, String musicId) async {
+    await _dbManager?.removeSongFromPlaylist(
+      playlistId: playlistId,
+      musicId: musicId,
+    );
+
+    _playlistUpdateController.add(null);
   }
 }

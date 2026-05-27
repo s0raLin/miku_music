@@ -5,6 +5,7 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:provider/provider.dart';
 
 class PlaylistDetailPage extends StatefulWidget {
@@ -16,7 +17,6 @@ class PlaylistDetailPage extends StatefulWidget {
 }
 
 class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
-  // 专门用来存储桌面端鼠标点按位置的变量
   Offset _actionMenuTapPosition = Offset.zero;
 
   String _formatDuration(Duration d) {
@@ -25,18 +25,24 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     return hours > 0 ? "$hours小时 $minutes分钟" : "$minutes分钟";
   }
 
-  // --- 核心重构：自适应 M3 响应式菜单 ---
+  // --- 自适应 M3 响应式菜单重构 ---
   void _showResponsiveActionMenu(BuildContext context, Playlist playlist) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 600;
-    final mp = context.read<MusicProvider>();
 
-    // 1. 配置标准菜单项
+    // 依赖各自各司其职的 Provider
+    final playlistProvider = context.read<PlaylistProvider>();
+    final musicProvider = context.read<MusicProvider>();
+
     final menuItems = [
       _AdaptiveActionItem(
         icon: Icons.add_rounded,
         title: "添加歌曲",
-        onTap: () => _showModalSideSheet(context: context, library: mp.library),
+        // 传入核心乐库源数据进行筛选
+        onTap: () => _showModalSideSheet(
+          context: context,
+          library: musicProvider.library,
+        ),
       ),
       _AdaptiveActionItem(
         icon: Icons.edit_note_rounded,
@@ -53,7 +59,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     ];
 
     if (isDesktop) {
-      // 桌面端：在鼠标点击坐标处弹出
       showMenu(
         context: context,
         position: RelativeRect.fromLTRB(
@@ -78,7 +83,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         }).toList(),
       );
     } else {
-      // 手机端：底部弹出 M3 抽屉
       showModalBottomSheet(
         context: context,
         showDragHandle: true,
@@ -123,21 +127,20 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     }
   }
 
-  // 侧边栏添加歌曲
+  // 侧边栏添加歌曲逻辑重构
   void _showModalSideSheet({
     required BuildContext context,
     required List<MusicInfo> library,
     double width = 320,
   }) {
-    final mp = context.read<MusicProvider>();
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss Side Sheet",
-      pageBuilder: (context, _, _) => Align(
+      pageBuilder: (dialogContext, _, _) => Align(
         alignment: Alignment.centerRight,
         child: Material(
-          color: Theme.of(context).colorScheme.surfaceContainer,
+          color: Theme.of(dialogContext).colorScheme.surfaceContainer,
           borderRadius: const BorderRadius.horizontal(
             left: Radius.circular(24),
           ),
@@ -154,20 +157,20 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       children: [
                         Text(
                           "选择要添加的歌曲",
-                          style: Theme.of(context).textTheme.titleMedium
+                          style: Theme.of(dialogContext).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => Navigator.pop(dialogContext),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     Expanded(
                       child: ListView.builder(
-                        scrollCacheExtent: ScrollCacheExtent.pixels(100),
+                        scrollCacheExtent: const ScrollCacheExtent.pixels(100),
                         itemCount: library.length,
                         itemBuilder: (context, index) {
                           final music = library[index];
@@ -202,8 +205,18 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 Icons.add_circle_outline_rounded,
                               ),
                               color: Theme.of(context).colorScheme.primary,
-                              onPressed: () =>
-                                  mp.addToPlaylist(widget.playlistId, music),
+                              onPressed: () async {
+                                // 改为调用 PlaylistProvider 的方法
+                                await context
+                                    .read<PlaylistProvider>()
+                                    .addToPlaylist(widget.playlistId, music);
+                                if (context.mounted) {
+                                  AppToast.success(
+                                    context,
+                                    message: '已添加「${music.title}」',
+                                  );
+                                }
+                              },
                             ),
                           );
                         },
@@ -226,7 +239,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     );
   }
 
-  // --- 弹窗逻辑精简 ---
+  // --- 弹窗与移除逻辑改道至 PlaylistProvider ---
   Future<void> _showDeleteConfirmDialog(
     BuildContext context,
     Playlist playlist,
@@ -252,9 +265,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    context.read<MusicProvider>().deletePlaylist(playlist.id);
-    AppToast.neutral(context, message: '歌单「${playlist.name}」已删除');
-    Navigator.of(context).pop();
+
+    await context.read<PlaylistProvider>().deletePlaylist(playlist.id);
+    if (context.mounted) {
+      AppToast.neutral(context, message: '歌单「${playlist.name}」已删除');
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _confirmRemoveSong(BuildContext context, String musicId) async {
@@ -276,19 +292,22 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    context.read<MusicProvider>().removeFromPlaylist(
+
+    await context.read<PlaylistProvider>().removeFromPlaylist(
       widget.playlistId,
       musicId,
     );
-    AppToast.neutral(context, message: '已从歌单移除');
+    if (context.mounted) {
+      AppToast.neutral(context, message: '已从歌单移除');
+    }
   }
 
   Future<void> _showAddToPlaylistSheet(
     BuildContext context,
     MusicInfo song,
   ) async {
-    final mp = context.read<MusicProvider>();
-    if (mp.userPlaylists.isEmpty) return;
+    final playlistProvider = context.read<PlaylistProvider>();
+    if (playlistProvider.userPlaylists.isEmpty) return;
 
     showModalBottomSheet(
       context: context,
@@ -296,9 +315,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       builder: (context) => SafeArea(
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: mp.userPlaylists.length,
+          itemCount: playlistProvider.userPlaylists.length,
           itemBuilder: (context, index) {
-            final p = mp.userPlaylists[index];
+            final p = playlistProvider.userPlaylists[index];
             final alreadyIn = p.songIds.contains(song.id);
             return ListTile(
               enabled: !alreadyIn,
@@ -310,10 +329,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       color: Theme.of(context).colorScheme.secondary,
                     )
                   : null,
-              onTap: () {
-                mp.addToPlaylist(p.id, song);
-                Navigator.pop(context);
-                AppToast.success(context, message: '已添加到「${p.name}」');
+              onTap: () async {
+                await playlistProvider.addToPlaylist(p.id, song);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  AppToast.success(context, message: '已添加到「${p.name}」');
+                }
               },
             );
           },
@@ -345,17 +366,27 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   // --- UI 构建 ---
   @override
   Widget build(BuildContext context) {
+    // 监听两个不同的 Provider
+    final playlistProvider = context.watch<PlaylistProvider>();
     final musicProvider = context.watch<MusicProvider>();
-    final playlist = musicProvider.getPlaylistById(widget.playlistId);
+
+    final playlist = playlistProvider.getPlaylistById(widget.playlistId);
     if (playlist == null) {
       return const Scaffold(body: Center(child: Text("歌单不存在")));
     }
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final songs = musicProvider.getPlaylistSongs(widget.playlistId);
+
+    // 利用 PlaylistProvider 内部维护的歌曲信息映射转换逻辑
+    final songs = playlistProvider.getPlaylistSongs(
+      widget.playlistId,
+      musicProvider.library,
+    );
+
     final isSystem = playlist.isSystem;
-    final isFavorites = widget.playlistId == musicProvider.favoritesPlaylistId;
+    final isFavorites =
+        widget.playlistId == PlaylistProvider.favoritesPlaylistId;
     final totalDuration = songs.fold(
       Duration.zero,
       (prev, s) => prev + s.duration,
@@ -386,7 +417,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     icon: const Icon(Icons.more_vert_rounded),
                   ),
                 ),
-              Padding(padding: const EdgeInsets.only(right: 8)),
+              const Padding(padding: const EdgeInsets.only(right: 8)),
             ],
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
@@ -462,6 +493,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 FilledButton.icon(
                                   onPressed: songs.isNotEmpty
                                       ? () {
+                                          // 属于播放操作：依旧交回给 MusicProvider
                                           musicProvider.replaceQueue(
                                             songs,
                                             startIndex: 0,
@@ -664,7 +696,6 @@ class _M3SongTile extends StatelessWidget {
   }
 }
 
-// 辅助数据结构
 class _AdaptiveActionItem {
   final IconData icon;
   final String title;

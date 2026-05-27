@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart'; 
 import 'package:myapp/views/User/PlaylistDetail/index.dart';
-import 'package:provider/provider.dart';
 
 class RecentlyPlayedPage extends StatelessWidget {
   const RecentlyPlayedPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final playlistId = context.read<MusicProvider>().recentPlaylistId;
-    return PlaylistDetailPage(playlistId: playlistId);
+    // 使用 PlaylistProvider 的系统常数 ID
+    const playlistId = PlaylistProvider.recentPlaylistId;
+    return const PlaylistDetailPage(playlistId: playlistId);
   }
 }

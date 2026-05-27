@@ -13,7 +13,8 @@ impl DbManager {
         description: Option<String>,
         cover_path: Option<String>, // 创建歌单时允许附带封面路径
         is_system: bool,
-    ) -> Result<String> { // 🌟 建议返回 String (ID)，方便 Dart 创建完后直接拿着 ID 跳转
+    ) -> Result<String> {
+        // 🌟 建议返回 String (ID)，方便 Dart 创建完后直接拿着 ID 跳转
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp();
         let generated_id = uuid::Uuid::new_v4().to_string();
@@ -70,29 +71,64 @@ impl DbManager {
         Ok(())
     }
 
-    /// 获取所有歌单（包括自建和系统歌单）
+    /// 获取所有歌单（包含每张歌单的歌曲 ID 列表）
+    /// 获取所有歌单（包含每张歌单的歌曲 ID 列表）
     pub fn get_all_playlists(&self) -> Result<Vec<PlaylistInfo>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT id, name, description, cover_path, is_system, created_at, updated_at FROM playlists ORDER BY created_at DESC;")?;
 
-        let rows = stmt.query_map([], |row| {
-            // 🌟 修复：拉直并完美对齐 0 ~ 6 的所有映射下标！
+        // 1. 先查询出所有歌单的基础信息
+        let mut stmt = conn.prepare(
+            "SELECT id, name, description, cover_path, is_system, created_at, updated_at
+             FROM playlists
+             ORDER BY created_at DESC;",
+        )?;
+
+        let playlist_rows = stmt.query_map([], |row| {
             Ok(PlaylistInfo {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 description: row.get(2)?,
                 cover_path: row.get(3)?,
-                is_system: row.get(4)?, // 从 3 修正为 4
-                created_at: row.get(5)?, // 从 4 修正为 5
-                updated_at: row.get(6)?, // 从 5 修正为 6
+                is_system: row.get(4)?,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
+                ids: Vec::new(), // 先给个空 Vec，后面填充
             })
         })?;
 
-        let mut list = Vec::new();
-        for item in rows {
-            list.push(item?);
+        let mut playlists = Vec::new();
+        for item in playlist_rows {
+            playlists.push(item?);
         }
-        Ok(list)
+
+        // 2. 一次性查出全量映射关系（按 sort_order 排序），解决你提到的变量未消费问题
+        let mut map_stmt = conn
+            .prepare("SELECT playlist_id, music_id FROM playlist_songs ORDER BY sort_order ASC;")?;
+
+        let map_rows = map_stmt.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?;
+
+        // 3. 在内存中高效建立多对多映射关系字典
+        use std::collections::HashMap;
+        let mut playlist_to_songs_map: HashMap<String, Vec<String>> = HashMap::new();
+
+        for map_item in map_rows {
+            let (playlist_id, music_id) = map_item?;
+            playlist_to_songs_map
+                .entry(playlist_id)
+                .or_insert_with(Vec::new)
+                .push(music_id);
+        }
+
+        // 4. 将对应的歌曲 ID 注入到各个歌单模型中
+        for playlist in &mut playlists {
+            if let Some(ids) = playlist_to_songs_map.remove(&playlist.id) {
+                playlist.ids = ids;
+            }
+        }
+
+        Ok(playlists)
     }
 
     // ─────────────────────────────────────────────
@@ -125,10 +161,11 @@ impl DbManager {
     pub fn get_song_ids_in_playlist(&self, playlist_id: &str) -> Result<Vec<String>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT music_id FROM playlist_songs WHERE playlist_id = ?1 ORDER BY sort_order ASC;"
+            "SELECT music_id FROM playlist_songs WHERE playlist_id = ?1 ORDER BY sort_order ASC;",
         )?;
 
-        let ids = stmt.query_map([playlist_id], |row| row.get::<_, String>(0))?
+        let ids = stmt
+            .query_map([playlist_id], |row| row.get::<_, String>(0))?
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(ids)

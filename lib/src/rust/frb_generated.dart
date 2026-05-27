@@ -94,10 +94,11 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiAudioDbDbManagerClearHistory({required DbManager that});
 
-  Future<void> crateApiAudioDbDbManagerCreatePlaylist({
+  Future<String> crateApiAudioDbDbManagerCreatePlaylist({
     required DbManager that,
     required String name,
     String? description,
+    String? coverPath,
     required bool isSystem,
   });
 
@@ -168,6 +169,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiAudioDbDbManagerUpdatePlaylist({
     required DbManager that,
+    required String id,
     required String name,
     String? description,
     String? coverPath,
@@ -317,10 +319,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateApiAudioDbDbManagerCreatePlaylist({
+  Future<String> crateApiAudioDbDbManagerCreatePlaylist({
     required DbManager that,
     required String name,
     String? description,
+    String? coverPath,
     required bool isSystem,
   }) {
     return handler.executeNormal(
@@ -333,6 +336,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_String(name, serializer);
           sse_encode_opt_String(description, serializer);
+          sse_encode_opt_String(coverPath, serializer);
           sse_encode_bool(isSystem, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
@@ -342,11 +346,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
+          decodeSuccessData: sse_decode_String,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerCreatePlaylistConstMeta,
-        argValues: [that, name, description, isSystem],
+        argValues: [that, name, description, coverPath, isSystem],
         apiImpl: this,
       ),
     );
@@ -355,7 +359,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAudioDbDbManagerCreatePlaylistConstMeta =>
       const TaskConstMeta(
         debugName: "DbManager_create_playlist",
-        argNames: ["that", "name", "description", "isSystem"],
+        argNames: ["that", "name", "description", "coverPath", "isSystem"],
       );
 
   @override
@@ -880,6 +884,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<void> crateApiAudioDbDbManagerUpdatePlaylist({
     required DbManager that,
+    required String id,
     required String name,
     String? description,
     String? coverPath,
@@ -892,6 +897,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
+          sse_encode_String(id, serializer);
           sse_encode_String(name, serializer);
           sse_encode_opt_String(description, serializer);
           sse_encode_opt_String(coverPath, serializer);
@@ -907,7 +913,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta,
-        argValues: [that, name, description, coverPath],
+        argValues: [that, id, name, description, coverPath],
         apiImpl: this,
       ),
     );
@@ -916,7 +922,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAudioDbDbManagerUpdatePlaylistConstMeta =>
       const TaskConstMeta(
         debugName: "DbManager_update_playlist",
-        argNames: ["that", "name", "description", "coverPath"],
+        argNames: ["that", "id", "name", "description", "coverPath"],
       );
 
   @override
@@ -1264,16 +1270,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlaylistInfo dco_decode_playlist_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return PlaylistInfo(
       id: dco_decode_String(arr[0]),
       name: dco_decode_String(arr[1]),
       description: dco_decode_opt_String(arr[2]),
       coverPath: dco_decode_opt_String(arr[3]),
       isSystem: dco_decode_i_32(arr[4]),
-      createdAt: dco_decode_i_64(arr[5]),
-      updatedAt: dco_decode_i_64(arr[6]),
+      ids: dco_decode_list_String(arr[5]),
+      createdAt: dco_decode_i_64(arr[6]),
+      updatedAt: dco_decode_i_64(arr[7]),
     );
   }
 
@@ -1548,6 +1555,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_description = sse_decode_opt_String(deserializer);
     var var_coverPath = sse_decode_opt_String(deserializer);
     var var_isSystem = sse_decode_i_32(deserializer);
+    var var_ids = sse_decode_list_String(deserializer);
     var var_createdAt = sse_decode_i_64(deserializer);
     var var_updatedAt = sse_decode_i_64(deserializer);
     return PlaylistInfo(
@@ -1556,6 +1564,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       description: var_description,
       coverPath: var_coverPath,
       isSystem: var_isSystem,
+      ids: var_ids,
       createdAt: var_createdAt,
       updatedAt: var_updatedAt,
     );
@@ -1821,6 +1830,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.description, serializer);
     sse_encode_opt_String(self.coverPath, serializer);
     sse_encode_i_32(self.isSystem, serializer);
+    sse_encode_list_String(self.ids, serializer);
     sse_encode_i_64(self.createdAt, serializer);
     sse_encode_i_64(self.updatedAt, serializer);
   }
@@ -1886,15 +1896,17 @@ class DbManagerImpl extends RustOpaque implements DbManager {
   Future<void> clearHistory() =>
       RustLib.instance.api.crateApiAudioDbDbManagerClearHistory(that: this);
 
-  /// 创建一个新歌单
-  Future<void> createPlaylist({
+  /// 创建一个新歌单（让 Rust 自动生成唯一 ID 并返回给前端）
+  Future<String> createPlaylist({
     required String name,
     String? description,
+    String? coverPath,
     required bool isSystem,
   }) => RustLib.instance.api.crateApiAudioDbDbManagerCreatePlaylist(
     that: this,
     name: name,
     description: description,
+    coverPath: coverPath,
     isSystem: isSystem,
   );
 
@@ -1914,7 +1926,8 @@ class DbManagerImpl extends RustOpaque implements DbManager {
         musicId: musicId,
       );
 
-  /// 获取所有歌单（包括自建和系统歌单）
+  /// 获取所有歌单（包含每张歌单的歌曲 ID 列表）
+  /// 获取所有歌单（包含每张歌单的歌曲 ID 列表）
   Future<List<PlaylistInfo>> getAllPlaylists() =>
       RustLib.instance.api.crateApiAudioDbDbManagerGetAllPlaylists(that: this);
 
@@ -1981,11 +1994,13 @@ class DbManagerImpl extends RustOpaque implements DbManager {
 
   /// 修改歌单信息
   Future<void> updatePlaylist({
+    required String id,
     required String name,
     String? description,
     String? coverPath,
   }) => RustLib.instance.api.crateApiAudioDbDbManagerUpdatePlaylist(
     that: this,
+    id: id,
     name: name,
     description: description,
     coverPath: coverPath,

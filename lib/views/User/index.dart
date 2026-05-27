@@ -6,7 +6,7 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart'; // 👈 引入新的 Provider
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -62,7 +62,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             title: const Text("个人主页"),
             actions: [
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert), // 纵向三个点
+                icon: const Icon(Icons.more_vert),
                 onSelected: (value) {
                   if (value == "edit") {
                     context.push("/user/edit-profile");
@@ -118,14 +118,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   SizedBox(
                     height: 96,
                     child: ListView.separated(
-                      scrollDirection: Axis.horizontal, // 设置为横向滚动
+                      scrollDirection: Axis.horizontal,
                       itemBuilder: (BuildContext context, int index) =>
                           quickCards[index],
                       separatorBuilder: (BuildContext context, int index) =>
                           const SizedBox(width: 10.0),
                       itemCount: quickCards.length,
-                      // spacing: 12.0,
-                      // runSpacing: 12.0,
                     ),
                   ),
                 ],
@@ -143,7 +141,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 children: [
                   AppSectionHeader(title: "我的歌单"),
                   const SizedBox(height: 12),
-                  // 新建歌单按钮 + 进入音乐库链接
                   Row(
                     children: [
                       FilledButton.icon(
@@ -162,10 +159,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // 歌单列表
-                  Consumer<MusicProvider>(
-                    builder: (context, musicProvider, _) {
-                      final userPlaylists = musicProvider.userPlaylists;
+
+                  // 👈 将绑定的 Provider 切换至 PlaylistProvider
+                  Consumer<PlaylistProvider>(
+                    builder: (context, playlistProvider, _) {
+                      final userPlaylists = playlistProvider.userPlaylists;
                       if (userPlaylists.isEmpty) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 28),
@@ -199,7 +197,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 220, // ← 关键：限制每个卡片最大宽度为 220
+                              maxCrossAxisExtent: 220,
                               childAspectRatio: 0.9,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
@@ -250,39 +248,41 @@ class _UserCard extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Column(
-            // 让子组件在水平方向上靠起始位置（左侧）对齐
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(username),
               const SizedBox(height: 4),
               Text(
                 decoration,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                overflow: TextOverflow.ellipsis, // 防止描述过长导致换行
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              Text("- 关注 | - 粉丝"),
+              const Text("- 关注 | - 粉丝"),
             ],
           ),
         ),
-        IconButton(onPressed: onTap, icon: Icon(Icons.chevron_right_rounded)),
+        IconButton(
+          onPressed: onTap,
+          icon: const Icon(Icons.chevron_right_rounded),
+        ),
       ],
     );
   }
 }
 
-// --- 用户播放列表卡（用于网格） ---
 class _UserPlaylistCard extends StatelessWidget {
   final Playlist playlist;
   final int songCount;
   final VoidCallback onTap;
-  // final VoidCallback onMoreTap;
 
   const _UserPlaylistCard({
     required this.playlist,
     required this.songCount,
     required this.onTap,
-    // required this.onMoreTap,
   });
 
   @override
@@ -291,7 +291,7 @@ class _UserPlaylistCard extends StatelessWidget {
       title: playlist.name,
       subtitle: "$songCount 首",
       coverBytes: playlist.coverBytes,
-      fallbackIcon: Icon(Icons.playlist_play_rounded, size: 32),
+      fallbackIcon: const Icon(Icons.playlist_play_rounded, size: 32),
       onTap: onTap,
       coverAspectRatio: 1.22,
       titleLines: 1,
@@ -301,19 +301,22 @@ class _UserPlaylistCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+// 对话框及逻辑重构
+// ─────────────────────────────────────────────
 Future<void> _showCreatePlaylistDialog(BuildContext context) async {
   final nameController = TextEditingController();
   final uidController = TextEditingController();
-  final mp = context.read<MusicProvider>();
 
-  await showDialog(
+  // 1. 弹出 Tab 型对话框
+  final result = await showDialog<Map<String, dynamic>>(
     context: context,
     builder: (context) => DefaultTabController(
       length: 2,
       child: Builder(
         builder: (tabContext) {
           return AlertDialog(
-            title: TabBar(
+            title: const TabBar(
               tabs: [
                 Tab(text: "新建歌单"),
                 Tab(text: "网易云导入"),
@@ -352,7 +355,6 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
               ),
               FilledButton(
                 onPressed: () {
-                  // 根据当前选中的索引判断执行哪种逻辑
                   final tabIndex = DefaultTabController.of(tabContext).index;
                   Navigator.pop(context, {'index': tabIndex});
                 },
@@ -363,29 +365,40 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
         },
       ),
     ),
-  ).then((result) async {
-    if (result == null || !context.mounted) return [];
+  );
 
-    final provider = context.read<MusicProvider>();
-    if (result['index'] == 0) {
-      final name = nameController.text.trim();
-      if (name.isNotEmpty) {
-        provider.createPlaylist(name);
-        if (context.mounted) {
-          AppToast.success(context, message: '歌单「$name」已创建', title: '创建成功');
-        }
-      }
-    } else {
-      final uid = uidController.text.trim();
-      if (uid.isNotEmpty) {
-        final playlists = await NeteaseCloudMusicApi.getPlaylist(uid);
-        mp.addNetworkPlaylists(playlists);
+  // 2. 异步安全守卫
+  if (result == null || !context.mounted) return;
+
+  final playlistProvider = context.read<PlaylistProvider>();
+
+  if (result['index'] == 0) {
+    // 创建自建歌单
+    final name = nameController.text.trim();
+    if (name.isNotEmpty) {
+      await playlistProvider.createPlaylist(name);
+      if (context.mounted) {
+        AppToast.success(context, message: '歌单「$name」已创建', title: '创建成功');
       }
     }
-  });
+  } else {
+    // 网易云歌单导入
+    final uid = uidController.text.trim();
+    if (uid.isNotEmpty) {
+      try {
+        // final playlists = await NeteaseCloudMusicApi.getPlaylist(uid);
+        // ⚠️ 请确保您在 PlaylistProvider 中实现了 addNetworkPlaylists 方法，
+        // 如果目前暂未迁移，可以先在这个方法内通过 playlistUpdates 广播通知或调用批量插入接口。
+        // playlistProvider.addNetworkPlaylists(playlists);
+      } catch (e) {
+        if (context.mounted) {
+          AppToast.error(context, message: '导入失败: $e', title: '错误');
+        }
+      }
+    }
+  }
 }
 
-// --- 快捷入口卡片 ---
 class _PlaylistQuickCard extends StatelessWidget {
   final String title;
   final IconData icon;

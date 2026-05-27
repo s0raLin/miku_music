@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/views/Music/widgets/playlist_card.dart';
 import 'package:provider/provider.dart';
 
@@ -10,13 +10,23 @@ class PlaylistTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final musicProvider = context.watch<MusicProvider>();
-    final userPlaylists = musicProvider.userPlaylists;
-    final favorites = musicProvider.favoritesPlaylist;
+    // 1. 修正命名：明确这是 PlaylistProvider
+    final playlistProvider = context.watch<PlaylistProvider>();
+    final userPlaylists = playlistProvider.userPlaylists;
+
+    // 2. 从提供者中通过常量 ID 动态获取“我喜欢”系统歌单
+    final favorites = playlistProvider.getPlaylistById(
+      PlaylistProvider.favoritesPlaylistId,
+    );
 
     return RefreshIndicator(
-      onRefresh: () async {},
+      // 3. 补全下拉刷新，联动底层的 Rust 数据库拉取
+      onRefresh: () async {
+        await playlistProvider.refreshFromDb();
+      },
       child: SingleChildScrollView(
+        // 让内容不满一屏时也能触发下拉刷新
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -24,7 +34,8 @@ class PlaylistTab extends StatelessWidget {
             if (favorites != null)
               PlaylistCard(
                 playlist: favorites,
-                songCount: musicProvider.favList.length,
+                // 歌单自己的 songIds 已经包含了准确的数量，不再和 MusicProvider 耦合
+                songCount: favorites.songIds.length,
                 onTap: () => context.push("/user/playlist/favorites"),
               ),
             const SizedBox(height: 16),
@@ -44,7 +55,7 @@ class PlaylistTab extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             userPlaylists.isEmpty
-                ? AppEmptyState(
+                ? const AppEmptyState(
                     icon: Icons.playlist_play_rounded,
                     title: "还没有歌单",
                     subtitle: "创建自己的歌单来整理喜欢的歌曲",
@@ -71,6 +82,8 @@ class PlaylistTab extends StatelessWidget {
 
   Future<void> _showCreatePlaylistDialog(BuildContext context) async {
     final controller = TextEditingController();
+
+    // 弹出创建对话框
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -93,16 +106,17 @@ class PlaylistTab extends StatelessWidget {
       ),
     );
 
-     if (name != null && name.isNotEmpty) {
-       if (!context.mounted) return;
-       context.read<MusicProvider>().createPlaylist(name);
-       if (context.mounted) {
-         AppToast.success(
-           context,
-           message: '歌单「$name」已创建',
-           title: '创建成功',
-         );
-       }
-     }
+    // 4. 严格的异步安全守卫：await 之后必须先检查 context 还在不在
+    if (!context.mounted) return;
+
+    if (name != null && name.isNotEmpty) {
+      // 5. 正确调用 PlaylistProvider 而不是原来的 MusicProvider
+      await context.read<PlaylistProvider>().createPlaylist(name);
+
+      // 再次确认挂载状态后弹出提示
+      if (context.mounted) {
+        AppToast.success(context, message: '歌单「$name」已创建', title: '创建成功');
+      }
+    }
   }
 }

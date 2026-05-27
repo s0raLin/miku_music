@@ -30,6 +30,7 @@ pub struct PlaylistInfo {
     pub description: Option<String>,
     pub cover_path: Option<String>,
     pub is_system: i32, // 0: 用户自建, 1: 系统歌单
+    pub ids: Vec<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }

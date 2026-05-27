@@ -55,10 +55,7 @@ class WideLayout extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    flex: 5,
-                    child: CoverTabContent(music: music, isLiked: isLiked),
-                  ),
+                  Expanded(flex: 5, child: CoverTabContent(music: music)),
                   const SizedBox(width: 24),
                   const Expanded(flex: 4, child: LyricsSection()),
                 ],

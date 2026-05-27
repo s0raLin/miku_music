@@ -90,7 +90,6 @@ class _NarrowLayoutState extends State<NarrowLayout> {
                     child: _selectedSegment == 0
                         ? CoverTabContent(
                             music: widget.music,
-                            isLiked: widget.isLiked,
                           )
                         : const LyricsSection(),
                   ),

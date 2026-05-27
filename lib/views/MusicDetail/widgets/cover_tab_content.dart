@@ -12,13 +12,8 @@ import 'package:provider/provider.dart';
 
 class CoverTabContent extends StatefulWidget {
   final Music music;
-  final bool isLiked;
 
-  const CoverTabContent({
-    super.key,
-    required this.music,
-    required this.isLiked,
-  });
+  const CoverTabContent({super.key, required this.music});
 
   @override
   State<CoverTabContent> createState() => _CoverTabContentState();
@@ -38,6 +33,13 @@ class _CoverTabContentState extends State<CoverTabContent> {
     final playlistProvider = context.watch<PlaylistProvider>();
     final musicProvider = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
+
+    final isLiked = playlistProvider
+        .getPlaylistSongs(
+          PlaylistProvider.favoritesPlaylistId,
+          musicProvider.library,
+        )
+        .any((m) => m.id == widget.music.id);
 
     return Column(
       children: [
@@ -135,11 +137,11 @@ class _CoverTabContentState extends State<CoverTabContent> {
                 transitionBuilder: (child, anim) =>
                     ScaleTransition(scale: anim, child: child),
                 child: Icon(
-                  widget.isLiked
+                  isLiked
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
-                  key: ValueKey<bool>(widget.isLiked),
-                  color: widget.isLiked ? cs.primary : cs.onSurfaceVariant,
+                  key: ValueKey<bool>(isLiked),
+                  color: isLiked ? cs.primary : cs.onSurfaceVariant,
                   size: 28,
                 ),
               ),
@@ -242,10 +244,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
     );
   }
 
-  Future<void> _showAddToPlaylistSheet(
-    BuildContext context,
-    Music song,
-  ) async {
+  Future<void> _showAddToPlaylistSheet(BuildContext context, Music song) async {
     // TODO
   }
 }

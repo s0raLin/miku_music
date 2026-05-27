@@ -135,7 +135,7 @@ class MusicDbService {
     await _dbManager?.toggleSongFavorite(musicId: musicId);
     _playlistUpdateController.add(null);
   }
-
+  
   Future<void> removeFromPlaylist(String playlistId, String musicId) async {
     await _dbManager?.removeSongFromPlaylist(
       playlistId: playlistId,

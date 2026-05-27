@@ -124,10 +124,7 @@ class PlaylistProvider extends ChangeNotifier {
     return _playlists.firstWhereOrNull((p) => p.id == id);
   }
 
-  List<Music> getPlaylistSongs(
-    String playlistId,
-    List<Music> globalLibrary,
-  ) {
+  List<Music> getPlaylistSongs(String playlistId, List<Music> globalLibrary) {
     final playlist = getPlaylistById(playlistId);
     if (playlist == null) return [];
 

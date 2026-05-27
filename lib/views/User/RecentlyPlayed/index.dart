@@ -15,6 +15,7 @@ class RecentlyPlayedPage extends StatelessWidget {
     return hours > 0 ? "$hours小时 $minutes分钟" : "$minutes分钟";
   }
 
+
   // 弹窗选择要加入的普通用户歌单
   Future<void> _showAddToPlaylistSheet(BuildContext context, Music song) async {
     final playlistProvider = context.read<PlaylistProvider>();
@@ -59,11 +60,9 @@ class RecentlyPlayedPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🌟 核心：直接监听 PlaylistProvider 的 history 列表与乐库
     final playlistProvider = context.watch<PlaylistProvider>();
     final musicProvider = context.watch<MusicProvider>();
-
-    final songs = playlistProvider.history; // 👈 独立数据源，不走 ID 转换
+    final songs = playlistProvider.history;
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -82,10 +81,6 @@ class RecentlyPlayedPage extends StatelessWidget {
             stretch: true,
             scrolledUnderElevation: 2,
             leading: const BackButton(),
-            actions: [
-              // 历史记录不需要上传云端，故不放上传按钮
-              const Padding(padding: EdgeInsets.only(right: 8)),
-            ],
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
               titlePadding: const EdgeInsets.only(
@@ -111,9 +106,10 @@ class RecentlyPlayedPage extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          colorScheme.tertiaryContainer.withValues(
-                            alpha: 0.6,
-                          ), // 换个颜色和普通歌单区分
+                          // 🌟 修复：改为使用你自定义的 primaryContainer 主色容器，拒绝默认的紫色 tertiary
+                          colorScheme.primaryContainer.withValues(
+                            alpha: 0.4,
+                          ),
                           colorScheme.surface,
                         ],
                       ),
@@ -127,7 +123,6 @@ class RecentlyPlayedPage extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          // 专属的“最近播放”时间历史图标
                           Container(
                             width: 140,
                             height: 140,
@@ -137,7 +132,7 @@ class RecentlyPlayedPage extends StatelessWidget {
                               boxShadow: [
                                 BoxShadow(
                                   color: colorScheme.shadow.withValues(
-                                    alpha: 0.12,
+                                    alpha: 0.08,
                                   ),
                                   blurRadius: 15,
                                   offset: const Offset(0, 8),
@@ -147,7 +142,8 @@ class RecentlyPlayedPage extends StatelessWidget {
                             child: Icon(
                               Icons.history_rounded,
                               size: 60,
-                              color: colorScheme.tertiary,
+                              // 🌟 修复：图标颜色由默认紫(tertiary)收拢为主色(primary)
+                              color: colorScheme.primary,
                             ),
                           ),
                           const SizedBox(width: 20),
@@ -198,8 +194,9 @@ class RecentlyPlayedPage extends StatelessWidget {
                                   ),
                                   label: const Text("播放全部"),
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: colorScheme.tertiary,
-                                    foregroundColor: colorScheme.onTertiary,
+                                    // 🌟 修复：按钮背景与文字彻底归位到你的专属自定义主题色
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: colorScheme.onPrimary,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 20,
                                       vertical: 10,
@@ -252,7 +249,6 @@ class RecentlyPlayedPage extends StatelessWidget {
                       final isCurrent =
                           musicProvider.currentMusic?.id == song.id;
 
-                      // 检查该历史歌曲是否存在于“我喜欢”系统歌单中
                       final isFav = playlistProvider
                           .getPlaylistSongs(
                             PlaylistProvider.favoritesPlaylistId,

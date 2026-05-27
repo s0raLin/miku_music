@@ -539,6 +539,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     itemBuilder: (context, index) => _M3SongTile(
                       song: songs[index],
                       musicProvider: musicProvider,
+                      playlistProvider: playlistProvider,
                       onTap: () {
                         musicProvider.playFromLibrary(songs[index]);
                         context.push("/music-detail", extra: songs[index]);
@@ -621,6 +622,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
 class _M3SongTile extends StatelessWidget {
   final MusicInfo song;
+  final PlaylistProvider playlistProvider;
   final MusicProvider musicProvider;
   final VoidCallback onTap;
   final VoidCallback? onRemove;
@@ -629,6 +631,7 @@ class _M3SongTile extends StatelessWidget {
   const _M3SongTile({
     required this.song,
     required this.musicProvider,
+    required this.playlistProvider,
     required this.onTap,
     this.onRemove,
     required this.onAddToPlaylist,
@@ -637,8 +640,14 @@ class _M3SongTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCurrent = musicProvider.currentMusic?.id == song.id;
+
     final colorScheme = Theme.of(context).colorScheme;
-    final isFav = musicProvider.favList.any((m) => m.id == song.id);
+    final isFav = playlistProvider
+        .getPlaylistSongs(
+          PlaylistProvider.favoritesPlaylistId,
+          musicProvider.library,
+        )
+        .any((m) => m.id == song.id);
 
     return ListTile(
       onTap: onTap,
@@ -673,7 +682,7 @@ class _M3SongTile extends StatelessWidget {
               size: 20,
             ),
             color: isFav ? colorScheme.primary : null,
-            onPressed: () => musicProvider.toggleFav(song),
+            onPressed: () => playlistProvider.toggleMusicFavorite(song),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),

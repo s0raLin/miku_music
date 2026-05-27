@@ -57,14 +57,14 @@ class MusicProvider extends ChangeNotifier {
   // ───────────────────────────
   // 基础状态持久化（仅用于直接切歌/打星收藏）
   // ───────────────────────────
-  static const _historyKey = 'play_history';
-  static const _favListKey = 'fav_list';
+  // static const _historyKey = 'play_history';
+  // static const _favListKey = 'fav_list';
 
-  List<MusicInfo> _history = [];
-  List<MusicInfo> get history => _history;
+  // List<MusicInfo> _history = [];
+  // List<MusicInfo> get history => _history;
 
-  List<MusicInfo> _favList = [];
-  List<MusicInfo> get favList => _favList;
+  // List<MusicInfo> _favList = [];
+  // List<MusicInfo> get favList => _favList;
 
   List<LyricLine> _currentLyrics = [];
   List<LyricLine> get currentLyrics => _currentLyrics;
@@ -91,11 +91,11 @@ class MusicProvider extends ChangeNotifier {
       ..addAll(scannedSongs);
     notifyListeners();
 
-    onProgress?.call('恢复播放历史', '正在读取历史记录');
-    await _loadHistory();
+    // onProgress?.call('恢复播放历史', '正在读取历史记录');
+    // await _loadHistory();
 
-    onProgress?.call('恢复收藏列表', '正在读取我喜欢列表');
-    await _loadFavList();
+    // onProgress?.call('恢复收藏列表', '正在读取我喜欢列表');
+    // await _loadFavList();
 
     onProgress?.call('恢复音量设置', '正在同步播放器音量');
     await _loadVolume();
@@ -176,6 +176,9 @@ class MusicProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 1. 定义一个切歌时的通知钩子
+  void Function(MusicInfo song)? onMusicPlayed;
+
   Future<void> replaceQueue(
     List<MusicInfo> songs, {
     int startIndex = 0,
@@ -214,14 +217,17 @@ class MusicProvider extends ChangeNotifier {
     if (music.coverBytes == null || music.coverBytes!.isEmpty) {
       MusicService.parse(music.id)
           .then((updated) {
-            music.coverBytes = updated.coverBytes;
-            notifyListeners();
+            // 🌟 触发封面更新方法
+            updateCoverBytes(music.id, updated.coverBytes);
           })
           .catchError((_) {});
     }
 
     if (autoPlay) {
-      _addToHistory(music);
+      // _addToHistory(music);
+      // 🌟 核心：触发外部钩子，通知最近播放列表
+      onMusicPlayed?.call(music);
+      audioHandler.playMusic(music);
       audioHandler.playMusic(music);
     } else {
       audioHandler.playMusic(music, autoPlay: false);
@@ -237,8 +243,8 @@ class MusicProvider extends ChangeNotifier {
 
     patch(_library);
     patch(_queue);
-    patch(_history);
-    patch(_favList);
+    // patch(_history);
+    // patch(_favList);
     notifyListeners();
   }
 
@@ -305,55 +311,55 @@ class MusicProvider extends ChangeNotifier {
   // ─────────────────────────────────────────────
   // 喜好与历史基础存储
   // ─────────────────────────────────────────────
-  Future<void> toggleFav(MusicInfo music) async {
-    final isExist = _favList.any((m) => m.id == music.id);
-    if (isExist) {
-      _favList.removeWhere((m) => m.id == music.id);
-    } else {
-      _favList.add(music);
-    }
-    notifyListeners();
-  }
+  // Future<void> toggleFav(MusicInfo music) async {
+  //   final isExist = _favList.any((m) => m.id == music.id);
+  //   if (isExist) {
+  //     _favList.removeWhere((m) => m.id == music.id);
+  //   } else {
+  //     _favList.add(music);
+  //   }
+  //   notifyListeners();
+  // }
 
-  Future<void> _loadFavList() async {
-    final pfs = await SharedPreferences.getInstance();
-    final ids = pfs.getStringList(_favListKey) ?? [];
-    _favList = ids
-        .map((id) => _library.firstWhereOrNull((m) => m.id == id))
-        .whereType<MusicInfo>()
-        .toList();
-    notifyListeners();
-  }
+  // Future<void> _loadFavList() async {
+  //   final pfs = await SharedPreferences.getInstance();
+  //   final ids = pfs.getStringList(_favListKey) ?? [];
+  //   _favList = ids
+  //       .map((id) => _library.firstWhereOrNull((m) => m.id == id))
+  //       .whereType<MusicInfo>()
+  //       .toList();
+  //   notifyListeners();
+  // }
 
-  Future<void> _loadHistory() async {
-    final pfs = await SharedPreferences.getInstance();
-    final ids = pfs.getStringList(_historyKey) ?? [];
-    _history = ids
-        .map((id) => _library.firstWhereOrNull((m) => m.id == id))
-        .whereType<MusicInfo>()
-        .toList();
-    notifyListeners();
-  }
+  // Future<void> _loadHistory() async {
+  //   final pfs = await SharedPreferences.getInstance();
+  //   final ids = pfs.getStringList(_historyKey) ?? [];
+  //   _history = ids
+  //       .map((id) => _library.firstWhereOrNull((m) => m.id == id))
+  //       .whereType<MusicInfo>()
+  //       .toList();
+  //   notifyListeners();
+  // }
 
-  Future<void> _addToHistory(MusicInfo music) async {
-    _history.removeWhere((m) => m.id == music.id);
-    _history.insert(0, music);
-    if (_history.length > 200) _history.removeLast();
-    await _saveHistory();
-    notifyListeners();
-  }
+  // Future<void> _addToHistory(MusicInfo music) async {
+  //   _history.removeWhere((m) => m.id == music.id);
+  //   _history.insert(0, music);
+  //   if (_history.length > 200) _history.removeLast();
+  //   await _saveHistory();
+  //   notifyListeners();
+  // }
 
-  Future<void> _saveHistory() async {
-    final pfs = await SharedPreferences.getInstance();
-    await pfs.setStringList(_historyKey, _history.map((m) => m.id).toList());
-  }
+  // Future<void> _saveHistory() async {
+  //   final pfs = await SharedPreferences.getInstance();
+  //   await pfs.setStringList(_historyKey, _history.map((m) => m.id).toList());
+  // }
 
-  Future<void> clearHistory() async {
-    _history.clear();
-    final pfs = await SharedPreferences.getInstance();
-    await pfs.remove(_historyKey);
-    notifyListeners();
-  }
+  // Future<void> clearHistory() async {
+  //   _history.clear();
+  //   final pfs = await SharedPreferences.getInstance();
+  //   await pfs.remove(_historyKey);
+  //   notifyListeners();
+  // }
 
   Stream<PositionData> get positionDataStream =>
       Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(

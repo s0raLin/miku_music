@@ -30,6 +30,31 @@ class PlaylistProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> bootstrap({
+    void Function(String module, String detail)? onProgress,
+  }) async {
+    onProgress?.call('连接媒体数据库', '正在读取歌单架构...');
+
+    // 从 Rust SQLite 中获取包含系统和自建的完整列表
+    _playlists = await _dbService.getAllRustPlaylists();
+
+    // 提取系统专属歌单实体，用于更加精细的进度信息展示
+    final favPlaylist = getPlaylistById(favoritesPlaylistId);
+    final recentPlaylist = getPlaylistById(recentPlaylistId);
+
+    onProgress?.call('恢复收藏列表', '已载入 ${favPlaylist?.songIds.length ?? 0} 首收藏歌曲');
+
+    onProgress?.call(
+      '恢复播放历史',
+      '已载入 ${recentPlaylist?.songIds.length ?? 0} 首最近播放记录',
+    );
+
+    onProgress?.call('同步自建歌单', '已拉取 ${userPlaylists.length} 个本地歌单');
+
+    // 全部装载完毕，统一派发 UI 刷新通知
+    notifyListeners();
+  }
+
   // ─────────────────────────────────────────────
   // 歌单核心 CRUD 方法（主动触发更新，杜绝套娃）
   // ─────────────────────────────────────────────
@@ -75,6 +100,18 @@ class PlaylistProvider extends ChangeNotifier {
   /// 从歌单移除歌曲
   Future<void> removeFromPlaylist(String playlistId, String musicId) async {
     await _dbService.removeFromPlaylist(playlistId, musicId);
+    await refreshFromDb();
+  }
+
+  /// 将歌曲添加到历史记录
+  Future<void> addToHistory(MusicInfo music) async {
+    await _dbService.addMusicToHistory(music.id);
+    await refreshFromDb();
+  }
+
+  // 将歌曲添加到收藏
+  Future<void> toggleMusicFavorite(MusicInfo music) async {
+    await _dbService.toggleMusicFavorite(music.id);
     await refreshFromDb();
   }
 

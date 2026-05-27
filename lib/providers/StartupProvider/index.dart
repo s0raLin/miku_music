@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/service/Initialization/index.dart';
 
@@ -27,6 +28,7 @@ class StartupProvider extends ChangeNotifier {
   Future<void> run({
     required ThemeProvider themeProvider,
     required MusicProvider musicProvider,
+    required PlaylistProvider playlistProvider,
   }) async {
     if (_status == StartupStatus.running ||
         _status == StartupStatus.completed) {
@@ -54,6 +56,10 @@ class StartupProvider extends ChangeNotifier {
       _setStage('恢复播放器状态', '正在恢复播放数据');
       await musicProvider.bootstrap(
         scannedSongs: songs,
+        onProgress: (module, detail) => _setStage(module, detail),
+      );
+
+      playlistProvider.bootstrap(
         onProgress: (module, detail) => _setStage(module, detail),
       );
       _finishStep('恢复播放器状态', '播放器状态恢复完成');

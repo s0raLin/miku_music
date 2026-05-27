@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/views/MusicDetail/layout/narrow_layout.dart';
 import 'package:myapp/views/MusicDetail/layout/wide_layout.dart';
 
@@ -19,6 +20,8 @@ class MusicDetailPage extends StatefulWidget {
 class _MusicDetailPageState extends State<MusicDetailPage> {
   @override
   Widget build(BuildContext context) {
+    final musicProvider = context.read<MusicProvider>();
+    final playlistProvider = context.read<PlaylistProvider>();
     final music = context.select<MusicProvider, MusicInfo?>(
       (p) => p.currentMusic,
     );
@@ -31,9 +34,12 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
       );
     }
 
-    final isLiked = context.select<MusicProvider, bool>(
-      (p) => p.favList.any((m) => m.id == music.id),
-    );
+    final isLiked = playlistProvider
+        .getPlaylistSongs(
+          PlaylistProvider.favoritesPlaylistId,
+          musicProvider.library,
+        )
+        .any((m) => m.id == music.id);
     final isWide = MediaQuery.sizeOf(context).width > 700;
 
     return isWide

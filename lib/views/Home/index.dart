@@ -7,6 +7,7 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -39,7 +40,12 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final history = context.watch<MusicProvider>().history;
+    final musicProvider = context.watch<MusicProvider>();
+    final playlistProvider = context.watch<PlaylistProvider>();
+    final history = playlistProvider.getPlaylistSongs(
+      PlaylistProvider.recentPlaylistId,
+      musicProvider.library,
+    );
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -147,7 +153,7 @@ class _HomePageState extends State<HomePage> {
                           music: item,
                           onTap: () {
                             final mp = context.read<MusicProvider>();
-                            mp.replaceQueue(mp.history, startIndex: index);
+                            mp.replaceQueue(history, startIndex: index);
                             context.push('/music-detail');
                           },
                         );

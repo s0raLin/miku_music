@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/StartupProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/router/Extensions/router.dart';
@@ -53,6 +54,10 @@ class _SplashPageState extends State<SplashPage>
     final startupProvider = context.read<StartupProvider>();
     final themeProvider = context.read<ThemeProvider>();
     final musicProvider = context.read<MusicProvider>();
+    final playlistProvider = context.read<PlaylistProvider>();
+    musicProvider.onMusicPlayed = (song) {
+      playlistProvider.addToHistory(song);
+    };
 
     final pfs = await SharedPreferences.getInstance();
     final bool isFirstRun = pfs.getBool("is_first_run") ?? true;
@@ -61,6 +66,7 @@ class _SplashPageState extends State<SplashPage>
       await startupProvider.run(
         themeProvider: themeProvider,
         musicProvider: musicProvider,
+        playlistProvider: playlistProvider,
       );
       startupSucceeded = startupProvider.status == StartupStatus.completed;
     } catch (e) {

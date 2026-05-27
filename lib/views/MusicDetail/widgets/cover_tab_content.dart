@@ -7,6 +7,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:provider/provider.dart';
 
 class CoverTabContent extends StatefulWidget {
@@ -34,7 +35,8 @@ class _CoverTabContentState extends State<CoverTabContent> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.read<MusicProvider>();
+    final playlistProvider = context.read<PlaylistProvider>();
+    final musicProvider = context.read<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
     return Column(
@@ -119,10 +121,13 @@ class _CoverTabContentState extends State<CoverTabContent> {
             ),
             IconButton(
               onPressed: () {
-                provider.toggleFav(widget.music);
-                final isFav = provider.favList.any(
-                  (m) => m.id == widget.music.id,
-                );
+                playlistProvider.toggleMusicFavorite(widget.music);
+                final isFav = playlistProvider
+                    .getPlaylistSongs(
+                      PlaylistProvider.favoritesPlaylistId,
+                      musicProvider.library,
+                    )
+                    .any((m) => m.id == widget.music.id);
                 AppToast.neutral(context, message: isFav ? '已添加到喜欢' : '已取消收藏');
               },
               icon: AnimatedSwitcher(
@@ -156,7 +161,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
 
         // 💡 仅用于包裹进度条与时间文本的 StreamBuilder
         StreamBuilder<PositionData>(
-          stream: provider.positionDataStream,
+          stream: musicProvider.positionDataStream,
           builder: (context, snapshot) {
             final data =
                 snapshot.data ??
@@ -169,7 +174,8 @@ class _CoverTabContentState extends State<CoverTabContent> {
             final safeTotal = totalMs > 0 ? totalMs : 1.0;
 
             final sliderValue = _draggingValue ?? currentPosMs;
-            final isWaving = provider.player.playing && _draggingValue == null;
+            final isWaving =
+                musicProvider.player.playing && _draggingValue == null;
 
             return Column(
               children: [
@@ -185,7 +191,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
                       });
                     },
                     onChangeEnd: (v) async {
-                      await provider.player.seek(
+                      await musicProvider.player.seek(
                         Duration(milliseconds: v.toInt()),
                       );
                       setState(() {
@@ -230,7 +236,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
         const SizedBox(height: 20),
 
         // 【核心修改位置】将控制台移出 StreamBuilder 外层，独立渲染
-        _PlaybackControls(provider: provider),
+        _PlaybackControls(provider: musicProvider),
         const SizedBox(height: 28),
       ],
     );

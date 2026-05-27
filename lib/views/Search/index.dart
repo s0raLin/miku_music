@@ -141,7 +141,7 @@ class _SearchPageState extends State<SearchPage> {
       padding: const EdgeInsets.all(24),
       children: [
         Text(
-          "推荐搜索",
+          "搜索推荐",
           style: textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: cs.primary,

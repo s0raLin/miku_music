@@ -12,8 +12,8 @@ class PlaylistProvider extends ChangeNotifier {
   List<Playlist> _playlists = [];
   List<Playlist> get playlists => _playlists;
 
-  List<Music> _history = [];
-  List<Music> get history => _history;
+  List<String> _historyIds = [];
+  List<String> get historyIds => _historyIds;
 
   static const String favoritesPlaylistId = 'system_favorites';
 
@@ -22,15 +22,14 @@ class PlaylistProvider extends ChangeNotifier {
   List<Playlist> get systemPlaylists =>
       _playlists.where((p) => p.isSystem).toList();
 
-  // 1. 构造函数保持绝对干净，或者只在初始化阶段拉取一次数据，不允许在里面订阅容易重复构建的单例 Stream
   PlaylistProvider() {
     refreshFromDb();
   }
 
-  /// 从数据库拉取最新歌单数据
+  /// 从数据库拉取最新歌单与播放历史 ID
   Future<void> refreshFromDb() async {
     _playlists = await _dbService.getAllRustPlaylists();
-
+    _historyIds = await _dbService.getHistoryIds();
     notifyListeners();
   }
 
@@ -40,20 +39,17 @@ class PlaylistProvider extends ChangeNotifier {
     onProgress?.call('连接媒体数据库', '正在读取歌单架构...');
     await MusicDbService().init();
 
-    // 从 Rust SQLite 中获取包含系统和自建的完整列表
     _playlists = await _dbService.getAllRustPlaylists();
 
-    // 提取系统专属歌单实体，用于更加精细的进度信息展示
     final favPlaylist = getPlaylistById(favoritesPlaylistId);
-    _history = await _dbService.getHistory();
+    _historyIds = await _dbService.getHistoryIds();
 
     onProgress?.call('恢复收藏列表', '已载入 ${favPlaylist?.songIds.length ?? 0} 首收藏歌曲');
 
-    onProgress?.call('恢复播放历史', '已载入 ${_history.length} 首最近播放记录');
+    onProgress?.call('恢复播放历史', '已载入 ${_historyIds.length} 首最近播放记录');
 
     onProgress?.call('同步自建歌单', '已拉取 ${userPlaylists.length} 个本地歌单');
 
-    // 全部装载完毕，统一派发 UI 刷新通知
     notifyListeners();
   }
 
@@ -61,7 +57,6 @@ class PlaylistProvider extends ChangeNotifier {
   // 歌单核心 CRUD 方法（主动触发更新，杜绝套娃）
   // ─────────────────────────────────────────────
 
-  /// 创建新歌单
   Future<void> createPlaylist(
     String name, {
     String? coverPath,
@@ -72,11 +67,9 @@ class PlaylistProvider extends ChangeNotifier {
       coverPath: coverPath,
       description: description,
     );
-    // 主动控制刷新，只有这一个口子，清清爽爽
     await refreshFromDb();
   }
 
-  /// 删除指定歌单
   Future<void> deletePlaylist(String id) async {
     final playlist = getPlaylistById(id);
     if (playlist != null && playlist.isSystem) {
@@ -87,31 +80,26 @@ class PlaylistProvider extends ChangeNotifier {
     await refreshFromDb();
   }
 
-  /// 重命名歌单
   Future<void> renamePlaylist(String playlistId, String newName) async {
     await _dbService.renamePlaylist(playlistId, newName);
     await refreshFromDb();
   }
 
-  /// 向歌单追加歌曲
   Future<void> addToPlaylist(String playlistId, Music music) async {
     await _dbService.addMusicToPlaylist(playlistId, music.id);
     await refreshFromDb();
   }
 
-  /// 从歌单移除歌曲
   Future<void> removeFromPlaylist(String playlistId, String musicId) async {
     await _dbService.removeFromPlaylist(playlistId, musicId);
     await refreshFromDb();
   }
 
-  /// 将歌曲添加到历史记录
   Future<void> addToHistory(Music music) async {
     await _dbService.addMusicToHistory(music.id);
     await refreshFromDb();
   }
 
-  // 将歌曲添加到收藏
   Future<void> toggleMusicFavorite(Music music) async {
     await _dbService.toggleMusicFavorite(music.id);
     await refreshFromDb();
@@ -129,6 +117,13 @@ class PlaylistProvider extends ChangeNotifier {
     if (playlist == null) return [];
 
     return playlist.songIds
+        .map((id) => globalLibrary.firstWhereOrNull((m) => m.id == id))
+        .whereType<Music>()
+        .toList();
+  }
+
+  List<Music> getHistorySongs(List<Music> globalLibrary) {
+    return _historyIds
         .map((id) => globalLibrary.firstWhereOrNull((m) => m.id == id))
         .whereType<Music>()
         .toList();

@@ -45,6 +45,15 @@ class WideLayout extends StatelessWidget {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              
+            },
+            tooltip: "更多",
+            icon: Icon(Icons.more_vert_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(

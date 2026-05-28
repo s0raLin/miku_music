@@ -1,4 +1,4 @@
-use super::{DbManager, MusicInfo};
+use super::DbManager;
 use rusqlite::{params, Result};
 
 impl DbManager {
@@ -25,26 +25,19 @@ impl DbManager {
         Ok(())
     }
 
-    /// 获取最近播放的历史歌曲列表
-    pub fn get_play_history(&self) -> Result<Vec<MusicInfo>> {
+    /// 获取最近播放的歌曲 ID 列表（按播放时间倒序）
+    pub fn get_play_history(&self) -> Result<Vec<String>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT m.id, m.title, m.artist, m.album, m.duration_ms, m.cover_path, m.lyrics, m.path
-             FROM play_history h
-             INNER JOIN songs m ON h.music_id = m.id
-             ORDER BY h.played_at DESC;"
+            "SELECT music_id FROM play_history ORDER BY played_at DESC;",
         )?;
 
-        let rows = stmt.query_map([], |row| {
-            Ok(MusicInfo {
-                id: row.get(0)?, title: row.get(1)?, artist: row.get(2)?,
-                album: row.get(3)?, duration_ms: row.get(4)?, cover_path: row.get(5)?,
-                lyrics: row.get(6)?, path: row.get(7)?,
-            })
-        })?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
         let mut history = Vec::new();
-        for item in rows { history.push(item?); }
+        for item in rows {
+            history.push(item?);
+        }
         Ok(history)
     }
 

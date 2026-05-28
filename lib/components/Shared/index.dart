@@ -583,81 +583,28 @@ class SongListCardTile extends StatelessWidget {
 // QuickActionCard
 // 图标容器使用 secondaryContainer，与选中态色系统一（primary 留给主操作按钮）。
 // ---------------------------------------------------------------------------
-class QuickActionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final String? subtitle;
-  final VoidCallback? onTap;
+// class QuickActionCard extends StatelessWidget {
+//   final String title;
+//   final IconData icon;
+//   final String? subtitle;
+//   final VoidCallback? onTap;
 
-  const QuickActionCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    this.subtitle,
-    this.onTap,
-  });
+//   const QuickActionCard({
+//     super.key,
+//     required this.title,
+//     required this.icon,
+//     this.subtitle,
+//     this.onTap,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+//     final colorScheme = theme.colorScheme;
 
-    return Card.filled(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12), // ↓ 从 14 收紧到 12，减少白边
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 图标容器：放大到 56×56，图标 28px，视觉存在感更强
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer,
-                  borderRadius: AppRadius.innerBR,
-                ),
-                child: SizedBox(
-                  width: 46, // ↑ 从 48 → 56
-                  height: 46, // ↑ 从 48 → 56
-                  child: Icon(
-                    icon,
-                    color: colorScheme.onSecondaryContainer,
-                    size: 24, // ↑ 从 24 → 28，图标更突出
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6), // 固定间距替代 Spacer，避免图标贴顶/文字贴底
-              Text(
-                title,
-                textAlign: TextAlign.center, //居中
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700, // 加重到 w700，与 icon 对比更明确
-                  fontSize: 12,
-                  letterSpacing: -0.1, // 微收字间距，标题更紧实
-                  color: colorScheme.onSurface, // 明确用 onSurface，避免跟随默认灰
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 3), // ↑ 从 2 → 3，标题与副标题层次更清晰
-                Text(
-                  subtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//     return
+//   }
+// }
 
 // ---------------------------------------------------------------------------
 // AppEmptyState

@@ -52,6 +52,15 @@ class _NarrowLayoutState extends State<NarrowLayout> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              
+            },
+            tooltip: "更多",
+            icon: Icon(Icons.more_vert_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -88,9 +97,7 @@ class _NarrowLayoutState extends State<NarrowLayout> {
                   child: KeyedSubtree(
                     key: ValueKey(_selectedSegment),
                     child: _selectedSegment == 0
-                        ? CoverTabContent(
-                            music: widget.music,
-                          )
+                        ? CoverTabContent(music: widget.music)
                         : const LyricsSection(),
                   ),
                 ),

@@ -120,7 +120,7 @@ abstract class RustLibApi extends BaseApi {
     required DbManager that,
   });
 
-  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetPlayHistory({
+  Future<List<String>> crateApiAudioDbDbManagerGetPlayHistory({
     required DbManager that,
   });
 
@@ -511,7 +511,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<List<MusicInfo>> crateApiAudioDbDbManagerGetPlayHistory({
+  Future<List<String>> crateApiAudioDbDbManagerGetPlayHistory({
     required DbManager that,
   }) {
     return handler.executeNormal(
@@ -530,7 +530,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_list_music_info,
+          decodeSuccessData: sse_decode_list_String,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerGetPlayHistoryConstMeta,
@@ -1936,8 +1936,8 @@ class DbManagerImpl extends RustOpaque implements DbManager {
   Future<List<MusicInfo>> getFavoriteSongs() =>
       RustLib.instance.api.crateApiAudioDbDbManagerGetFavoriteSongs(that: this);
 
-  /// 获取最近播放的历史歌曲列表
-  Future<List<MusicInfo>> getPlayHistory() =>
+  /// 获取最近播放的歌曲 ID 列表（按播放时间倒序）
+  Future<List<String>> getPlayHistory() =>
       RustLib.instance.api.crateApiAudioDbDbManagerGetPlayHistory(that: this);
 
   /// 获取单首歌曲

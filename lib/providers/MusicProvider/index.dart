@@ -143,6 +143,17 @@ class MusicProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reorderQueue(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    // 假设你内部管理的变量叫 _queue
+    final song = _queue.removeAt(oldIndex);
+    _queue.insert(newIndex, song);
+
+    notifyListeners(); // 关键：通知全局 UI 刷新
+  }
+
   void removeFromQueue(int index) {
     if (index == _currentIndex) return;
     _queue.removeAt(index);

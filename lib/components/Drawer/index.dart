@@ -69,7 +69,7 @@ class MainDrawer extends StatelessWidget {
     ),
     const NavItem(
       group: '音乐',
-      path: '/user/playlist/recent',
+      path: '/user/recent',
       label: '最近播放',
       icon: Icons.history_rounded,
       selectedIcon: Icons.history_rounded,

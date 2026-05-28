@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
+import 'package:myapp/views/MusicUpload/index.dart';
 import 'package:myapp/views/Search/index.dart';
 import 'package:myapp/views/SetupWizard/index.dart';
 import 'package:myapp/views/User/EditProfile/index.dart';
@@ -152,6 +153,7 @@ final _routes = [
     builder: (context, state) => const AboutPage(),
   ),
   GoRoute(path: "/search", builder: (context, state) => const SearchPage()),
+  GoRoute(path: "/upload", builder: (context, state) => MusicUploadPage()),
   GoRoute(
     path: "/music-detail",
     pageBuilder: (context, state) {

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.29.0](https://github.com/s0raLin/miku_music/compare/v1.28.0...v1.29.0) (2026-05-28)
+
+
+### Features
+
+* **ui:** implement music upload functionality and update navigation ([c7aa68e](https://github.com/s0raLin/miku_music/commit/c7aa68e9f9e7a77d26b96501ff46fac1423e66a4))
+* **ui:** implement search functionality and navigation ([722808f](https://github.com/s0raLin/miku_music/commit/722808f9f9058fd982e73d31206d37a195a5f013))
+
 ## [1.28.0](https://github.com/s0raLin/miku_music/compare/v1.27.0...v1.28.0) (2026-05-27)
 
 

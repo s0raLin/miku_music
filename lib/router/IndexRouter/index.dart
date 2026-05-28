@@ -24,7 +24,6 @@ import 'package:myapp/views/User/RecentlyPlayed/index.dart';
 import 'package:myapp/views/User/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 
 class AppNavItem {

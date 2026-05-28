@@ -107,9 +107,7 @@ class _FilesPageState extends State<FilesPage>
   Widget build(BuildContext context) {
     super.build(context);
     // 当扫描流调用 musicProvider.updateLibrary() 时，这里会自动感知并触发重绘
-    final songs = context.select<MusicProvider, List<Music>>(
-      (p) => p.library,
-    );
+    final songs = context.select<MusicProvider, List<Music>>((p) => p.library);
 
     final folderGroups = _groupByFolder(songs);
     final albumGroups = _groupByAlbum(songs);
@@ -367,8 +365,7 @@ class _FilesPageState extends State<FilesPage>
   Widget _buildCollectionGrid(
     List<MapEntry<String, List<Music>>> entries, {
     required IconData emptyIcon,
-    required String Function(MapEntry<String, List<Music>> entry)
-    titleBuilder,
+    required String Function(MapEntry<String, List<Music>> entry) titleBuilder,
     required String Function(MapEntry<String, List<Music>> entry)
     subtitleBuilder,
     required void Function(MapEntry<String, List<Music>> entry) onTap,
@@ -380,6 +377,7 @@ class _FilesPageState extends State<FilesPage>
             : constraints.maxWidth >= 1000
             ? 200.0
             : 220.0;
+
         return RefreshIndicator(
           onRefresh: () async {
             _startScan(_paths);
@@ -393,7 +391,7 @@ class _FilesPageState extends State<FilesPage>
                     maxCrossAxisExtent: maxExtent,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
-                    childAspectRatio: 0.9,
+                    childAspectRatio: 1.0,
                   ),
                   itemCount: entries.length,
                   itemBuilder: (context, i) {
@@ -406,16 +404,13 @@ class _FilesPageState extends State<FilesPage>
                           orElse: () => entry.value.first,
                         )
                         .coverBytes;
-                    return MediaGridCard(
+
+                    return MediaOverlayCard(
                       title: titleBuilder(entry),
                       subtitle: subtitleBuilder(entry),
                       coverBytes: cover,
-                      fallbackIcon: Icon(emptyIcon, size: 32),
+                      fallbackIcon: emptyIcon,
                       onTap: () => onTap(entry),
-                      coverAspectRatio: 1.22,
-                      titleLines: 1,
-                      contentSpacing: 4,
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
                     );
                   },
                 ),

@@ -1,6 +1,4 @@
 // ─── 封面 + 元信息 + 控制台 ───────────────────────────────────────────────────
-
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -231,10 +229,6 @@ class _CoverTabContentState extends State<CoverTabContent> {
         const SizedBox(height: 28),
       ],
     );
-  }
-
-  Future<void> _showAddToPlaylistSheet(BuildContext context, Music song) async {
-    // TODO
   }
 }
 

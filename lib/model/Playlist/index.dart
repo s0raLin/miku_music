@@ -5,8 +5,8 @@ class Playlist {
   final String id;
   final String name;
   final String? description;
-  final Uint8List? coverBytes;
-  final String? coverPath;
+  Uint8List? coverBytes;
+  String? coverPath;
   final List<String> songIds;
   final bool isSystem;
   final DateTime createdAt;

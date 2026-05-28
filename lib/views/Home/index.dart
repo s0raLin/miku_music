@@ -40,8 +40,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-
-
     final playlistProvider = context.watch<PlaylistProvider>();
     final library = context.watch<MusicProvider>().library;
     final history = playlistProvider.getHistorySongs(library);
@@ -143,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: history.take(6).length,
                       separatorBuilder: (BuildContext context, int index) {
-                        return SizedBox(width: 4);
+                        return SizedBox(width: 6);
                       },
                       itemBuilder: (context, index) {
                         final item = history[index];

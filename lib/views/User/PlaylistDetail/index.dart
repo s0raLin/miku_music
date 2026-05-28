@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
@@ -17,112 +19,10 @@ class PlaylistDetailPage extends StatefulWidget {
 }
 
 class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
-  Offset _actionMenuTapPosition = Offset.zero;
-
   String _formatDuration(Duration d) {
     final minutes = d.inMinutes.remainder(60);
     final hours = d.inHours;
     return hours > 0 ? "$hours小时 $minutes分钟" : "$minutes分钟";
-  }
-
-  // --- 自适应 M3 响应式菜单重构 ---
-  void _showResponsiveActionMenu(BuildContext context, Playlist playlist) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDesktop = MediaQuery.of(context).size.width >= 600;
-
-    final musicProvider = context.read<MusicProvider>();
-
-    final menuItems = [
-      _AdaptiveActionItem(
-        icon: Icons.add_rounded,
-        title: "添加歌曲",
-        // 传入核心乐库源数据进行筛选
-        onTap: () => _showModalSideSheet(
-          context: context,
-          library: musicProvider.library,
-        ),
-      ),
-      _AdaptiveActionItem(
-        icon: Icons.edit_note_rounded,
-        title: "编辑歌单信息",
-        onTap: () {},
-      ),
-      _AdaptiveActionItem(
-        icon: Icons.delete_sweep_rounded,
-        title: "删除歌单",
-        textColor: colorScheme.error,
-        iconColor: colorScheme.error,
-        onTap: () => _showDeleteConfirmDialog(context, playlist),
-      ),
-    ];
-
-    if (isDesktop) {
-      showMenu(
-        context: context,
-        position: RelativeRect.fromLTRB(
-          _actionMenuTapPosition.dx,
-          _actionMenuTapPosition.dy,
-          _actionMenuTapPosition.dx + 1,
-          _actionMenuTapPosition.dy + 1,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        items: menuItems.map((item) {
-          return PopupMenuItem(
-            onTap: item.onTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(item.icon, size: 20, color: item.iconColor),
-                const SizedBox(width: 12),
-                Text(item.title, style: TextStyle(color: item.textColor)),
-              ],
-            ),
-          );
-        }).toList(),
-      );
-    } else {
-      showModalBottomSheet(
-        context: context,
-        showDragHandle: true,
-        useSafeArea: true,
-        builder: (context) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
-                child: Text(
-                  playlist.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const Divider(height: 1),
-              ...menuItems.map(
-                (item) => ListTile(
-                  leading: Icon(item.icon, color: item.iconColor),
-                  title: Text(
-                    item.title,
-                    style: TextStyle(color: item.textColor),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    item.onTap?.call();
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
   }
 
   // 侧边栏添加歌曲逻辑重构
@@ -607,8 +507,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: playlist.coverBytes?.isNotEmpty == true
-          ? Image.memory(playlist.coverBytes!, fit: BoxFit.cover)
+      child: playlist.coverPath?.isNotEmpty == true
+          ? Image.file(File(playlist.coverPath!), fit: BoxFit.cover)
           : Icon(
               isFavorites
                   ? Icons.favorite_rounded
@@ -732,20 +632,4 @@ class _M3SongTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _AdaptiveActionItem {
-  final IconData icon;
-  final String title;
-  final Color? textColor;
-  final Color? iconColor;
-  final VoidCallback? onTap;
-
-  _AdaptiveActionItem({
-    required this.icon,
-    required this.title,
-    this.textColor,
-    this.iconColor,
-    this.onTap,
-  });
 }

@@ -10,72 +10,106 @@ class PlaylistTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 修正命名：明确这是 PlaylistProvider
     final playlistProvider = context.watch<PlaylistProvider>();
     final userPlaylists = playlistProvider.userPlaylists;
 
-    // 2. 从提供者中通过常量 ID 动态获取“我喜欢”系统歌单
     final favorites = playlistProvider.getPlaylistById(
       PlaylistProvider.favoritesPlaylistId,
     );
 
     return RefreshIndicator(
-      // 3. 补全下拉刷新，联动底层的 Rust 数据库拉取
       onRefresh: () async {
         await playlistProvider.refreshFromDb();
       },
-      child: SingleChildScrollView(
-        // 让内容不满一屏时也能触发下拉刷新
+      child: CustomScrollView(
+        // 👈 改为 CustomScrollView，能完美处理网格流与滚动
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (favorites != null)
-              PlaylistCard(
-                playlist: favorites,
-                // 歌单自己的 songIds 已经包含了准确的数量，不再和 MusicProvider 耦合
-                songCount: favorites.songIds.length,
-                onTap: () => context.push("/user/playlist/favorites"),
-              ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "我的歌单",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                TextButton.icon(
-                  onPressed: () => _showCreatePlaylistDialog(context),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text("新建"),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            userPlaylists.isEmpty
-                ? const AppEmptyState(
-                    icon: Icons.playlist_play_rounded,
-                    title: "还没有歌单",
-                    subtitle: "创建自己的歌单来整理喜欢的歌曲",
-                  )
-                : Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: userPlaylists
-                        .map(
-                          (playlist) => PlaylistCard(
-                            playlist: playlist,
-                            songCount: playlist.songIds.length,
-                            onTap: () =>
-                                context.push("/user/playlist/${playlist.id}"),
-                          ),
-                        )
-                        .toList(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. 限制“喜欢”系统歌单的尺寸，不再让它无限撑满全宽
+                  if (favorites != null) ...[
+                    const Text(
+                      "系统歌单",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 150, // 🔒 严格限制宽度，“喜欢”卡片会自动变成 150x150
+                      child: PlaylistCard(
+                        playlist: favorites,
+                        songCount: favorites.songIds.length,
+                        onTap: () => context.push("/user/playlist/favorites"),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // 2. 标题与新建按钮
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "我的歌单",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _showCreatePlaylistDialog(context),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text("新建"),
+                      ),
+                    ],
                   ),
-          ],
-        ),
+                ],
+              ),
+            ),
+          ),
+
+          // 3. 将原本的 Wrap 替换为响应式的原生 GridView 布局
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: userPlaylists.isEmpty
+                ? const SliverToBoxAdapter(
+                    child: AppEmptyState(
+                      icon: Icons.playlist_play_rounded,
+                      title: "还没有歌单",
+                      subtitle: "创建自己的歌单来整理喜欢的歌曲",
+                    ),
+                  )
+                : SliverGrid.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 180, // 🔒 控制单张卡片的最大宽度，会自动响应式分列
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio:
+                              1.0, // 🔒 强制网格分配 1:1 正方形空间，终结无限大和长方形
+                        ),
+                    itemCount: userPlaylists.length,
+                    itemBuilder: (context, index) {
+                      final playlist = userPlaylists[index];
+                      return PlaylistCard(
+                        playlist: playlist,
+                        songCount: playlist.songIds.length,
+                        onTap: () =>
+                            context.push("/user/playlist/${playlist.id}"),
+                      );
+                    },
+                  ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
       ),
     );
   }

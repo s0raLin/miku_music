@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/api/NeteaseCloudMusic/index.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
@@ -198,16 +197,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: 220,
-                              childAspectRatio: 0.9,
+                              childAspectRatio: 1,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
                             ),
                         itemCount: userPlaylists.length,
                         itemBuilder: (context, index) {
                           final playlist = userPlaylists[index];
-                          return _UserPlaylistCard(
-                            playlist: playlist,
-                            songCount: playlist.songIds.length,
+                          return MediaOverlayCard(
+                            title: playlist.name,
+                            subtitle: "${playlist.songIds.length} 首",
+                            coverBytes: playlist.coverBytes,
+                            fallbackIcon: Icons.playlist_play_rounded,
                             onTap: () {
                               context.push("/user/playlist/${playlist.id}");
                             },
@@ -270,33 +271,6 @@ class _UserCard extends StatelessWidget {
           icon: const Icon(Icons.chevron_right_rounded),
         ),
       ],
-    );
-  }
-}
-
-class _UserPlaylistCard extends StatelessWidget {
-  final Playlist playlist;
-  final int songCount;
-  final VoidCallback onTap;
-
-  const _UserPlaylistCard({
-    required this.playlist,
-    required this.songCount,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return MediaGridCard(
-      title: playlist.name,
-      subtitle: "$songCount 首",
-      coverBytes: playlist.coverBytes,
-      fallbackIcon: const Icon(Icons.playlist_play_rounded, size: 32),
-      onTap: onTap,
-      coverAspectRatio: 1.22,
-      titleLines: 1,
-      contentSpacing: 4,
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
     );
   }
 }

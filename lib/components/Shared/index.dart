@@ -2,7 +2,6 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/model/Music/index.dart';
@@ -42,7 +41,6 @@ class AppToast {
     AppToastTone tone = AppToastTone.neutral,
     Duration duration = const Duration(seconds: 2),
   }) {
-
     final messenger = ScaffoldMessenger.maybeOf(context);
     messenger?.hideCurrentSnackBar();
 
@@ -329,180 +327,6 @@ class ArtworkCover extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// MediaGridCard
-//
-// 背景色统一策略：
-//   • below 模式 → Card.filled 默认色（surfaceContainerHigh），无需手动指定。
-//   • overlay 模式 → color: Colors.transparent，视觉层次由图片+渐变承担。
-//
-// 与 SongListCardTile 保持一致：都走 Card.filled 默认色，不再使用
-// surfaceContainerLowest（该 Token 在 M3 中为最低层级，用于 Page 背景）。
-// ---------------------------------------------------------------------------
-class MediaGridCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final Uint8List? coverBytes;
-  final Icon fallbackIcon;
-  final VoidCallback? onTap;
-  final Widget? badge;
-  final Widget? trailing;
-  final double? width;
-  final int titleLines;
-  final bool expandArtwork;
-  final double? coverAspectRatio;
-  final double contentSpacing;
-  final EdgeInsetsGeometry? padding;
-  final MediaGridCardTextLayout textLayout;
-  final int subtitleLines;
-
-  const MediaGridCard({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    this.coverBytes,
-    required this.fallbackIcon,
-    this.onTap,
-    this.badge,
-    this.trailing,
-    this.width,
-    this.titleLines = 1,
-    this.expandArtwork = false,
-    this.coverAspectRatio = 1,
-    this.contentSpacing = 8,
-    this.padding,
-    this.textLayout = MediaGridCardTextLayout.below,
-    this.subtitleLines = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final bool useOverlay = textLayout == MediaGridCardTextLayout.overlay;
-
-    // overlay 模式：Card 透明，视觉由图片决定；below 模式：走 Card.filled 默认色
-    final cardColor = useOverlay ? Colors.transparent : null;
-
-    final titleStyle = theme.textTheme.titleSmall!.copyWith(
-      fontWeight: FontWeight.w600,
-      color: useOverlay ? Colors.white : colorScheme.onSurface,
-    );
-    final subtitleStyle = theme.textTheme.bodySmall!.copyWith(
-      color: useOverlay ? Colors.white70 : colorScheme.onSurfaceVariant,
-    );
-
-    final titleWidget = Text(
-      title,
-      maxLines: titleLines,
-      overflow: TextOverflow.ellipsis,
-      style: titleStyle,
-    );
-    final subtitleWidget = Text(
-      subtitle,
-      maxLines: subtitleLines,
-      overflow: TextOverflow.ellipsis,
-      style: subtitleStyle,
-    );
-
-    Widget buildArtwork({required bool fillHeight}) => ArtworkCover(
-      bytes: coverBytes,
-      fallbackIcon: fallbackIcon.icon!,
-      iconSize: fallbackIcon.size ?? 24,
-      aspectRatio: (fillHeight || expandArtwork) ? null : coverAspectRatio,
-      overlay: useOverlay
-          ? _GradientOverlay(
-              titleWidget: titleWidget,
-              subtitleWidget: subtitleWidget,
-            )
-          : null,
-    );
-
-    final cardContent = Card.filled(
-      margin: EdgeInsets.zero,
-      color: cardColor,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          children: [
-            Padding(
-              padding:
-                  padding ??
-                  (useOverlay ? EdgeInsets.zero : const EdgeInsets.all(10)),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final hasBoundedHeight = constraints.maxHeight.isFinite;
-                  final artwork = buildArtwork(fillHeight: hasBoundedHeight);
-
-                  if (useOverlay) return artwork;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      hasBoundedHeight ? Expanded(child: artwork) : artwork,
-                      SizedBox(height: contentSpacing),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: titleWidget,
-                      ),
-                      const SizedBox(height: 2),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: subtitleWidget,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            if (badge != null) Positioned(left: 12, top: 12, child: badge!),
-            if (trailing != null)
-              Positioned(right: 10, top: 10, child: trailing!),
-          ],
-        ),
-      ),
-    );
-
-    return width == null
-        ? cardContent
-        : SizedBox(width: width, child: cardContent);
-  }
-}
-
-class _GradientOverlay extends StatelessWidget {
-  final Widget titleWidget;
-  final Widget subtitleWidget;
-
-  const _GradientOverlay({
-    required this.titleWidget,
-    required this.subtitleWidget,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.75)],
-          stops: const [0.3, 1.0],
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [titleWidget, const SizedBox(height: 4), subtitleWidget],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // SongListCardTile
 //
 // 选中态统一使用 M3 secondaryContainer / onSecondaryContainer。
@@ -574,6 +398,124 @@ class SongListCardTile extends StatelessWidget {
           ),
         ),
         trailing: trailing,
+      ),
+    );
+  }
+}
+
+class MediaOverlayCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Uint8List? coverBytes;
+  final IconData fallbackIcon;
+  final VoidCallback? onTap;
+  final Widget? badge; // 预留右上角组件（比如序号、状态标签等）
+  final bool isLoading; // 预留封面懒加载状态
+
+  const MediaOverlayCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.coverBytes,
+    required this.fallbackIcon,
+    this.onTap,
+    this.badge,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AspectRatio(
+        aspectRatio: 1.0, // 🔒 强制限制为完美的圆角正方形，不随外部拉伸变形
+        child: Container(
+          clipBehavior: Clip.antiAlias, // 完美裁剪内部层级
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24), // 统一的现代大圆角
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 1. 封面底图层
+              coverBytes != null && coverBytes!.isNotEmpty
+                  ? Image.memory(coverBytes!, fit: BoxFit.cover)
+                  : Container(
+                      color: cs.surfaceContainerHighest,
+                      child: isLoading
+                          ? Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: cs.primary,
+                                ),
+                              ),
+                            )
+                          : Icon(fallbackIcon, size: 44, color: cs.primary),
+                    ),
+
+              // 2. 半透明黑色安全渐变层（防止复杂/亮色封面导致白色文字隐形）
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.65),
+                      ],
+                      stops: const [0.6, 0.8, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 3. 底部文字信息层
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: 14,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 4. 右上角可选的 Badge 挂件
+              if (badge != null) Positioned(top: 10, right: 10, child: badge!),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -876,11 +818,11 @@ class _ObservableGridCardState extends State<ObservableGridCard> {
     try {
       final updatedMusic = await MusicService.parse(widget.music.id);
       if (mounted) {
+        context.read<MusicProvider>().updateCoverBytes(
+              widget.music.id,
+              updatedMusic.coverBytes,
+            );
         setState(() {
-          context.read<MusicProvider>().updateCoverBytes(
-            widget.music.id,
-            updatedMusic.coverBytes,
-          );
           _isLoading = false;
         });
       }
@@ -893,37 +835,33 @@ class _ObservableGridCardState extends State<ObservableGridCard> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // 角标背景颜色适配
     final badgeBackground = colorScheme.surfaceContainerHigh.withValues(
       alpha: colorScheme.brightness == Brightness.dark ? 0.88 : 0.82,
     );
 
-    return SizedBox(
-      width: 156,
-      child: MediaGridCard(
-        title: widget.music.title,
-        subtitle: widget.music.artist,
-        coverBytes: widget.music.coverBytes,
-        fallbackIcon: Icon(Icons.music_note_rounded, size: 32),
-        coverAspectRatio: 1.28,
-        titleLines: 1,
-        contentSpacing: 2,
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        onTap: widget.onTap,
-        badge: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: badgeBackground,
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-            ),
-            borderRadius: BorderRadius.circular(999),
+    return MediaOverlayCard(
+      title: widget.music.title,
+      subtitle: widget.music.artist,
+      coverBytes: widget.music.coverBytes,
+      fallbackIcon: Icons.music_note_rounded,
+      onTap: widget.onTap,
+      isLoading: _isLoading, // 将加载状态传给公共组件，使其自动在没图时渲染菊花图
+      badge: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: badgeBackground,
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.45),
           ),
-          child: Text(
-            '#${widget.index + 1}',
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
+          borderRadius: BorderRadius.circular(999), // 椭圆胶囊
+        ),
+        child: Text(
+          '#${widget.index + 1}',
+          style: textTheme.labelSmall?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

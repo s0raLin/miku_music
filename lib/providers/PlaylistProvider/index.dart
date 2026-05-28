@@ -85,7 +85,15 @@ class PlaylistProvider extends ChangeNotifier {
     String name, {
     String? description,
     String? coverPath,
-  }) async {}
+  }) async {
+    await _dbService.updatePlaylist(
+      playlistId,
+      name,
+      desc: description,
+      coverPath: coverPath,
+    );
+    await refreshFromDb();
+  }
 
   Future<void> renamePlaylist(String playlistId, String newName) async {
     await _dbService.renamePlaylist(playlistId, newName);

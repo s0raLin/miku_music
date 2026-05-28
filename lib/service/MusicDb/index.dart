@@ -103,6 +103,21 @@ class MusicDbService {
     _playlistUpdateController.add(null); //发射信号
   }
 
+  Future<void> updatePlaylist(
+    String id,
+    String name, {
+    String? desc,
+    String? coverPath,
+  }) async {
+    await _dbManager?.updatePlaylist(
+      id: id,
+      name: name,
+      description: desc,
+      coverPath: coverPath,
+    );
+    _playlistUpdateController.add(null); //发射信号
+  }
+
   Future<void> addMusicToPlaylist(String playlistId, String musicId) async {
     await _dbManager?.addSongToPlaylist(
       playlistId: playlistId,
@@ -120,7 +135,7 @@ class MusicDbService {
     await _dbManager?.toggleSongFavorite(musicId: musicId);
     _playlistUpdateController.add(null);
   }
-  
+
   Future<void> removeFromPlaylist(String playlistId, String musicId) async {
     await _dbManager?.removeSongFromPlaylist(
       playlistId: playlistId,

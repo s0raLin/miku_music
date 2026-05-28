@@ -74,7 +74,9 @@ class LibraryTab extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 160, // 控制横向专辑卡片的高度
+                // 1. 让外层容器的高度，严格等于【卡片宽度140】加上【上下的Padding间距】
+                // 如果你想保留卡片上下的一点空隙，可以设为 140 + 上下间距
+                height: 140,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -92,9 +94,10 @@ class LibraryTab extends StatelessWidget {
                         .coverBytes;
 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      // 2. 只需要给左右加间距（horizontal: 6），不要再加 vertical 间距让它缩放
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: SizedBox(
-                        width: 140, // 限定单张专辑卡片的宽度
+                        width: 140, // 🔒 宽度保持 140，配合外层高度 140，实现 1:1 完美正方形释放
                         child: AlbumCard(
                           albumName: albumName,
                           songCount: songs.length,
@@ -132,9 +135,7 @@ class LibraryTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final music = library[index];
                 return RepaintBoundary(
-                  child: ObservableMusicListItem(
-                    music: music,
-                  ),
+                  child: ObservableMusicListItem(music: music),
                 );
               },
             ),

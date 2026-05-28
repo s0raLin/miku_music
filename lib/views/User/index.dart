@@ -4,7 +4,6 @@ import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
-import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart'; // 👈 引入新的 Provider
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -159,7 +158,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 👈 将绑定的 Provider 切换至 PlaylistProvider
                   Consumer<PlaylistProvider>(
                     builder: (context, playlistProvider, _) {
                       final userPlaylists = playlistProvider.userPlaylists;
@@ -207,7 +205,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           return MediaOverlayCard(
                             title: playlist.name,
                             subtitle: "${playlist.songIds.length} 首",
-                            coverBytes: playlist.coverBytes,
+                            coverPath: playlist.coverPath,
                             fallbackIcon: Icons.playlist_play_rounded,
                             onTap: () {
                               context.push("/user/playlist/${playlist.id}");

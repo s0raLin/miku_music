@@ -1,4 +1,5 @@
 // import 'dart:io';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -407,6 +408,7 @@ class MediaOverlayCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Uint8List? coverBytes;
+  final String? coverPath;
   final IconData fallbackIcon;
   final VoidCallback? onTap;
   final Widget? badge; // 预留右上角组件（比如序号、状态标签等）
@@ -417,6 +419,7 @@ class MediaOverlayCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.coverBytes,
+    this.coverPath,
     required this.fallbackIcon,
     this.onTap,
     this.badge,
@@ -440,24 +443,7 @@ class MediaOverlayCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 1. 封面底图层
-              coverBytes != null && coverBytes!.isNotEmpty
-                  ? Image.memory(coverBytes!, fit: BoxFit.cover)
-                  : Container(
-                      color: cs.surfaceContainerHighest,
-                      child: isLoading
-                          ? Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: cs.primary,
-                                ),
-                              ),
-                            )
-                          : Icon(fallbackIcon, size: 44, color: cs.primary),
-                    ),
+              _buildCoverImage(cs),
 
               // 2. 半透明黑色安全渐变层（防止复杂/亮色封面导致白色文字隐形）
               Positioned.fill(
@@ -517,6 +503,54 @@ class MediaOverlayCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCoverImage(ColorScheme cs) {
+    // 优先：判断是否存在内存字节数组
+    if (coverBytes != null && coverBytes!.isNotEmpty) {
+      return Image.memory(coverBytes!, fit: BoxFit.cover);
+    }
+
+    // 其次：判断是否存在路径
+    if (coverPath != null && coverPath!.isNotEmpty) {
+      // 如果是网络图片 URL
+      if (coverPath!.startsWith('http://') ||
+          coverPath!.startsWith('https://')) {
+        return Image.network(
+          coverPath!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallback(cs),
+        );
+      }
+      // 如果是本地绝对路径 (比如 /storage/emulated/0/... 或 /Users/...)
+      return Image.file(
+        File(coverPath!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildFallback(cs),
+      );
+    }
+
+    // 最后：兜底状态
+    return _buildFallback(cs);
+  }
+
+  // 加载中状态
+  Widget _buildFallback(ColorScheme cs) {
+    return Container(
+      color: cs.surfaceContainerHighest,
+      child: isLoading
+          ? Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: cs.primary,
+                ),
+              ),
+            )
+          : Icon(fallbackIcon, size: 44, color: cs.primary),
     );
   }
 }
@@ -819,9 +853,9 @@ class _ObservableGridCardState extends State<ObservableGridCard> {
       final updatedMusic = await MusicService.parse(widget.music.id);
       if (mounted) {
         context.read<MusicProvider>().updateCoverBytes(
-              widget.music.id,
-              updatedMusic.coverBytes,
-            );
+          widget.music.id,
+          updatedMusic.coverBytes,
+        );
         setState(() {
           _isLoading = false;
         });

@@ -146,17 +146,6 @@ class _CoverTabContentState extends State<CoverTabContent> {
                 ),
               ),
             ),
-            PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: cs.onSurfaceVariant,
-                size: 24,
-              ),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'add', child: Text('添加到歌单')),
-              ],
-              onSelected: (_) => _showAddToPlaylistSheet(context, widget.music),
-            ),
           ],
         ),
         const SizedBox(height: 24),

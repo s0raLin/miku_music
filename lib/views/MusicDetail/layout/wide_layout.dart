@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/views/MusicDetail/widgets/cover_tab_content.dart';
@@ -46,13 +47,22 @@ class WideLayout extends StatelessWidget {
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () {
-              
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (details) {
+              AdaptiveMenu.show(
+                title: "更多选项",
+                context,
+                items: [AdaptiveMenuItem(title: "设置进度条样式", onTap: () {})],
+                details: details,
+              );
             },
-            tooltip: "更多",
-            icon: Icon(Icons.more_vert_rounded),
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Icon(Icons.more_vert_rounded),
+            ),
           ),
+          const Padding(padding: EdgeInsets.only(right: 8)),
         ],
       ),
       body: SafeArea(

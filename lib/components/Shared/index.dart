@@ -580,33 +580,6 @@ class SongListCardTile extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// QuickActionCard
-// 图标容器使用 secondaryContainer，与选中态色系统一（primary 留给主操作按钮）。
-// ---------------------------------------------------------------------------
-// class QuickActionCard extends StatelessWidget {
-//   final String title;
-//   final IconData icon;
-//   final String? subtitle;
-//   final VoidCallback? onTap;
-
-//   const QuickActionCard({
-//     super.key,
-//     required this.title,
-//     required this.icon,
-//     this.subtitle,
-//     this.onTap,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final theme = Theme.of(context);
-//     final colorScheme = theme.colorScheme;
-
-//     return
-//   }
-// }
-
-// ---------------------------------------------------------------------------
 // AppEmptyState
 // ---------------------------------------------------------------------------
 class AppEmptyState extends StatelessWidget {

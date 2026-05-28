@@ -405,14 +405,46 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               if (!isSystem)
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTapDown: (d) => _actionMenuTapPosition = d.globalPosition,
-                  child: IconButton(
-                    onPressed: () =>
-                        _showResponsiveActionMenu(context, playlist),
-                    icon: const Icon(Icons.more_vert_rounded),
+                  onTapDown: (details) {
+                    AdaptiveMenu.show(
+                      context,
+                      details: details,
+                      title: playlist.name,
+                      items: [
+                        AdaptiveMenuItem(
+                          icon: Icons.add_rounded,
+                          title: "添加歌曲",
+                          onTap: () {
+                            _showModalSideSheet(
+                              context: context,
+                              library: musicProvider.library,
+                            );
+                          },
+                        ),
+
+                        AdaptiveMenuItem(
+                          icon: Icons.edit_note_rounded,
+                          title: "编辑歌单信息",
+                          onTap: () {},
+                        ),
+
+                        AdaptiveMenuItem(
+                          icon: Icons.delete_sweep_rounded,
+                          title: "删除歌单",
+                          isDestructive: true,
+                          onTap: () {
+                            _showDeleteConfirmDialog(context, playlist);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.more_vert_rounded),
                   ),
                 ),
-              const Padding(padding: const EdgeInsets.only(right: 8)),
+              const Padding(padding: EdgeInsets.only(right: 8)),
             ],
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,

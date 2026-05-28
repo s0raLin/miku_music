@@ -17,12 +17,14 @@ import 'package:myapp/views/User/Network/index.dart';
 import 'package:myapp/views/NotFound/index.dart';
 import 'package:myapp/views/Settings/index.dart';
 import 'package:myapp/views/Splash/index.dart';
+import 'package:myapp/views/EditPlaylist/index.dart';
 import 'package:myapp/views/User/PlaylistDetail/Favorites/index.dart';
 import 'package:myapp/views/User/PlaylistDetail/index.dart';
 import 'package:myapp/views/User/RecentlyPlayed/index.dart';
 import 'package:myapp/views/User/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
+import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 
 class AppNavItem {
@@ -154,6 +156,13 @@ final _routes = [
   ),
   GoRoute(path: "/search", builder: (context, state) => const SearchPage()),
   GoRoute(path: "/upload", builder: (context, state) => MusicUploadPage()),
+  GoRoute(
+    path: "/playlist-edit/:id",
+    builder: (context, state) {
+      final id = state.pathParameters['id'] ?? '';
+      return PlaylistEditPage(playlistId: id);
+    },
+  ),
   GoRoute(
     path: "/music-detail",
     pageBuilder: (context, state) {

@@ -425,7 +425,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                         AdaptiveMenuItem(
                           icon: Icons.edit_note_rounded,
                           title: "编辑歌单信息",
-                          onTap: () {},
+                          onTap: () {
+                            context.push("/playlist-edit/${widget.playlistId}");
+                          },
                         ),
 
                         AdaptiveMenuItem(

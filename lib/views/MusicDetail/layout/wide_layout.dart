@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -133,76 +132,77 @@ class WideLayout extends StatelessWidget {
               ),
             )
           else
-            ReorderableListView(
+            ReorderableListView.builder(
+              itemCount: songs.length,
               onReorderItem: (oldIndex, newIndex) {
                 context.read<MusicProvider>().reorderQueue(oldIndex, newIndex);
               },
-              children: [
-                ...songs.mapIndexed((index, song) {
-                  final isPlaying = currentMusic?.id == song.id;
+              itemBuilder: (BuildContext context, int index) {
+                final song = songs[index];
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 2,
+                final isPlaying = currentMusic?.id == song.id;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 2,
+                  ),
+                  child: ListTile(
+                    dense: true,
+                    selected: isPlaying,
+                    // 正在播放的歌曲背景高亮
+                    selectedTileColor: cs.primaryContainer.withValues(
+                      alpha: 0.4,
                     ),
-                    child: ListTile(
-                      dense: true,
-                      selected: isPlaying,
-                      // 正在播放的歌曲背景高亮
-                      selectedTileColor: cs.primaryContainer.withValues(
-                        alpha: 0.4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    // 正在播放显示小喇叭/波纹，否则显示普通音乐图标
+                    leading: Icon(
+                      isPlaying
+                          ? Icons.volume_up_rounded
+                          : Icons.music_note_rounded,
+                      color: isPlaying ? cs.primary : cs.onSurfaceVariant,
+                      size: 20,
+                    ),
+                    title: Text(
+                      song.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: isPlaying
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isPlaying ? cs.primary : cs.onSurface,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    ),
+                    subtitle: Text(
+                      song.artist,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isPlaying
+                            ? cs.primary.withValues(alpha: 0.8)
+                            : cs.onSurfaceVariant,
                       ),
-                      // 正在播放显示小喇叭/波纹，否则显示普通音乐图标
-                      leading: Icon(
-                        isPlaying
-                            ? Icons.volume_up_rounded
-                            : Icons.music_note_rounded,
-                        color: isPlaying ? cs.primary : cs.onSurfaceVariant,
-                        size: 20,
-                      ),
-                      title: Text(
-                        song.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: isPlaying
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isPlaying ? cs.primary : cs.onSurface,
-                        ),
-                      ),
-                      subtitle: Text(
-                        song.artist,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isPlaying
-                              ? cs.primary.withValues(alpha: 0.8)
-                              : cs.onSurfaceVariant,
-                        ),
-                      ),
-                      // 右侧删除单曲按钮
-                      trailing: IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 16),
-                        onPressed: () {
-                          // mp.removeTrack(song);
-                          context.read<MusicProvider>().removeFromQueue(index);
-                        },
-                      ),
-                      onTap: () {
-                        // 点击切歌逻辑
-                        // mp.playSong(song);
-                        // mp.replaceQueue(songs);
-                        context.read<MusicProvider>().playByIndex(index);
+                    ),
+                    // 右侧删除单曲按钮
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 16),
+                      onPressed: () {
+                        // mp.removeTrack(song);
+                        context.read<MusicProvider>().removeFromQueue(index);
                       },
                     ),
-                  );
-                }),
-              ],
+                    onTap: () {
+                      // 点击切歌逻辑
+                      // mp.playSong(song);
+                      // mp.replaceQueue(songs);
+                      context.read<MusicProvider>().playByIndex(index);
+                    },
+                  ),
+                );
+              },
             ),
         ],
       ),

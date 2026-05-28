@@ -434,7 +434,7 @@ class MediaOverlayCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AspectRatio(
-        aspectRatio: 1.0, // 🔒 强制限制为完美的圆角正方形，不随外部拉伸变形
+        aspectRatio: 1.0, // 强制限制为完美的圆角正方形，不随外部拉伸变形
         child: Container(
           clipBehavior: Clip.antiAlias, // 完美裁剪内部层级
           decoration: BoxDecoration(
@@ -520,14 +520,14 @@ class MediaOverlayCard extends StatelessWidget {
         return Image.network(
           coverPath!,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallback(cs),
+          errorBuilder: (_, _, _) => _buildFallback(cs),
         );
       }
       // 如果是本地绝对路径 (比如 /storage/emulated/0/... 或 /Users/...)
       return Image.file(
         File(coverPath!),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildFallback(cs),
+        errorBuilder: (_, _, _) => _buildFallback(cs),
       );
     }
 

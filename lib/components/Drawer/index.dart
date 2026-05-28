@@ -76,10 +76,10 @@ class MainDrawer extends StatelessWidget {
     ),
     const NavItem(
       group: '音乐',
-      path: '/upload',
-      label: '上传歌曲',
-      icon: Icons.upload_rounded,
-      selectedIcon: Icons.upload_rounded,
+      path: '/search',
+      label: '查找歌曲',
+      icon: Icons.search_rounded,
+      selectedIcon: Icons.search_rounded,
     ),
 
     // ── 偏好 ──

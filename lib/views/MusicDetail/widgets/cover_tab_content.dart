@@ -568,7 +568,7 @@ class _PlaybackControls extends StatelessWidget {
                   tooltip: '当前播放队列',
                   onPressed: () {
                     // 顺着 context 往上找最近的 Scaffold，并优雅地拉出 EndDrawer 侧边栏
-                    Scaffold.of(pageContext).openEndDrawer();
+                    showPlaybackQueue(context);
                   },
                   child: Icon(
                     Icons.queue_music_rounded,
@@ -583,6 +583,125 @@ class _PlaybackControls extends StatelessWidget {
       },
     );
   }
+}
+
+void showPlaybackQueue(BuildContext context) {
+  final cs = Theme.of(context).colorScheme;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true, // 允许全屏滑动
+    backgroundColor: Colors.transparent, // 方便做圆角
+    builder: (context) {
+      // 使用选中的数据源
+      final songs = context.watch<MusicProvider>().queue;
+      final currentMusic = context.watch<MusicProvider>().currentMusic;
+
+      return DraggableScrollableSheet(
+        initialChildSize: 0.6, // 默认弹出高度占屏幕 60%
+        minChildSize: 0.4, // 最小可拉伸到 40%
+        maxChildSize: 0.9, // 最大可拉伸到 90%
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              children: [
+                // 1. 顶部小灰条（提示可以下滑关闭）
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // 2. 头部标题栏
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "当前播放 (${songs.length})",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        onPressed: () =>
+                            context.read<MusicProvider>().clearQueue(),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                // 3. 完美的排序列表
+                Expanded(
+                  child: songs.isEmpty
+                      ? const Center(child: Text("播放队列为空"))
+                      : ReorderableListView.builder(
+                          // 让 ReorderableListView 使用 DraggableScrollableSheet 的滚动控制器
+                          scrollController: scrollController,
+                          itemCount: songs.length,
+                          onReorder: (old, itemNew) {
+                            context.read<MusicProvider>().reorderQueue(
+                              old,
+                              itemNew,
+                            );
+                          },
+                          itemBuilder: (context, index) {
+                            final song = songs[index];
+                            final isPlaying = currentMusic?.id == song.id;
+
+                            return ListTile(
+                              key: ValueKey(song.id), // 唯一Key
+                              dense: true,
+                              selected: isPlaying,
+                              title: Text(
+                                song.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                song.artist,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              leading: Icon(
+                                isPlaying
+                                    ? Icons.volume_up_rounded
+                                    : Icons.music_note_rounded,
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.close_rounded, size: 16),
+                                onPressed: () => context
+                                    .read<MusicProvider>()
+                                    .removeFromQueue(index),
+                              ),
+                              onTap: () => context
+                                  .read<MusicProvider>()
+                                  .playByIndex(index),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }
 
 // ── 统一尺寸的控制按钮 ────────────────────────────────────────────────────────

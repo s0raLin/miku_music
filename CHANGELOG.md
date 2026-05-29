@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.30.0](https://github.com/s0raLin/miku_music/compare/v1.29.0...v1.30.0) (2026-05-29)
+
+
+### Features
+
+* **android:** implement dynamic app icon switching ([fd08282](https://github.com/s0raLin/miku_music/commit/fd08282473cb0b86e45e8d813f2bb8ecd59fa431))
+* **nav:** replace music upload with search in drawer ([502471c](https://github.com/s0raLin/miku_music/commit/502471c161edacf53aff0b508ab60ba7ed27a995))
+* **playlist:** add playlist editing functionality ([9c6a850](https://github.com/s0raLin/miku_music/commit/9c6a850f50d6e57ca2575b37ce086193129eca4c))
+* **settings:** add app icon selection and fix queue reordering logic ([7c907c5](https://github.com/s0raLin/miku_music/commit/7c907c572f63fa00f7b7fab4260f189583712bae))
+* **settings:** reorder app icon selection in settings menu ([74f3550](https://github.com/s0raLin/miku_music/commit/74f355049934a129b693c4d0548995e8f6cba79e))
+* **ui:** add reorderable queue functionality to music detail layouts ([eb4c752](https://github.com/s0raLin/miku_music/commit/eb4c752f9c568c439dddd3aeec8582c8fd946b9a))
+* **ui:** implement adaptive menu for music and playlist actions ([16d491a](https://github.com/s0raLin/miku_music/commit/16d491a5634125490cddb00e76edb25092dbac65))
+* **ui:** implement bottom sheet for playback queue display ([b884f47](https://github.com/s0raLin/miku_music/commit/b884f47d27c665664ad86c48f13c09bc6899d50d))
+* **ui:** support file and network paths for media covers ([7574d53](https://github.com/s0raLin/miku_music/commit/7574d533fb8c24e491c86f4abbd3fab43231efb1))
+
+
+### Performance Improvements
+
+* **ui:** optimize music queue rendering using ReorderableListView.builder ([8b365fc](https://github.com/s0raLin/miku_music/commit/8b365fc58d5b69e5a3f25e6cb79e09cf1cd3679e))
+
 ## [1.29.0](https://github.com/s0raLin/miku_music/compare/v1.28.0...v1.29.0) (2026-05-28)
 
 

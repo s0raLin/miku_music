@@ -2,12 +2,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
-
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
 
@@ -16,11 +13,77 @@
         <activity android:name="com.ryanheise.audioservice.AudioServiceActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
 
             <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme" />
+        </activity>
+
+        <activity-alias android:name=".MainActivityDefault" android:enabled="true" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        </activity>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon1" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon2" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon3" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon4" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon5" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon6" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon7" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon8" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name=".AppIcon9" android:enabled="false" android:exported="true" android:icon="@mipmap/launcher_icon" android:targetActivity="com.ryanheise.audioservice.AudioServiceActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
 
         <meta-data android:name="flutterEmbedding" android:value="2" />
 
@@ -32,6 +95,7 @@
 
         <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver" android:exported="true" tools:ignore="Instantiatable">
             <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>

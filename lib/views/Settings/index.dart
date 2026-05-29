@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/constants/Theme/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
@@ -483,16 +484,16 @@ class SettingsPage extends StatelessWidget {
 
   void _showAppIconPicker(BuildContext context, ThemeProvider themeProvider) {
     final List<String> iconPaths = [
-      "assets/app_icon/app_icon1.png",
-      "assets/app_icon/app_icon2.jpeg",
-      "assets/app_icon/app_icon3.jpeg",
-      "assets/app_icon/app_icon4.jpeg",
-      "assets/app_icon/app_icon5.jpeg",
-      "assets/app_icon/app_icon6.jpeg",
-      "assets/app_icon/app_icon7.jpeg",
-      "assets/app_icon/app_icon8.jpeg",
-      "assets/app_icon/app_icon9.jpeg",
-      "assets/app_icon/app_icon10.jpeg",
+      MyAssets.app_icon,
+      MyAssets.app_icon1,
+      MyAssets.app_icon2,
+      MyAssets.app_icon3,
+      MyAssets.app_icon4,
+      MyAssets.app_icon5,
+      MyAssets.app_icon6,
+      MyAssets.app_icon7,
+      MyAssets.app_icon8,
+      MyAssets.app_icon9,
     ];
 
     showModalBottomSheet(

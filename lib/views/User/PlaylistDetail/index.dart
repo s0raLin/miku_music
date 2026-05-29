@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +9,13 @@ import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:provider/provider.dart';
 
+// 排序枚举定义
+enum PlaylistSongSortType {
+  defaultOrder, // 默认顺序（歌单原始添加顺序）
+  title, // 歌曲标题 A-Z
+  artist, // 歌手名称 A-Z
+}
+
 class PlaylistDetailPage extends StatefulWidget {
   final String playlistId;
   const PlaylistDetailPage({super.key, required this.playlistId});
@@ -19,13 +25,23 @@ class PlaylistDetailPage extends StatefulWidget {
 }
 
 class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+  PlaylistSongSortType _sortType = PlaylistSongSortType.defaultOrder;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   String _formatDuration(Duration d) {
     final minutes = d.inMinutes.remainder(60);
     final hours = d.inHours;
     return hours > 0 ? "$hours小时 $minutes分钟" : "$minutes分钟";
   }
 
-  // 侧边栏添加歌曲逻辑重构
+  // 侧边栏添加歌曲逻辑
   void _showModalSideSheet({
     required BuildContext context,
     required List<Music> library,
@@ -104,7 +120,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                               ),
                               color: Theme.of(context).colorScheme.primary,
                               onPressed: () async {
-                                // 改为调用 PlaylistProvider 的方法
                                 await context
                                     .read<PlaylistProvider>()
                                     .addToPlaylist(widget.playlistId, music);
@@ -137,7 +152,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     );
   }
 
-  // --- 弹窗与移除逻辑改道至 PlaylistProvider ---
   Future<void> _showDeleteConfirmDialog(
     BuildContext context,
     Playlist playlist,
@@ -258,10 +272,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     );
   }
 
-  // --- UI 构建 ---
   @override
   Widget build(BuildContext context) {
-    // 监听两个不同的 Provider
     final playlistProvider = context.watch<PlaylistProvider>();
     final musicProvider = context.watch<MusicProvider>();
 
@@ -273,16 +285,32 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // 利用 PlaylistProvider 内部维护的歌曲信息映射转换逻辑
-    final songs = playlistProvider.getPlaylistSongs(
+    // 1. 从库中检索出该歌单的原始歌曲映射
+    final rawSongs = playlistProvider.getPlaylistSongs(
       widget.playlistId,
       musicProvider.library,
     );
 
+    // 2. 执行核心实时搜索过滤
+    List<Music> filteredSongs = rawSongs.where((song) {
+      final query = _searchQuery.toLowerCase();
+      return song.title.toLowerCase().contains(query) ||
+          song.artist.toLowerCase().contains(query);
+    }).toList();
+
+    // 3. 执行多维数据排序
+    if (_sortType == PlaylistSongSortType.title) {
+      filteredSongs.sort((a, b) => a.title.compareTo(b.title));
+    } else if (_sortType == PlaylistSongSortType.artist) {
+      filteredSongs.sort((a, b) => a.artist.compareTo(b.artist));
+    }
+
     final isSystem = playlist.isSystem;
     final isFavorites =
         widget.playlistId == PlaylistProvider.favoritesPlaylistId;
-    final totalDuration = songs.fold(
+
+    // 联动计算过滤/排序后的总时长与总数
+    final totalDuration = filteredSongs.fold(
       Duration.zero,
       (prev, s) => prev + s.duration,
     );
@@ -321,7 +349,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                             );
                           },
                         ),
-
                         AdaptiveMenuItem(
                           icon: Icons.edit_note_rounded,
                           title: "编辑歌单信息",
@@ -329,7 +356,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                             context.push("/playlist-edit/${widget.playlistId}");
                           },
                         ),
-
                         AdaptiveMenuItem(
                           icon: Icons.delete_sweep_rounded,
                           title: "删除歌单",
@@ -407,7 +433,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  "${songs.length} 首歌曲",
+                                  "${filteredSongs.length} 首歌曲",
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -420,16 +446,15 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 ),
                                 const SizedBox(height: 16),
                                 FilledButton.icon(
-                                  onPressed: songs.isNotEmpty
+                                  onPressed: filteredSongs.isNotEmpty
                                       ? () {
-                                          // 属于播放操作：依旧交回给 MusicProvider
                                           musicProvider.replaceQueue(
-                                            songs,
+                                            filteredSongs,
                                             startIndex: 0,
                                           );
                                           context.push(
                                             "/music-detail",
-                                            extra: songs.first,
+                                            extra: filteredSongs.first,
                                           );
                                         }
                                       : null,
@@ -459,25 +484,148 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               ),
             ),
           ),
+
+          // ================= ✨ 核心添加：SliverPersistentHeader 吸顶工具栏 =================
+          if (rawSongs.isNotEmpty)
+            SliverPersistentHeader(
+              pinned: true, // 🔒 开启固定吸顶
+              delegate: _PlaylistSearchHeaderDelegate(
+                child: Container(
+                  color: colorScheme.surface, // 隔离底层列表内容，防止重叠污染
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SearchBar(
+                          controller: _searchController,
+                          hintText: "搜索歌单内歌曲...",
+                          leading: const Icon(Icons.search_rounded),
+                          trailing: _searchQuery.isNotEmpty
+                              ? [
+                                  IconButton(
+                                    icon: const Icon(Icons.clear_rounded),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = "");
+                                    },
+                                  ),
+                                ]
+                              : null,
+                          elevation: WidgetStateProperty.all(0),
+                          backgroundColor: WidgetStateProperty.all(
+                            colorScheme.surfaceContainerLow,
+                          ),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() => _searchQuery = value);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      PopupMenuButton<PlaylistSongSortType>(
+                        icon: const Icon(Icons.sort_rounded),
+                        tooltip: "歌曲排序",
+                        initialValue: _sortType,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        onSelected: (type) {
+                          setState(() => _sortType = type);
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: PlaylistSongSortType.defaultOrder,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.queue_music_rounded,
+                                  color:
+                                      _sortType ==
+                                          PlaylistSongSortType.defaultOrder
+                                      ? colorScheme.primary
+                                      : null,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text("默认顺序"),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: PlaylistSongSortType.title,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.sort_by_alpha_rounded,
+                                  color: _sortType == PlaylistSongSortType.title
+                                      ? colorScheme.primary
+                                      : null,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text("歌曲标题 (A-Z)"),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: PlaylistSongSortType.artist,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.person_outline_rounded,
+                                  color:
+                                      _sortType == PlaylistSongSortType.artist
+                                      ? colorScheme.primary
+                                      : null,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text("歌手名称 (A-Z)"),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // ================= 歌单内歌曲渲染列表 =================
           SliverPadding(
-            padding: const EdgeInsets.all(8),
-            sliver: songs.isEmpty
-                ? _buildEmptyState(isFavorites, colorScheme, theme)
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            sliver: filteredSongs.isEmpty
+                ? _buildEmptyState(
+                    isFavorites,
+                    colorScheme,
+                    theme,
+                    isSearching: _searchQuery.isNotEmpty,
+                  )
                 : SliverList.builder(
-                    itemCount: songs.length,
+                    itemCount: filteredSongs.length,
                     itemBuilder: (context, index) => _M3SongTile(
-                      song: songs[index],
+                      song: filteredSongs[index],
                       musicProvider: musicProvider,
                       playlistProvider: playlistProvider,
                       onTap: () {
-                        musicProvider.playFromLibrary(songs[index]);
-                        context.push("/music-detail", extra: songs[index]);
+                        musicProvider.playFromLibrary(filteredSongs[index]);
+                        context.push(
+                          "/music-detail",
+                          extra: filteredSongs[index],
+                        );
                       },
                       onRemove: isSystem
                           ? null
-                          : () => _confirmRemoveSong(context, songs[index].id),
-                      onAddToPlaylist: () =>
-                          _showAddToPlaylistSheet(context, songs[index]),
+                          : () => _confirmRemoveSong(
+                              context,
+                              filteredSongs[index].id,
+                            ),
+                      onAddToPlaylist: () => _showAddToPlaylistSheet(
+                        context,
+                        filteredSongs[index],
+                      ),
                     ),
                   ),
           ),
@@ -519,11 +667,13 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     );
   }
 
+  // 扩展空状态：区分“纯空歌单”和“搜索不到结果”
   Widget _buildEmptyState(
     bool isFavorites,
     ColorScheme colorScheme,
-    ThemeData theme,
-  ) {
+    ThemeData theme, {
+    bool isSearching = false,
+  }) {
     return SliverFillRemaining(
       hasScrollBody: false,
       child: Center(
@@ -531,13 +681,15 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.library_music_outlined,
+              isSearching
+                  ? Icons.search_off_rounded
+                  : Icons.library_music_outlined,
               size: 64,
               color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
-              isFavorites ? "还没有收藏" : "空空如也",
+              isSearching ? "未找到相关歌曲" : (isFavorites ? "还没有收藏" : "空空如也"),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -569,7 +721,6 @@ class _M3SongTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCurrent = musicProvider.currentMusic?.id == song.id;
-
     final colorScheme = Theme.of(context).colorScheme;
     final isFav = playlistProvider
         .getPlaylistSongs(
@@ -631,5 +782,31 @@ class _M3SongTile extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ================= 必须配套实现的吸顶高度渲染代理 =================
+class _PlaylistSearchHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _PlaylistSearchHeaderDelegate({required this.child});
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  double get maxExtent => 72.0;
+
+  @override
+  double get minExtent => 72.0;
+
+  @override
+  bool shouldRebuild(covariant _PlaylistSearchHeaderDelegate oldDelegate) {
+    return true; // 确保外层调用 setState 更改搜索词或排序时，吸顶栏内部能同步重绘
   }
 }

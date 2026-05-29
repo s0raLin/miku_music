@@ -19,7 +19,7 @@ class PlaylistCard extends StatelessWidget {
     return MediaOverlayCard(
       title: playlist.name,
       subtitle: "$songCount 首",
-      coverBytes: playlist.coverBytes,
+      coverPath: playlist.coverPath,
       fallbackIcon: Icons.playlist_play_rounded,
       onTap: onTap,
     );

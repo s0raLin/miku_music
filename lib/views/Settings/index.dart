@@ -44,6 +44,19 @@ class SettingsPage extends StatelessWidget {
                 child: Column(
                   children: [
                     ListTile(
+                      leading: const Icon(Icons.apps_rounded, size: 20),
+                      title: const Text("应用图标"),
+                      subtitle: Text(
+                        _getIconFileName(themeProvider.appIconPath),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _showAppIconPicker(context, themeProvider),
+                    ),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    ListTile(
                       leading: const Icon(Icons.brightness_medium_rounded),
                       title: const Text("主题模式"),
                       subtitle: Text(
@@ -135,19 +148,6 @@ class SettingsPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                    ListTile(
-                      leading: const Icon(Icons.apps_rounded, size: 20),
-                      title: const Text("应用图标"),
-                      subtitle: Text(
-                        _getIconFileName(themeProvider.appIconPath),
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _showAppIconPicker(context, themeProvider),
                     ),
                   ],
                 ),

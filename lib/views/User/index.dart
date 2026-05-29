@@ -149,7 +149,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppSectionHeader(title: "我的歌单"),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       FilledButton.icon(
@@ -167,7 +167,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                     ],
                   ),
-
+                  const SizedBox(height: 4),
                   Consumer<PlaylistProvider>(
                     builder: (context, playlistProvider, _) {
                       final userPlaylists = playlistProvider.userPlaylists;
@@ -202,6 +202,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
+                        // 在这里显式加入 padding，这样网格整体就会向下挪
+                        padding: const EdgeInsets.only(top: 12, bottom: 8),
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: 220,

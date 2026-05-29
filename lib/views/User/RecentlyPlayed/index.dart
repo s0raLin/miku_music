@@ -153,7 +153,7 @@ class RecentlyPlayedPage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "系统自动记录的本地播放历史",
+                                  "本地播放历史",
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
                                     height: 1.4,

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapp"
+    namespace = "com.app.m3music"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

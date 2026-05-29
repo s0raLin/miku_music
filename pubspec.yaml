@@ -59,6 +59,7 @@ dependencies:
   toml: ^0.18.0
   flutter_rust_bridge: ^2.12.0
   flutter_dynamic_icon_plus: ^1.4.0
+  bee_dynamic_launcher: ^1.1.0
 
 dependency_overrides:
   # 强制锁定版本，消除 2.11.1 与 2.12.0 的冲突
@@ -90,7 +91,7 @@ flutter:
         - asset: assets/fonts/nishiki-teki.ttf
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
   image_path: "assets/app_icon/app_icon.png" # 确保你的 Miku 图标在这个路径
   min_sdk_android: 21 # 选填

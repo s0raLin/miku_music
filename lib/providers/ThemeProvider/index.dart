@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_color_utilities/blend/blend.dart';
+import 'package:myapp/service/AppIcon/index.dart';
 import 'package:myapp/service/Settings/index.dart';
 
 class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
@@ -141,6 +142,7 @@ class ThemeProvider extends ChangeNotifier {
     _appIconPath = iconPath;
     notifyListeners();
     SettingService.setAppIcon(iconPath);
+    AppIconService.switchAppIcon(iconPath);
   }
 
   // M3 颜色谐波化算法：让自定义颜色（如链接色）适配主题种子色

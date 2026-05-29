@@ -93,6 +93,11 @@ class MusicDbService {
     return ids;
   }
 
+  Future<void> clearHistory() async {
+    await _dbManager?.clearHistory();
+    _playlistUpdateController.add(null);
+  }
+
   Future<void> deletePlaylist(String id) async {
     await _dbManager?.deletePlaylist(playlistId: id);
     _playlistUpdateController.add(null);

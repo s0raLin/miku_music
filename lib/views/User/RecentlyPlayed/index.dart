@@ -246,6 +246,15 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
                 ],
               ),
             ),
+            actions: [
+              IconButton(
+                onPressed: () async {
+                  await playlistProvider.clearHistory();
+                },
+                icon: Icon(Icons.auto_delete_rounded),
+              ),
+              const Padding(padding: EdgeInsets.only(right: 8)),
+            ],
           ),
 
           // ================= ✨ 核心改动：真正的 SliverPersistentHeader 吸顶组件 =================
@@ -456,8 +465,9 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               onSelected: (val) {
-                                if (val == "add")
+                                if (val == "add") {
                                   _showAddToPlaylistSheet(context, song);
+                                }
                               },
                               itemBuilder: (context) => [
                                 const PopupMenuItem(

@@ -115,6 +115,11 @@ class PlaylistProvider extends ChangeNotifier {
     await refreshFromDb();
   }
 
+  Future<void> clearHistory() async {
+    await _dbService.clearHistory();
+    await refreshFromDb();
+  }
+
   Future<void> toggleMusicFavorite(Music music) async {
     await _dbService.toggleMusicFavorite(music.id);
     await refreshFromDb();

@@ -30,17 +30,11 @@ class _NarrowLayoutState extends State<NarrowLayout> {
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
           onPressed: () => context.pop(),
         ),
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('正在播放', style: tt.labelMedium),
-            Text(
-              widget.music.title,
-              style: tt.titleMedium,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+        title: Text(
+          "正在播放",
+          style: tt.titleMedium,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           GestureDetector(

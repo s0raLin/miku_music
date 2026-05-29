@@ -108,24 +108,27 @@ class _HomePageState extends State<HomePage> {
           // ── 最近播放横向列表 ─────────────────────────────────────────────────
           history.isEmpty
               ? SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 150,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: AppPanel(
+                      child: Row(
                         children: [
-                          Icon(
-                            Icons.history_rounded,
-                            size: 32,
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.5,
-                            ),
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor: colorScheme.secondaryContainer,
+                            foregroundColor: colorScheme.onSecondaryContainer,
+                            child: const Icon(Icons.history_rounded),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '暂无播放记录',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "还没有播放记录",
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ],

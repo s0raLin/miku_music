@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/views/MusicDetail/widgets/cover_tab_content.dart';
 import 'package:myapp/views/MusicDetail/widgets/lyrics_section.dart';
 import 'package:myapp/views/MusicDetail/widgets/playback_queue_drawer.dart';
-import 'package:provider/provider.dart';
 
 class WideLayout extends StatelessWidget {
   final Music music;
@@ -17,15 +15,6 @@ class WideLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    // final mp = context.read<MusicProvider>();
-
-    final songs = context.select<MusicProvider, List<Music>>(
-      (p) => [...p.queue],
-    );
-    final currentMusic = context.select<MusicProvider, Music?>(
-      (p) => p.currentMusic,
-    );
 
     return Scaffold(
       appBar: AppBar(

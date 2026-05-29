@@ -144,14 +144,26 @@ class MusicProvider extends ChangeNotifier {
   }
 
   void reorderQueue(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-    // 假设你内部管理的变量叫 _queue
-    final song = _queue.removeAt(oldIndex);
-    _queue.insert(newIndex, song);
+    if (oldIndex == newIndex) return;
 
-    notifyListeners(); // 关键：通知全局 UI 刷新
+    // 1. 记住当前正在播放的歌曲实例
+    final playingMusic = currentMusic;
+
+    // 2. 先在目标位置插入歌曲
+    // 此时不破坏原列表的索引结构，直接插入
+    _queue.insert(newIndex, _queue[oldIndex]);
+
+    // 3. 再删除原本位置的歌曲
+    // 如果是从上往下拖，因为前面 insert 了一项，原本的 oldIndex 就要往后挪一位，所以要加 1
+    final removeIndex = oldIndex < newIndex ? oldIndex : oldIndex + 1;
+    _queue.removeAt(removeIndex);
+
+    // 4. 重新定位当前播放歌曲在全新队列中的 Index，防止封面和播放错乱
+    if (playingMusic != null) {
+      _currentIndex = _queue.indexWhere((m) => m.id == playingMusic.id);
+    }
+
+    notifyListeners(); // 5. 通知全局 UI 刷新
   }
 
   void removeFromQueue(int index) {

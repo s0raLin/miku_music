@@ -81,7 +81,6 @@ class PlaybackQueueDrawer extends StatelessWidget {
                         : ReorderableListView.builder(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             itemCount: songs.length,
-                            // 💡 关键点 2：修复 Flutter 经典的向下拖拽 Index 偏移 Bug
                             onReorderItem: (int oldIndex, int newIndex) {
                               mp.reorderQueue(oldIndex, newIndex);
                             },

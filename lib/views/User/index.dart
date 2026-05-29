@@ -149,7 +149,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppSectionHeader(title: "我的歌单"),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       FilledButton.icon(
@@ -167,7 +167,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   Consumer<PlaylistProvider>(
                     builder: (context, playlistProvider, _) {

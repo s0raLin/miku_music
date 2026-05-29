@@ -10,6 +10,8 @@ class PlaylistTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final playlistProvider = context.watch<PlaylistProvider>();
     final userPlaylists = playlistProvider.userPlaylists;
 
@@ -87,11 +89,27 @@ class PlaylistTab extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             sliver: userPlaylists.isEmpty
-                ? const SliverToBoxAdapter(
-                    child: AppEmptyState(
-                      icon: Icons.playlist_play_rounded,
-                      title: "还没有歌单",
-                      subtitle: "创建自己的歌单来整理喜欢的歌曲",
+                ? SliverToBoxAdapter(
+                    child: AppPanel(
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor: colorScheme.secondaryContainer,
+                            foregroundColor: colorScheme.onSecondaryContainer,
+                            child: const Icon(Icons.history_rounded),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "还没有创建歌单\n点击上方「新建歌单」按钮创建",
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : SliverGrid.builder(

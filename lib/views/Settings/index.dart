@@ -580,7 +580,7 @@ class _AppIconPickerSheetState extends State<_AppIconPickerSheet> {
 
           // 横向滚动列表
           SizedBox(
-            height: 108,
+            height: 92,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: widget.iconPaths.length,

@@ -167,14 +167,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
 
                   Consumer<PlaylistProvider>(
                     builder: (context, playlistProvider, _) {
                       final userPlaylists = playlistProvider.userPlaylists;
                       if (userPlaylists.isEmpty) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           child: AppPanel(
                             child: Row(
                               children: [

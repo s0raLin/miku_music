@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
           // ── 轮播图区域 ──────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+              padding: const EdgeInsets.only(top: 4, left: 16, right: 16),
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: carouselHeight),
@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
           // ── 最近播放标题栏 ───────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: AppSectionHeader(
                 title: '最近播放',
                 subtitle: '继续你最近在听的内容',
@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> {
                 )
               : SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 186,
+                    height: 176,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -158,11 +158,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-          const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: AppSectionHeader(title: '排行榜'),
             ),
           ),

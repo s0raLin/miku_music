@@ -4,7 +4,7 @@ import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
-import 'package:myapp/providers/PlaylistProvider/index.dart'; // 👈 引入新的 Provider
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -87,22 +87,33 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ],
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-          // 2. 用户信息卡片区域
+          // 2. 用户信息卡片区域 — 改造成更丰富的 M3 风格卡片
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _UserCard(
+              child: _UserProfileCard(
                 username: "匿名",
-                decoration: "暂无描述",
+                bio: "暂无描述",
+                followers: 0,
+                following: 0,
                 onTap: () {
+                  // 点击进入用户详情页（后续可扩展）
+                  AppToast.show(
+                    context,
+                    message: '用户详情页开发中',
+                    title: '提示',
+                    tone: AppToastTone.neutral,
+                  );
+                },
+                onEditTap: () {
                   context.push("/user/edit-profile");
                 },
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
           // 3. 快捷入口
           SliverToBoxAdapter(
@@ -112,9 +123,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppSectionHeader(title: "我的音乐"),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   SizedBox(
-                    height: 96,
+                    height: 88,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemBuilder: (BuildContext context, int index) =>
@@ -128,7 +139,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
           // 4. 歌单管理区域
           SliverToBoxAdapter(
@@ -138,7 +149,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppSectionHeader(title: "我的歌单"),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       FilledButton.icon(
@@ -156,14 +167,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   Consumer<PlaylistProvider>(
                     builder: (context, playlistProvider, _) {
                       final userPlaylists = playlistProvider.userPlaylists;
                       if (userPlaylists.isEmpty) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 28),
+                          padding: const EdgeInsets.symmetric(vertical: 20),
                           child: AppPanel(
                             child: Row(
                               children: [
@@ -219,56 +230,122 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
     );
   }
 }
 
-class _UserCard extends StatelessWidget {
+/// 更丰富的用户卡片 — Material 3 风格
+class _UserProfileCard extends StatelessWidget {
   final String username;
-  final String decoration;
+  final String bio;
+  final int followers;
+  final int following;
   final VoidCallback? onTap;
-  const _UserCard({
+  final VoidCallback? onEditTap;
+
+  const _UserProfileCard({
     required this.username,
-    required this.decoration,
-    required this.onTap,
+    required this.bio,
+    required this.followers,
+    required this.following,
+    this.onTap,
+    this.onEditTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 46,
-          backgroundImage: AssetImage(MyAssets.mikulogo),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card.filled(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+          child: Row(
             children: [
-              Text(username),
-              const SizedBox(height: 4),
-              Text(
-                decoration,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-                overflow: TextOverflow.ellipsis,
+              // 头像
+              CircleAvatar(
+                radius: 40,
+                backgroundImage: AssetImage(MyAssets.mikulogo),
               ),
-              const SizedBox(height: 4),
-              const Text("- 关注 | - 粉丝"),
+              const SizedBox(width: 16),
+              // 中间信息
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      bio,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _StatChip(
+                          label: "$following 关注",
+                          colorScheme: colorScheme,
+                        ),
+                        const SizedBox(width: 8),
+                        _StatChip(
+                          label: "$followers 粉丝",
+                          colorScheme: colorScheme,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // 右箭头 — 暗示可点击进入详情
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),
-        IconButton(
-          onPressed: onTap,
-          icon: const Icon(Icons.chevron_right_rounded),
+      ),
+    );
+  }
+}
+
+/// 关注/粉丝小标签
+class _StatChip extends StatelessWidget {
+  final String label;
+  final ColorScheme colorScheme;
+
+  const _StatChip({required this.label, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
         ),
-      ],
+      ),
     );
   }
 }

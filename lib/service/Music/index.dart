@@ -14,7 +14,7 @@ import 'package:crypto/crypto.dart'; // 用于 md5
 import 'package:path/path.dart' as p; // 推荐使用 path 库处理后缀
 
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'package:permission_handler/permission_handler.dart';
+import 'package:myapp/service/Permissions/index.dart';
 
 class ScanProgress {
   final String currentPath; //正在处理的路径
@@ -32,12 +32,7 @@ class ScanProgress {
 
 class MusicService {
   static Future<bool> ensureAndroidAudioPermission() async {
-    if (!Platform.isAndroid) return true;
-
-    final audioStatus = await Permission.audio.request();
-    final storageStatus = await Permission.manageExternalStorage.request();
-
-    return audioStatus.isGranted && storageStatus.isGranted;
+    return PermissionService.hasAnyMediaAccess();
   }
 
   static Future<Music> parse(String path) async {

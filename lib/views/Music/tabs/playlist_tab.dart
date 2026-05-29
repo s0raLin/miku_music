@@ -13,8 +13,17 @@ class PlaylistTab extends StatelessWidget {
     final playlistProvider = context.watch<PlaylistProvider>();
     final userPlaylists = playlistProvider.userPlaylists;
 
+    // 获取“喜欢”系统歌单
     final favorites = playlistProvider.getPlaylistById(
       PlaylistProvider.favoritesPlaylistId,
+    );
+
+    // 抽离统一的网格代理配置，确保上下卡片的自适应尺寸和 1:1 比例绝对像素级一致
+    const gridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: 140, // 统一限定卡片最大宽度
+      mainAxisSpacing: 12, // 行间距
+      crossAxisSpacing: 12, // 列间距
+      childAspectRatio: 1.0, // 🔒 强制 1:1 正方形比例
     );
 
     return RefreshIndicator(
@@ -22,62 +31,61 @@ class PlaylistTab extends StatelessWidget {
         await playlistProvider.refreshFromDb();
       },
       child: CustomScrollView(
-        // 👈 改为 CustomScrollView，能完美处理网格流与滚动
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. 限制“喜欢”系统歌单的尺寸，不再让它无限撑满全宽
-                  if (favorites != null) ...[
-                    const Text(
-                      "系统歌单",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: 150, // 🔒 严格限制宽度，“喜欢”卡片会自动变成 150x150
-                      child: PlaylistCard(
-                        playlist: favorites,
-                        songCount: favorites.songIds.length,
-                        onTap: () => context.push("/user/playlist/favorites"),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+          // ================= 1. 系统歌单标题 =================
+          if (favorites != null)
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  "系统歌单",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
 
-                  // 2. 标题与新建按钮
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "我的歌单",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _showCreatePlaylistDialog(context),
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: const Text("新建"),
-                      ),
-                    ],
+          // ================= 2. 系统歌单网格 =================
+          // 用只包含 1 个元素的 SliverGrid 承载，使其完美继承网格的尺寸计算公式
+          if (favorites != null)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              sliver: SliverGrid(
+                gridDelegate: gridDelegate,
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return PlaylistCard(
+                    playlist: favorites,
+                    songCount: favorites.songIds.length,
+                    onTap: () => context.push("/user/playlist/favorites"),
+                  );
+                }, childCount: 1),
+              ),
+            ),
+
+          // ================= 3. 我的歌单标题与新建按钮 =================
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "我的歌单",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _showCreatePlaylistDialog(context),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text("新建"),
                   ),
                 ],
               ),
             ),
           ),
 
-          // 3. 将原本的 Wrap 替换为响应式的原生 GridView 布局
+          // ================= 4. 我的歌单列表网格 =================
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             sliver: userPlaylists.isEmpty
                 ? const SliverToBoxAdapter(
                     child: AppEmptyState(
@@ -87,14 +95,7 @@ class PlaylistTab extends StatelessWidget {
                     ),
                   )
                 : SliverGrid.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 180, // 🔒 控制单张卡片的最大宽度，会自动响应式分列
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio:
-                              1.0, // 🔒 强制网格分配 1:1 正方形空间，终结无限大和长方形
-                        ),
+                    gridDelegate: gridDelegate,
                     itemCount: userPlaylists.length,
                     itemBuilder: (context, index) {
                       final playlist = userPlaylists[index];
@@ -108,16 +109,17 @@ class PlaylistTab extends StatelessWidget {
                   ),
           ),
 
+          // 底部留白，防止滚动被底部导航栏或播放条遮挡
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
     );
   }
 
+  /// 弹出创建新歌单的对话框
   Future<void> _showCreatePlaylistDialog(BuildContext context) async {
     final controller = TextEditingController();
 
-    // 弹出创建对话框
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -140,14 +142,14 @@ class PlaylistTab extends StatelessWidget {
       ),
     );
 
-    // 4. 严格的异步安全守卫：await 之后必须先检查 context 还在不在
+    // 🔒 异步安全守卫：确保 context 在弹窗关闭后依然挂载有效
     if (!context.mounted) return;
 
     if (name != null && name.isNotEmpty) {
-      // 5. 正确调用 PlaylistProvider 而不是原来的 MusicProvider
+      // 调用歌单状态管理器创建新歌单
       await context.read<PlaylistProvider>().createPlaylist(name);
 
-      // 再次确认挂载状态后弹出提示
+      // 再次确认挂载状态，安全弹出 Toast 提示
       if (context.mounted) {
         AppToast.success(context, message: '歌单「$name」已创建', title: '创建成功');
       }

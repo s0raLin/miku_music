@@ -78,6 +78,7 @@ flutter:
   assets:
     - .env
     - assets/app_icon.png
+    - assets/app_icon/
     - assets/
     - assets/icons/
     - assets/background/

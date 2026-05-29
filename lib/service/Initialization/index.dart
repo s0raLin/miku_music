@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Files/index.dart';
@@ -31,6 +32,9 @@ class InitializationService {
   static Future<void> preRunInit() async {
     // 先通电，把 Flutter 底层环境和原生通道拉起来
     WidgetsFlutterBinding.ensureInitialized();
+
+    // 避免在无 TLS/无外网时从 gstatic 拉字体导致启动崩溃
+    GoogleFonts.config.allowRuntimeFetching = false;
 
     // 环境好了，放心初始化 Rust 库和本地配置
     if (!kIsWeb) {

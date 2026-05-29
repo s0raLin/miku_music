@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/service/AppIcon/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/StartupProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
@@ -24,10 +25,12 @@ class _SplashPageState extends State<SplashPage>
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
+  String _splashIconPath = AppIconService.defaultIconPath;
 
   @override
   void initState() {
     super.initState();
+    _loadSplashIcon();
 
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1200),
@@ -46,6 +49,13 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.forward();
     _startInitialization();
+  }
+
+  Future<void> _loadSplashIcon() async {
+    final path = await AppIconService.getCurrentAppIconPath();
+    if (mounted) {
+      setState(() => _splashIconPath = path);
+    }
   }
 
   Future<void> _startInitialization() async {
@@ -68,6 +78,7 @@ class _SplashPageState extends State<SplashPage>
         musicProvider: musicProvider,
         playlistProvider: playlistProvider,
       );
+      await _loadSplashIcon();
       startupSucceeded = startupProvider.status == StartupStatus.completed;
     } catch (e) {
       debugPrint("初始化失败: $e");
@@ -123,10 +134,16 @@ class _SplashPageState extends State<SplashPage>
                   child: ScaleTransition(
                     scale: _scaleAnimation,
                     child: Image.asset(
-                      MyAssets.mikulogo,
+                      _splashIconPath,
                       width: 108,
                       height: 108,
                       fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        MyAssets.mikulogo,
+                        width: 108,
+                        height: 108,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),

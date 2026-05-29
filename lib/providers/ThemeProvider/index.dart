@@ -179,7 +179,7 @@ class ThemeProvider extends ChangeNotifier {
         },
       ),
 
-      // 整合：你的 GoogleFonts，根据字体缩放调整
+      // 离线优先：未打包 Noto Sans SC 时使用系统字体，避免网络拉取崩溃
       textTheme: GoogleFonts.notoSansScTextTheme(baseTheme.textTheme),
 
       // 整合：新代码中更精细的组件样式

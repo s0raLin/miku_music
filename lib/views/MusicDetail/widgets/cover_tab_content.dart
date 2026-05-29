@@ -1,5 +1,4 @@
 // ─── 封面 + 元信息 + 控制台 ───────────────────────────────────────────────────
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -163,6 +162,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
             final safeTotal = totalMs > 0 ? totalMs : 1.0;
 
             final sliderValue = _draggingValue ?? currentPosMs;
+            // 只有当音乐正在播放，且用户不在拖拽进度条时，波浪才会起伏
             final isWaving =
                 musicProvider.player.playing && _draggingValue == null;
 
@@ -170,7 +170,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: M3WavySlider(
+                  child: WavySlider(
                     value: sliderValue.clamp(0.0, safeTotal),
                     max: safeTotal,
                     isWaving: isWaving,
@@ -224,206 +224,22 @@ class _CoverTabContentState extends State<CoverTabContent> {
         ),
         const SizedBox(height: 20),
 
-        // 【核心修改位置】将控制台移出 StreamBuilder 外层，独立渲染
-        _PlaybackControls(provider: musicProvider),
+        _PlaybackControls(mp: musicProvider),
         const SizedBox(height: 28),
       ],
     );
   }
 }
 
-// ─── 智能动画蛇形进度条组件 ──────────────────────────────────────────────────────
-
-class M3WavySlider extends StatefulWidget {
-  final double value;
-  final double max;
-  final bool isWaving;
-  final ValueChanged<double> onChanged;
-  final ValueChanged<double>? onChangeEnd;
-
-  const M3WavySlider({
-    super.key,
-    required this.value,
-    required this.max,
-    required this.isWaving,
-    required this.onChanged,
-    this.onChangeEnd,
-  });
-
-  @override
-  State<M3WavySlider> createState() => _M3WavySliderState();
-}
-
-class _M3WavySliderState extends State<M3WavySlider>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _waveController;
-
-  @override
-  void initState() {
-    super.initState();
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2500),
-    );
-    if (widget.isWaving) _waveController.repeat();
-  }
-
-  @override
-  void didUpdateWidget(covariant M3WavySlider oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isWaving && !_waveController.isAnimating) {
-      _waveController.repeat();
-    } else if (!widget.isWaving && _waveController.isAnimating) {
-      _waveController.stop();
-    }
-  }
-
-  @override
-  void dispose() {
-    _waveController.dispose();
-    super.dispose();
-  }
-
-  void _handleDrag(DragUpdateDetails details, double maxWidth) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final localPosition = box.globalToLocal(details.globalPosition);
-    final percent = (localPosition.dx / maxWidth).clamp(0.0, 1.0);
-    widget.onChanged(percent * widget.max);
-  }
-
-  void _handleTap(TapUpDetails details, double maxWidth) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final localPosition = box.globalToLocal(details.globalPosition);
-    final percent = (localPosition.dx / maxWidth).clamp(0.0, 1.0);
-    widget.onChanged(percent * widget.max);
-    widget.onChangeEnd?.call(percent * widget.max);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final percent = widget.max > 0
-            ? (widget.value / widget.max).clamp(0.0, 1.0)
-            : 0.0;
-
-        return GestureDetector(
-          onHorizontalDragUpdate: (details) => _handleDrag(details, maxWidth),
-          onHorizontalDragEnd: (details) =>
-              widget.onChangeEnd?.call(widget.value),
-          onTapUp: (details) => _handleTap(details, maxWidth),
-          child: AnimatedBuilder(
-            animation: _waveController,
-            builder: (context, child) {
-              return CustomPaint(
-                size: const Size(double.infinity, 32),
-                painter: _WavySliderPainter(
-                  percent: percent,
-                  phase: _waveController.value * 2 * math.pi,
-                  activeColor: cs.primary,
-                  inactiveColor: cs.primary.withValues(alpha: 0.15),
-                  thumbColor: cs.primary,
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _WavySliderPainter extends CustomPainter {
-  final double percent;
-  final double phase;
-  final Color activeColor;
-  final Color inactiveColor;
-  final Color thumbColor;
-
-  _WavySliderPainter({
-    required this.percent,
-    required this.phase,
-    required this.activeColor,
-    required this.inactiveColor,
-    required this.thumbColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double midY = size.height / 2;
-    final double thumbX = size.width * percent;
-
-    final inactivePaint = Paint()
-      ..color = inactiveColor
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    if (thumbX < size.width) {
-      canvas.drawLine(
-        Offset(thumbX, midY),
-        Offset(size.width, midY),
-        inactivePaint,
-      );
-    }
-
-    final activePaint = Paint()
-      ..color = activeColor
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    if (thumbX > 0) {
-      final path = Path();
-      path.moveTo(0, midY);
-
-      const double maxAmplitude = 3.0;
-      const double waveLength = 54.0;
-
-      for (double x = 0; x <= thumbX; x += 1.0) {
-        final double relativeX = x / waveLength;
-        final double fadeInFactor = (x / 48.0).clamp(0.0, 1.0);
-        final double distanceFromThumb = thumbX - x;
-        final double fadeOutFactor = (distanceFromThumb / 32.0).clamp(0.0, 1.0);
-        final double currentAmplitude =
-            maxAmplitude * fadeInFactor * fadeOutFactor;
-
-        final double y =
-            midY + math.sin(relativeX * 2 * math.pi - phase) * currentAmplitude;
-        path.lineTo(x, y);
-      }
-      path.lineTo(thumbX, midY);
-      canvas.drawPath(path, activePaint);
-    }
-
-    final thumbPaint = Paint()
-      ..color = thumbColor
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(thumbX, midY), 6, thumbPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _WavySliderPainter oldDelegate) {
-    return oldDelegate.percent != percent ||
-        oldDelegate.phase != phase ||
-        oldDelegate.activeColor != activeColor ||
-        oldDelegate.inactiveColor != inactiveColor;
-  }
-}
-
 // ─── 播放控制按钮组 ─────────────────────────────────────
 class _PlaybackControls extends StatelessWidget {
-  final MusicProvider provider;
-  const _PlaybackControls({required this.provider});
+  final MusicProvider mp;
+  const _PlaybackControls({required this.mp});
 
   @override
   Widget build(BuildContext context) {
     final pageContext = context;
-    final mp = context.watch<MusicProvider>();
+    // final mp = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
     IconData modeIcon(PlayMode mode) => switch (mode) {
@@ -567,8 +383,7 @@ class _PlaybackControls extends StatelessWidget {
                   size: btnSize,
                   tooltip: '当前播放队列',
                   onPressed: () {
-                    // 顺着 context 往上找最近的 Scaffold，并优雅地拉出 EndDrawer 侧边栏
-                    showPlaybackQueue(context);
+                    Scaffold.of(pageContext).openEndDrawer();
                   },
                   child: Icon(
                     Icons.queue_music_rounded,
@@ -583,125 +398,6 @@ class _PlaybackControls extends StatelessWidget {
       },
     );
   }
-}
-
-void showPlaybackQueue(BuildContext context) {
-  final cs = Theme.of(context).colorScheme;
-
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true, // 允许全屏滑动
-    backgroundColor: Colors.transparent, // 方便做圆角
-    builder: (context) {
-      // 使用选中的数据源
-      final songs = context.watch<MusicProvider>().queue;
-      final currentMusic = context.watch<MusicProvider>().currentMusic;
-
-      return DraggableScrollableSheet(
-        initialChildSize: 0.6, // 默认弹出高度占屏幕 60%
-        minChildSize: 0.4, // 最小可拉伸到 40%
-        maxChildSize: 0.9, // 最大可拉伸到 90%
-        expand: false,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                // 1. 顶部小灰条（提示可以下滑关闭）
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // 2. 头部标题栏
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "当前播放 (${songs.length})",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurface,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        onPressed: () =>
-                            context.read<MusicProvider>().clearQueue(),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                // 3. 完美的排序列表
-                Expanded(
-                  child: songs.isEmpty
-                      ? const Center(child: Text("播放队列为空"))
-                      : ReorderableListView.builder(
-                          // 让 ReorderableListView 使用 DraggableScrollableSheet 的滚动控制器
-                          scrollController: scrollController,
-                          itemCount: songs.length,
-                          onReorder: (old, itemNew) {
-                            context.read<MusicProvider>().reorderQueue(
-                              old,
-                              itemNew,
-                            );
-                          },
-                          itemBuilder: (context, index) {
-                            final song = songs[index];
-                            final isPlaying = currentMusic?.id == song.id;
-
-                            return ListTile(
-                              key: ValueKey(song.id), // 唯一Key
-                              dense: true,
-                              selected: isPlaying,
-                              title: Text(
-                                song.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                song.artist,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              leading: Icon(
-                                isPlaying
-                                    ? Icons.volume_up_rounded
-                                    : Icons.music_note_rounded,
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 16),
-                                onPressed: () => context
-                                    .read<MusicProvider>()
-                                    .removeFromQueue(index),
-                              ),
-                              onTap: () => context
-                                  .read<MusicProvider>()
-                                  .playByIndex(index),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
 }
 
 // ── 统一尺寸的控制按钮 ────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/views/MusicDetail/widgets/cover_tab_content.dart';
 import 'package:myapp/views/MusicDetail/widgets/lyrics_section.dart';
+import 'package:myapp/views/MusicDetail/widgets/playback_queue_drawer.dart';
 import 'package:provider/provider.dart';
 
 class WideLayout extends StatelessWidget {
@@ -82,130 +83,7 @@ class WideLayout extends StatelessWidget {
           ),
         ),
       ),
-      endDrawer: NavigationDrawer(
-        children: [
-          // 1. 抽屉头部标题
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "当前播放",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "共 ${songs.length} 首歌曲",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-                // 清空列表按钮（可选）
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  onPressed: () {
-                    // mp.clearLibrary();
-                  },
-                ),
-              ],
-            ),
-          ),
-          const Divider(indent: 16, endIndent: 16),
-
-          // 2. 歌曲列表区域
-          if (songs.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 40),
-              child: Center(
-                child: Text("播放队列为空", style: TextStyle(color: Colors.grey)),
-              ),
-            )
-          else
-            ReorderableListView.builder(
-              itemCount: songs.length,
-              onReorderItem: (oldIndex, newIndex) {
-                context.read<MusicProvider>().reorderQueue(oldIndex, newIndex);
-              },
-              itemBuilder: (BuildContext context, int index) {
-                final song = songs[index];
-
-                final isPlaying = currentMusic?.id == song.id;
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 2,
-                  ),
-                  child: ListTile(
-                    dense: true,
-                    selected: isPlaying,
-                    // 正在播放的歌曲背景高亮
-                    selectedTileColor: cs.primaryContainer.withValues(
-                      alpha: 0.4,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    // 正在播放显示小喇叭/波纹，否则显示普通音乐图标
-                    leading: Icon(
-                      isPlaying
-                          ? Icons.volume_up_rounded
-                          : Icons.music_note_rounded,
-                      color: isPlaying ? cs.primary : cs.onSurfaceVariant,
-                      size: 20,
-                    ),
-                    title: Text(
-                      song.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: isPlaying
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isPlaying ? cs.primary : cs.onSurface,
-                      ),
-                    ),
-                    subtitle: Text(
-                      song.artist,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isPlaying
-                            ? cs.primary.withValues(alpha: 0.8)
-                            : cs.onSurfaceVariant,
-                      ),
-                    ),
-                    // 右侧删除单曲按钮
-                    trailing: IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      onPressed: () {
-                        // mp.removeTrack(song);
-                        context.read<MusicProvider>().removeFromQueue(index);
-                      },
-                    ),
-                    onTap: () {
-                      // 点击切歌逻辑
-                      // mp.playSong(song);
-                      // mp.replaceQueue(songs);
-                      context.read<MusicProvider>().playByIndex(index);
-                    },
-                  ),
-                );
-              },
-            ),
-        ],
-      ),
+      endDrawer: PlaybackQueueDrawer(),
     );
   }
 }

@@ -657,161 +657,186 @@ class AppEmptySliver extends StatelessWidget {
 
 /// M3 蛇形进度条
 /// 已播放区域：正弦波曲线；未播放区域：水平直线；thumb：固定在中轴线的圆点。
+// ─── 智能动画蛇形进度条组件 (原M3波浪动效) ─────────────────────────────────────────
 class WavySlider extends StatefulWidget {
+  final double value;
+  final double max;
+  final bool isWaving;
+  final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChangeEnd;
+
   const WavySlider({
     super.key,
     required this.value,
+    required this.max,
+    required this.isWaving,
     required this.onChanged,
-    this.activeColor,
-    this.inactiveColor,
-    this.thumbColor,
-    this.amplitude = 2.5,
-    this.wavelength = 32.0,
-    this.strokeWidth = 3.0,
-    this.thumbRadius = 7.0,
-    this.height = 44.0,
+    this.onChangeEnd,
   });
 
-  final double value; // 0.0 ~ 1.0
-  final ValueChanged<double> onChanged;
-  final Color? activeColor;
-  final Color? inactiveColor;
-  final Color? thumbColor;
-  final double amplitude; // 波峰高度 px
-  final double wavelength; // 一个完整波形的宽度 px
-  final double strokeWidth;
-  final double thumbRadius;
-  final double height;
-
   @override
-  State<WavySlider> createState() => _WavySliderState();
+  State<WavySlider> createState() => _M3WavySliderState();
 }
 
-class _WavySliderState extends State<WavySlider> {
-  void _handleDrag(double localX, double totalWidth) {
-    final v = (localX / totalWidth).clamp(0.0, 1.0);
-    widget.onChanged(v);
+class _M3WavySliderState extends State<WavySlider>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    );
+    if (widget.isWaving) _waveController.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant WavySlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isWaving && !_waveController.isAnimating) {
+      _waveController.repeat();
+    } else if (!widget.isWaving && _waveController.isAnimating) {
+      _waveController.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
+
+  void _handleDrag(DragUpdateDetails details, double maxWidth) {
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final localPosition = box.globalToLocal(details.globalPosition);
+    final percent = (localPosition.dx / maxWidth).clamp(0.0, 1.0);
+    widget.onChanged(percent * widget.max);
+  }
+
+  void _handleTap(TapUpDetails details, double maxWidth) {
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final localPosition = box.globalToLocal(details.globalPosition);
+    final percent = (localPosition.dx / maxWidth).clamp(0.0, 1.0);
+    widget.onChanged(percent * widget.max);
+    widget.onChangeEnd?.call(percent * widget.max);
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final activeColor = widget.activeColor ?? colorScheme.primary;
-    final inactiveColor = widget.inactiveColor ?? colorScheme.outlineVariant;
-    final thumbColor = widget.thumbColor ?? colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
 
-    return SizedBox(
-      height: widget.height,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final totalWidth = constraints.maxWidth;
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragStart: (d) =>
-                _handleDrag(d.localPosition.dx, totalWidth),
-            onHorizontalDragUpdate: (d) =>
-                _handleDrag(d.localPosition.dx, totalWidth),
-            onTapDown: (d) => _handleDrag(d.localPosition.dx, totalWidth),
-            child: CustomPaint(
-              size: Size(totalWidth, widget.height),
-              painter: _WavyPainter(
-                value: widget.value,
-                activeColor: activeColor,
-                inactiveColor: inactiveColor,
-                thumbColor: thumbColor,
-                amplitude: widget.amplitude,
-                wavelength: widget.wavelength,
-                strokeWidth: widget.strokeWidth,
-                thumbRadius: widget.thumbRadius,
-              ),
-            ),
-          );
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final percent = widget.max > 0
+            ? (widget.value / widget.max).clamp(0.0, 1.0)
+            : 0.0;
+
+        return GestureDetector(
+          onHorizontalDragUpdate: (details) => _handleDrag(details, maxWidth),
+          onHorizontalDragEnd: (details) =>
+              widget.onChangeEnd?.call(widget.value),
+          onTapUp: (details) => _handleTap(details, maxWidth),
+          child: AnimatedBuilder(
+            animation: _waveController,
+            builder: (context, child) {
+              return CustomPaint(
+                size: const Size(double.infinity, 32),
+                painter: _WavySliderPainter(
+                  percent: percent,
+                  phase: _waveController.value * 2 * math.pi,
+                  activeColor: cs.primary,
+                  inactiveColor: cs.primary.withValues(alpha: 0.15),
+                  thumbColor: cs.primary,
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
 
-class _WavyPainter extends CustomPainter {
-  _WavyPainter({
-    required this.value,
-    required this.activeColor,
-    required this.inactiveColor,
-    required this.thumbColor,
-    required this.amplitude,
-    required this.wavelength,
-    required this.strokeWidth,
-    required this.thumbRadius,
-  });
-
-  final double value;
+class _WavySliderPainter extends CustomPainter {
+  final double percent;
+  final double phase;
   final Color activeColor;
   final Color inactiveColor;
   final Color thumbColor;
-  final double amplitude;
-  final double wavelength;
-  final double strokeWidth;
-  final double thumbRadius;
 
-  double _waveY(double x, double cy, double phaseOffset) {
-    return cy +
-        math.sin((x + phaseOffset) / wavelength * math.pi * 2) * amplitude;
-  }
+  _WavySliderPainter({
+    required this.percent,
+    required this.phase,
+    required this.activeColor,
+    required this.inactiveColor,
+    required this.thumbColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cy = size.height / 2;
-    final splitX = value * size.width;
-
-    final activePaint = Paint()
-      ..color = activeColor
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
+    final double midY = size.height / 2;
+    final double thumbX = size.width * percent;
 
     final inactivePaint = Paint()
       ..color = inactiveColor
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = 4
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
+
+    if (thumbX < size.width) {
+      canvas.drawLine(
+        Offset(thumbX, midY),
+        Offset(size.width, midY),
+        inactivePaint,
+      );
+    }
+
+    final activePaint = Paint()
+      ..color = activeColor
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    if (thumbX > 0) {
+      final path = Path();
+      path.moveTo(0, midY);
+
+      const double maxAmplitude = 3.0;
+      const double waveLength = 54.0;
+
+      for (double x = 0; x <= thumbX; x += 1.0) {
+        final double relativeX = x / waveLength;
+        final double fadeInFactor = (x / 48.0).clamp(0.0, 1.0);
+        final double distanceFromThumb = thumbX - x;
+        final double fadeOutFactor = (distanceFromThumb / 32.0).clamp(0.0, 1.0);
+        final double currentAmplitude =
+            maxAmplitude * fadeInFactor * fadeOutFactor;
+
+        final double y =
+            midY + math.sin(relativeX * 2 * math.pi - phase) * currentAmplitude;
+        path.lineTo(x, y);
+      }
+      path.lineTo(thumbX, midY);
+      canvas.drawPath(path, activePaint);
+    }
 
     final thumbPaint = Paint()
       ..color = thumbColor
       ..style = PaintingStyle.fill;
 
-    // ── 已播放：正弦波 ──
-    if (splitX > 0) {
-      final path = Path();
-      path.moveTo(0, _waveY(0, cy, splitX));
-      // 每 1px 采样一次，曲线足够平滑
-      for (double x = 1; x <= splitX; x++) {
-        path.lineTo(x, _waveY(x, cy, splitX));
-      }
-      canvas.drawPath(path, activePaint);
-    }
-
-    // ── 未播放：水平直线 ──
-    if (splitX < size.width) {
-      canvas.drawLine(
-        Offset(splitX, cy),
-        Offset(size.width, cy),
-        inactivePaint,
-      );
-    }
-
-    // ── Thumb：固定在中轴线，盖住接缝 ──
-    canvas.drawCircle(Offset(splitX, cy), thumbRadius, thumbPaint);
+    canvas.drawCircle(Offset(thumbX, midY), 6, thumbPaint);
   }
 
   @override
-  bool shouldRepaint(_WavyPainter old) =>
-      old.value != value ||
-      old.activeColor != activeColor ||
-      old.inactiveColor != inactiveColor ||
-      old.thumbColor != thumbColor ||
-      old.amplitude != amplitude ||
-      old.wavelength != wavelength;
+  bool shouldRepaint(covariant _WavySliderPainter oldDelegate) {
+    return oldDelegate.percent != percent ||
+        oldDelegate.phase != phase ||
+        oldDelegate.activeColor != activeColor ||
+        oldDelegate.inactiveColor != inactiveColor;
+  }
 }
 
 class ObservableGridCard extends StatefulWidget {

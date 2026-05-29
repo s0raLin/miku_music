@@ -95,7 +95,6 @@ flutter_launcher_icons:
   image_path: "assets/app_icon/app_icon.png" # 确保你的 Miku 图标在这个路径
   min_sdk_android: 21 # 选填
 
-  # 特别注意：Linux 支持
   alternate_icons:
     - name: AppIcon
       image_path: "assets/app_icon/app_icon.png"

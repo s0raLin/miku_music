@@ -195,4 +195,19 @@ class SettingService {
     }
     return true;
   }
+
+  // 应用图标
+  static Future setAppIcon(String iconPath) async {
+    final pfs = await SharedPreferences.getInstance();
+    await pfs.setString("appIcon", iconPath);
+  }
+
+  static Future<String> loadAppIcon() async {
+    final pfs = await SharedPreferences.getInstance();
+    final icon = pfs.getString("appIcon");
+    if (icon != null && icon.isNotEmpty) {
+      return icon;
+    }
+    return "assets/app_icon/app_icon1.png";
+  }
 }

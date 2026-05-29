@@ -87,6 +87,7 @@ class InitializationService {
       SettingService.loadDoubleTapToPlay(),
       SettingService.loadPlaylistSortBy(),
       SettingService.loadMaxHistoryCount(),
+      SettingService.loadAppIcon(),
     ]);
 
     return {
@@ -101,6 +102,7 @@ class InitializationService {
       'doubleTapToPlay': results[8],
       'playlistSortBy': results[9],
       'maxHistoryCount': results[10],
+      'appIconPath': results[11],
     };
   }
 

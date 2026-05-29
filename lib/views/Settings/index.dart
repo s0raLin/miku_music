@@ -135,6 +135,19 @@ class SettingsPage extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    ListTile(
+                      leading: const Icon(Icons.apps_rounded, size: 20),
+                      title: const Text("应用图标"),
+                      subtitle: Text(
+                        _getIconFileName(themeProvider.appIconPath),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _showAppIconPicker(context, themeProvider),
+                    ),
                   ],
                 ),
               ),
@@ -462,6 +475,222 @@ class SettingsPage extends StatelessWidget {
       default:
         return "添加时间";
     }
+  }
+
+  String _getIconFileName(String path) {
+    return path.split('/').last;
+  }
+
+  void _showAppIconPicker(BuildContext context, ThemeProvider themeProvider) {
+    final List<String> iconPaths = [
+      "assets/app_icon/app_icon1.png",
+      "assets/app_icon/app_icon2.jpeg",
+      "assets/app_icon/app_icon3.jpeg",
+      "assets/app_icon/app_icon4.jpeg",
+      "assets/app_icon/app_icon5.jpeg",
+      "assets/app_icon/app_icon6.jpeg",
+      "assets/app_icon/app_icon7.jpeg",
+      "assets/app_icon/app_icon8.jpeg",
+      "assets/app_icon/app_icon9.jpeg",
+      "assets/app_icon/app_icon10.jpeg",
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return _AppIconPickerSheet(
+          iconPaths: iconPaths,
+          currentIconPath: themeProvider.appIconPath,
+          onConfirm: (selectedPath) {
+            themeProvider.setAppIconPath(selectedPath);
+            Navigator.of(sheetContext).pop();
+          },
+          onCancel: () {
+            Navigator.of(sheetContext).pop();
+          },
+        );
+      },
+    );
+  }
+}
+
+class _AppIconPickerSheet extends StatefulWidget {
+  final List<String> iconPaths;
+  final String currentIconPath;
+  final ValueChanged<String> onConfirm;
+  final VoidCallback onCancel;
+
+  const _AppIconPickerSheet({
+    required this.iconPaths,
+    required this.currentIconPath,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  @override
+  State<_AppIconPickerSheet> createState() => _AppIconPickerSheetState();
+}
+
+class _AppIconPickerSheetState extends State<_AppIconPickerSheet> {
+  late String _selectedPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPath = widget.currentIconPath;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 拖拽指示条
+          Center(
+            child: Container(
+              width: 32,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
+              "选择应用图标",
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          // 横向滚动列表
+          SizedBox(
+            height: 108,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.iconPaths.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final path = widget.iconPaths[index];
+                final isSelected = _selectedPath == path;
+                final fileName = path.split('/').last;
+                final displayName = fileName
+                    .replaceAll(RegExp(r'\.(png|jpeg|jpg)$'), '')
+                    .replaceAll('app_icon', '');
+
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedPath = path),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 76,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primaryContainer
+                          : colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                      border: isSelected
+                          ? Border.all(color: colorScheme.primary, width: 2)
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 1:1 圆角正方形图标预览
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            path,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.broken_image_outlined,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          displayName,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 确定和取消按钮
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: widget.onCancel,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 42),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text("取消"),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => widget.onConfirm(_selectedPath),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 42),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text("确定"),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -149,21 +149,26 @@ class MusicProvider extends ChangeNotifier {
     // 1. 记住当前正在播放的歌曲实例
     final playingMusic = currentMusic;
 
-    // 2. 先在目标位置插入歌曲
-    // 此时不破坏原列表的索引结构，直接插入
-    _queue.insert(newIndex, _queue[oldIndex]);
+    // 2. 核心：如果从上往下拖动，说明目标位置在旧位置后面。
+    // 由于底层组件已经帮你为“移除老元素”扣掉了一位，导致 newIndex 偏小，
+    // 我们在这里强行 +1 纠正，把它推到你眼睛看到的那个元素的“后面”。
+    if (newIndex > oldIndex) {
+      newIndex += 1;
+    }
 
-    // 3. 再删除原本位置的歌曲
-    // 如果是从上往下拖，因为前面 insert 了一项，原本的 oldIndex 就要往后挪一位，所以要加 1
-    final removeIndex = oldIndex < newIndex ? oldIndex : oldIndex + 1;
-    _queue.removeAt(removeIndex);
+    // 3. 执行标准的取出、插入动作
+    final song = _queue.removeAt(oldIndex);
 
-    // 4. 重新定位当前播放歌曲在全新队列中的 Index，防止封面和播放错乱
+    // 安全边界处理：确保 insert 的位置不会越界
+    final targetIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+    _queue.insert(targetIndex.clamp(0, _queue.length), song);
+
+    // 4. 重新死死咬住当前播放歌曲的指针，确保封面、状态绝不错乱
     if (playingMusic != null) {
       _currentIndex = _queue.indexWhere((m) => m.id == playingMusic.id);
     }
 
-    notifyListeners(); // 5. 通知全局 UI 刷新
+    notifyListeners(); // 5. 刷新全局 UI
   }
 
   void removeFromQueue(int index) {

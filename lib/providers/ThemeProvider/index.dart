@@ -32,6 +32,7 @@ class ThemeProvider extends ChangeNotifier {
   bool _doubleTapToPlay = true;
   String _playlistSortBy = "time";
   int _maxHistoryCount = 100;
+  String _appIconPath = "assets/app_icon/app_icon1.png";
 
   ThemeProvider();
 
@@ -46,6 +47,7 @@ class ThemeProvider extends ChangeNotifier {
   bool get doubleTapToPlay => _doubleTapToPlay;
   String get playlistSortBy => _playlistSortBy;
   int get maxHistoryCount => _maxHistoryCount;
+  String get appIconPath => _appIconPath;
 
   void updateFromMap(Map<String, dynamic> data) {
     // 使用 ?? 语法确保如果 Map 里的值缺失，保留当前的默认值
@@ -61,6 +63,7 @@ class ThemeProvider extends ChangeNotifier {
     _doubleTapToPlay = data['doubleTapToPlay'] ?? _doubleTapToPlay;
     _playlistSortBy = data['playlistSortBy'] ?? _playlistSortBy;
     _maxHistoryCount = data['maxHistoryCount'] ?? _maxHistoryCount;
+    _appIconPath = data['appIconPath'] ?? _appIconPath;
 
     // 关键：通知 UI 刷新样式
     notifyListeners();
@@ -132,6 +135,12 @@ class ThemeProvider extends ChangeNotifier {
     _maxHistoryCount = count;
     notifyListeners();
     SettingService.setMaxHistoryCount(count);
+  }
+
+  void setAppIconPath(String iconPath) {
+    _appIconPath = iconPath;
+    notifyListeners();
+    SettingService.setAppIcon(iconPath);
   }
 
   // M3 颜色谐波化算法：让自定义颜色（如链接色）适配主题种子色

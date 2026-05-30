@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.0](https://github.com/s0raLin/miku_music/compare/v1.31.1...v1.32.0) (2026-05-30)
+
+
+### Features
+
+* **service:** enable windows support in JustAudioMediaKit ([bb47f68](https://github.com/s0raLin/miku_music/commit/bb47f68f78fad2b373e84da521b09a17db071010))
+
 ## [1.31.1](https://github.com/s0raLin/miku_music/compare/v1.31.0...v1.31.1) (2026-05-30)
 
 

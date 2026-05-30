@@ -1,7 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:myapp/api/Model/User/index.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -17,6 +19,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _usernameController;
   late final TextEditingController _emailController;
   late final TextEditingController _bioController; // 新增：个性签名
+  final _imagePicker = ImagePicker();
+  XFile? _avatarImage;
+  Future<void> _pickAvatar() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 500,
+      maxHeight: 500,
+      imageQuality: 80,
+    );
+    if (picked != null) {
+      setState(() {
+        _avatarImage = picked;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -125,9 +142,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
               shape: BoxShape.circle,
               border: Border.all(color: colorScheme.primaryContainer, width: 4),
             ),
-            child: const CircleAvatar(
-              radius: 60,
-              backgroundImage: AssetImage(MyAssets.mikulogo),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: colorScheme.primaryContainer,
+              backgroundImage: _avatarImage != null
+                  ? FileImage(File(_avatarImage!.path))
+                  : null,
+              child: _avatarImage == null
+                  ? Icon(
+                      Icons.person,
+                      size: 50,
+                      color: colorScheme.onPrimaryContainer,
+                    )
+                  : null,
             ),
           ),
           Positioned(
@@ -138,7 +165,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               shape: const CircleBorder(),
               elevation: 4,
               child: IconButton(
-                onPressed: () => _showSimpleSnackBar('即将支持上传图片'),
+                onPressed: _pickAvatar,
                 icon: Icon(
                   Icons.camera_alt_rounded,
                   color: colorScheme.onPrimary,
@@ -239,11 +266,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     await userProvider.updateUserInfo(updatedUser);
 
     if (mounted) {
-      AppToast.success(
-        context,
-        message: '个人资料已更新',
-        title: '保存成功',
-      );
+      AppToast.success(context, message: '个人资料已更新', title: '保存成功');
     }
   }
 }

@@ -17,6 +17,9 @@ class PlaylistProvider extends ChangeNotifier {
   List<Playlist> _filteredPlaylists = [];
   List<String> _filteredHistoryIds = [];
 
+  // 2.1 存储当前有效的歌曲ID，用于CRUD后重新过滤
+  Set<String> _activeSongIds = {};
+
   static const String favoritesPlaylistId = 'system_favorites';
 
   // 3. 将 Getter 导向清洗后的有效列表
@@ -29,18 +32,20 @@ class PlaylistProvider extends ChangeNotifier {
       _filteredPlaylists.where((p) => p.isSystem).toList();
 
   PlaylistProvider() {
-    refreshFromDb();
+    // 构造函数不再调用 refreshFromDb，避免在 init() 前访问数据库导致空指针
   }
 
-  /// 从数据库拉取最新歌单与播放历史 ID（只更新 raw 原始数据）
+  /// 从数据库拉取最新歌单与播放历史 ID
   Future<void> refreshFromDb() async {
     _rawPlaylists = await _dbService.getAllRustPlaylists();
     _rawHistoryIds = await _dbService.getHistoryIds();
-    // 注意：这里先不盲目 notifyListeners()，等 ProxyProvider 的逻辑来统一驱动清洗
+    // 使用当前缓存的有效歌曲ID进行过滤，确保CRUD后响应式生效
+    updateActivePlaylists(_activeSongIds);
   }
 
   /// ✨ 核心优雅逻辑：由 ProxyProvider 驱动，结合当前内存中有效的全局乐库动态瘦身
   void updateActivePlaylists(Set<String> localSongIds) {
+    _activeSongIds = localSongIds;
     // 过滤歌单内的无效 ID
     _filteredPlaylists = _rawPlaylists.map((playlist) {
       final activeIds = playlist.songIds
@@ -58,27 +63,26 @@ class PlaylistProvider extends ChangeNotifier {
   }
 
   Future<void> bootstrap({
-    required List<Music> currentLibrary, // ✨ 建议把启动时的内存乐库一同传进来，用于初次清洗自驱
+    required List<Music> currentLibrary,
     void Function(String module, String detail)? onProgress,
   }) async {
     onProgress?.call('连接媒体数据库', '正在读取歌单架构...');
     await MusicDbService().init();
 
+    // 从数据库加载原始数据，然后用传入的乐库进行初始过滤
     _rawPlaylists = await _dbService.getAllRustPlaylists();
     _rawHistoryIds = await _dbService.getHistoryIds();
 
-    // ✨ 修复：从包含完整原始数据的 _rawPlaylists 中去定位，避免冷启动时 filtered 为空导致无法加载
+    final localSongIds = currentLibrary.map((s) => s.id).toSet();
+    updateActivePlaylists(localSongIds);
+
+    // 从原始数据中定位收藏歌单（避免 filtered 为空导致无法加载）
     final favPlaylist = _rawPlaylists.firstWhereOrNull(
       (p) => p.id == favoritesPlaylistId,
     );
 
     onProgress?.call('恢复收藏列表', '已载入 ${favPlaylist?.songIds.length ?? 0} 首收藏歌曲');
     onProgress?.call('恢复播放历史', '已载入 ${_rawHistoryIds.length} 首最近播放记录');
-
-    // ✨ 在通知 UI 前，利用刚传进来的乐库先进行一次初始过滤，让 userPlaylists 能正确计算出数量
-    final localSongIds = currentLibrary.map((s) => s.id).toSet();
-    updateActivePlaylists(localSongIds);
-
     onProgress?.call('同步自建歌单', '已拉取 ${userPlaylists.length} 个本地歌单');
   }
 

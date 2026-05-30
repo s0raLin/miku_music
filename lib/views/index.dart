@@ -8,6 +8,7 @@ import 'package:myapp/config/globals.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 class MainPage extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -18,8 +19,26 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> with WindowListener {
   late bool showNavigationDrawer;
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this); // 注册监听
+  }
+
+  // 【最关键】拦截关闭事件
+  @override
+  void onWindowClose() async {
+    await windowManager.hide(); // 隐藏到托盘
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this); // 清理
+    super.dispose();
+  }
 
   void onTabChanged(int idx) {
     widget.navigationShell.goBranch(idx);

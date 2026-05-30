@@ -75,6 +75,14 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# ====================== tray_manager 专用修复 ======================
+# 针对 tray_manager_plugin 额外处理（更保险）
+if(TARGET tray_manager_plugin)
+  target_compile_options(tray_manager_plugin PRIVATE
+    -Wno-deprecated-declarations
+    -Wno-error=deprecated-declarations
+  )
+endif()
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build

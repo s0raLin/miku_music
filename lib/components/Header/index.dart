@@ -98,7 +98,7 @@ class _WindowControls extends StatelessWidget {
         _WindowButton(
           icon: ImageIcon(AssetImage(MyAssets.close), size: iconVisualSize),
           isCloseBtn: true,
-          onPressed: () => windowManager.close(),
+          onPressed: () => windowManager.hide(),
         ),
       ],
     );

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -9,6 +11,7 @@ import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:myapp/router/IndexRouter/index.dart';
 import 'package:myapp/service/Audio/index.dart';
 import 'package:myapp/service/Initialization/index.dart';
+import 'package:myapp/service/Tray/index.dart';
 import 'package:provider/provider.dart';
 
 late MyAudioHandler globalAudioHandler; // 定义全局句柄
@@ -57,4 +60,10 @@ Future<void> main() async {
       child: const IndexRouter(),
     ),
   );
+
+  try {
+    await AppTrayManager().init();
+  } catch (e) {
+    debugPrint('托盘初始化失败: $e');
+  }
 }

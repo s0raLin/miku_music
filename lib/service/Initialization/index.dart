@@ -10,6 +10,7 @@ import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/service/MusicDb/index.dart';
 import 'package:myapp/service/Settings/index.dart';
+import 'package:myapp/service/Tray/index.dart';
 import 'package:myapp/src/rust/frb_generated.dart';
 import 'package:window_manager/window_manager.dart';
 

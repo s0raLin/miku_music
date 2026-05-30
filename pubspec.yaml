@@ -44,7 +44,6 @@ dependencies:
   json_annotation: ^4.11.0
   flutter_dotenv: ^6.0.1
   window_manager: ^0.5.1
-  system_tray: ^0.1.1
   fluttertoast: ^9.0.0
   audio_service: ^0.18.18
   path_provider: ^2.1.5
@@ -59,7 +58,7 @@ dependencies:
   flutter_rust_bridge: ^2.12.0
   flutter_dynamic_icon_plus: ^1.4.0
   bee_dynamic_launcher: ^1.1.0
-
+  tray_manager: ^0.5.2
 dependency_overrides:
   # 强制锁定版本，消除 2.11.1 与 2.12.0 的冲突
   # flutter_rust_bridge: 2.11.1

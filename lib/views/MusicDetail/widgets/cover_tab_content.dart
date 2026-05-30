@@ -120,14 +120,22 @@ class _CoverTabContentState extends State<CoverTabContent> {
             ),
             IconButton(
               onPressed: () {
-                playlistProvider.toggleMusicFavorite(widget.music);
-                final isFav = playlistProvider
+                // 1. 在取反之前，先获取“当前”是否已经是喜欢状态
+                final wasLiked = playlistProvider
                     .getPlaylistSongs(
                       PlaylistProvider.favoritesPlaylistId,
                       musicProvider.library,
                     )
                     .any((m) => m.id == widget.music.id);
-                AppToast.neutral(context, message: isFav ? '已添加到喜欢' : '已取消收藏');
+
+                // 2. 执行切换
+                playlistProvider.toggleMusicFavorite(widget.music);
+
+                // 3. 根据切换前的状态（wasLiked）来提示：如果以前是喜欢，那现在就是取消了；反之亦然。
+                AppToast.neutral(
+                  context,
+                  message: wasLiked ? '已取消收藏' : '已添加到喜欢',
+                );
               },
               icon: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),

@@ -4,15 +4,14 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
 
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
-
-import 'package:path/path.dart' as p;
-import 'package:provider/provider.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -23,46 +22,49 @@ class FilesPage extends StatefulWidget {
 class _FilesPageState extends State<FilesPage>
     with AutomaticKeepAliveClientMixin {
   List<String> _paths = [];
+  bool _isScanning = false;
+  List<Music> _scannedSongs = [];
+  StreamSubscription? _scanSubscription;
 
   @override
   void initState() {
     super.initState();
-    FileService.loadPaths().then((p) {
-      setState(() {
-        _paths = p;
-      });
+    FileService.loadPaths().then((loadedPaths) {
+      if (mounted) {
+        setState(() => _paths = loadedPaths);
+      }
     });
   }
 
-  // Stream<List<Music>>? _musicStream;
-  // List<Music> _musicList = [];
-  List<Music> _scannedSongs = [];
-  bool _isScanning = false;
+  @override
+  void dispose() {
+    _scanSubscription?.cancel();
+    super.dispose();
+  }
 
-  StreamSubscription? _scanSubscription;
+  @override
+  bool get wantKeepAlive => true;
 
-  // 核心逻辑：将扫描流转换为“累加列表流”
+  // ==========================================
+  // 核心业务逻辑
+  // ==========================================
+
   void _startScan(List<String> paths) {
-    _scanSubscription?.cancel(); //取消上一次扫描
+    _scanSubscription?.cancel();
     setState(() {
-      // _musicList = [];
       _isScanning = true;
       _scannedSongs = [];
     });
 
-    final scanProgressStream = MusicService.scanDirectories(paths);
     final musicProvider = context.read<MusicProvider>();
-
-    //在进入流监听之前，死死锁住当前的页面级上下文
     final pageContext = context;
 
-    _scanSubscription = scanProgressStream.listen(
-      (s) {
+    _scanSubscription = MusicService.scanDirectories(paths).listen(
+      (progress) {
         if (!mounted) return;
-        if (s.music != null) {
-          _scannedSongs.add(s.music!);
-
-          //每积累15首才刷新一次UI,避免频繁setState
+        if (progress.music != null) {
+          _scannedSongs.add(progress.music!);
+          // 每积累15首增量刷新一次全局 Library
           if (_scannedSongs.length % 15 == 0) {
             musicProvider.updateLibrary(List.from(_scannedSongs));
           }
@@ -70,13 +72,9 @@ class _FilesPageState extends State<FilesPage>
       },
       onDone: () {
         if (!pageContext.mounted) return;
-
-        // 扫描完成,把最后剩下不够15首度歌曲一次性倒进去
         musicProvider.updateLibrary(List.from(_scannedSongs));
+        setState(() => _isScanning = false);
 
-        setState(() {
-          _isScanning = false;
-        });
         if (_scannedSongs.isNotEmpty) {
           AppToast.success(
             pageContext,
@@ -86,105 +84,48 @@ class _FilesPageState extends State<FilesPage>
           AppToast.neutral(pageContext, message: '未发现音频文件');
         }
       },
-      onError: (e) {
+      onError: (err) {
         if (!mounted) return;
-        setState(() {
-          _isScanning = false;
-        });
+        setState(() => _isScanning = false);
         if (!pageContext.mounted) return;
-        AppToast.error(pageContext, message: '扫描出错: $e', title: '扫描失败');
+        AppToast.error(pageContext, message: '扫描出错: $err', title: '扫描失败');
       },
     );
   }
 
-  @override
-  void dispose() {
-    _scanSubscription?.cancel(); //取消上一次扫描
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    // 当扫描流调用 musicProvider.updateLibrary() 时，这里会自动感知并触发重绘
-    final songs = context.select<MusicProvider, List<Music>>((p) => p.library);
-
-    final folderGroups = _groupByFolder(songs);
-    final albumGroups = _groupByAlbum(songs);
-    final artistGroups = _groupByArtist(songs);
-    return Scaffold(
-      body: DefaultTabController(
-        length: 3,
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                floating: false, // 向上滚动时 AppBar 是否立即显现
-                pinned: true, // 滚动后，bottom 部分（TabBar）是否固定在顶部
-                title: const Text("文件"),
-                bottom: const TabBar(
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start, // 让 Tab 靠左对齐
-                  tabs: [
-                    Tab(text: "文件夹"),
-                    Tab(text: "专辑"),
-                    Tab(text: "艺术家"),
-                  ],
-                ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: IconButton(
-                      tooltip: "选择目录",
-                      onPressed: () {
-                        _showPickDialog();
-                      },
-                      icon: Icon(Icons.folder_open_rounded),
-                    ),
-                  ),
-                ],
-              ),
-            ];
-          },
-          body: TabBarView(
-            children: [
-              _buildLeft(folderGroups),
-              _buildCenter(albumGroups),
-              _buildRight(artistGroups),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 弹出选择目录的 Dialog
   Future<void> _showPickDialog() async {
-    final List<String> tmp = [..._paths];
+    final List<String> tmpPaths = [..._paths];
     final result = await showDialog<List<String>>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setTileState) => AlertDialog(
+        builder: (ctx, setDialogState) => AlertDialog(
           title: const Text("扫描目录"),
-          content: SizedBox(
+          content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 FilledButton.icon(
                   onPressed: () async {
-                    final p = await FilePicker.getDirectoryPath();
-                    if (p != null) setTileState(() => tmp.add(p));
+                    final selectedPath = await FilePicker.getDirectoryPath();
+                    if (selectedPath != null) {
+                      setDialogState(() => tmpPaths.add(selectedPath));
+                    }
                   },
                   icon: const Icon(Icons.add),
                   label: const Text("添加目录"),
                 ),
                 const Divider(),
-                ...tmp.map(
-                  (p) => ListTile(
-                    title: Text(p, maxLines: 1),
+                ...tmpPaths.map(
+                  (path) => ListTile(
+                    title: Text(
+                      path,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.close),
-                      onPressed: () => setTileState(() => tmp.remove(p)),
+                      onPressed: () =>
+                          setDialogState(() => tmpPaths.remove(path)),
                     ),
                   ),
                 ),
@@ -197,7 +138,7 @@ class _FilesPageState extends State<FilesPage>
               child: const Text("取消"),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(ctx, tmp),
+              onPressed: () => Navigator.pop(ctx, tmpPaths),
               child: const Text("确认"),
             ),
           ],
@@ -205,21 +146,24 @@ class _FilesPageState extends State<FilesPage>
       ),
     );
 
-    if (result != null) {
-      if (Platform.isAndroid &&
-          !(await MusicService.ensureAndroidAudioPermission())) {
-        if (mounted) {
-          AppToast.error(context, message: '请授予存储和音频权限以扫描音乐', title: '权限不足');
-        }
-        return;
+    if (result == null) return;
+
+    if (Platform.isAndroid &&
+        !(await MusicService.ensureAndroidAudioPermission())) {
+      if (mounted) {
+        AppToast.error(context, message: '请授予存储和音频权限以扫描音乐', title: '权限不足');
       }
-      await FileService.savePaths(result);
-      setState(() {
-        _paths = tmp;
-      });
-      _startScan(tmp);
+      return;
     }
+
+    await FileService.savePaths(result);
+    setState(() => _paths = result);
+    _startScan(result);
   }
+
+  // ==========================================
+  // 数据分组算法
+  // ==========================================
 
   Map<String, List<Music>> _groupByFolder(List<Music> songs) {
     final groups = <String, List<Music>>{};
@@ -234,7 +178,10 @@ class _FilesPageState extends State<FilesPage>
     for (final song in songs) {
       final album = song.album?.trim();
       groups
-          .putIfAbsent(album?.isNotEmpty == true ? album! : '未知专辑', () => [])
+          .putIfAbsent(
+            album != null && album.isNotEmpty ? album : '未知专辑',
+            () => [],
+          )
           .add(song);
     }
     return groups;
@@ -248,128 +195,107 @@ class _FilesPageState extends State<FilesPage>
     return groups;
   }
 
-  Widget _buildLeft(Map<String, List<Music>> folderGroups) {
-    if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  // ==========================================
+  // UI 构建核心方法
+  // ==========================================
 
-    if (_paths.isEmpty && !Platform.isAndroid) {
-      return const AppEmptyState(
-        icon: Icons.folder_open_rounded,
-        title: "还没有扫描目录",
-        subtitle: "点击右下角按钮添加目录后，这里会展示扫描到的内容",
-        compact: true,
-      );
-    }
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
 
-    if (!_isScanning && folderGroups.isEmpty) {
-      return const AppEmptyState(
-        icon: Icons.audio_file_rounded,
-        title: "没有找到音频文件",
-        subtitle: "当前范围内没有可显示的音频文件",
-        compact: true,
-      );
-    }
+    // 使用 select 粒度化监听，只有 library 引用改变时才触发 build
+    final songs = context.select<MusicProvider, List<Music>>((p) => p.library);
 
-    final albums = folderGroups.entries.toList();
-    return _buildCollectionGrid(
-      albums,
-      emptyIcon: Icons.folder_open_rounded,
-      titleBuilder: (entry) => p.basename(entry.key),
-      subtitleBuilder: (entry) => "${entry.value.length} 首",
-      onTap: (entry) {
-        context.push(
-          "/user/files/album-detail",
-          extra: {"albumName": entry.key},
-        );
-      },
+    return Scaffold(
+      body: DefaultTabController(
+        length: 3,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              pinned: true,
+              title: const Text("文件"),
+              bottom: const TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: [
+                  Tab(text: "文件夹"),
+                  Tab(text: "专辑"),
+                  Tab(text: "艺术家"),
+                ],
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: IconButton(
+                    tooltip: "选择目录",
+                    onPressed: _showPickDialog,
+                    icon: const Icon(Icons.folder_open_rounded),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          body: TabBarView(
+            children: [
+              _buildTabContent(
+                groups: _groupByFolder(songs),
+                emptyIcon: Icons.folder_open_rounded,
+                emptySubtitle: "添加目录后，这里会展示扫描到的内容",
+                titleBuilder: (entry) => p.basename(entry.key),
+              ),
+              _buildTabContent(
+                groups: _groupByAlbum(songs),
+                emptyIcon: Icons.album_rounded,
+                emptySubtitle: "添加目录后，这里会自动整理出专辑内容",
+                titleBuilder: (entry) => entry.key,
+              ),
+              _buildTabContent(
+                groups: _groupByArtist(songs),
+                emptyIcon: Icons.person_rounded,
+                emptySubtitle: "添加目录后，这里会自动整理出艺术家内容",
+                titleBuilder: (entry) => entry.key,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildCenter(Map<String, List<Music>> albumGroups) {
-    if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_paths.isEmpty && !Platform.isAndroid) {
-      return const AppEmptyState(
-        icon: Icons.album_rounded,
-        title: "还没有扫描目录",
-        subtitle: "添加目录后，这里会自动整理出专辑内容",
-        compact: true,
-      );
-    }
-
-    if (!_isScanning && albumGroups.isEmpty) {
-      return const AppEmptyState(
-        icon: Icons.audio_file_rounded,
-        title: "没有找到音频文件",
-        subtitle: "当前范围内没有可显示的音频文件",
-        compact: true,
-      );
-    }
-
-    final albums = albumGroups.entries.toList();
-    return _buildCollectionGrid(
-      albums,
-      emptyIcon: Icons.album_rounded,
-      titleBuilder: (entry) => entry.key,
-      subtitleBuilder: (entry) => "${entry.value.length} 首",
-      onTap: (entry) {
-        context.push(
-          "/user/files/album-detail",
-          extra: {"albumName": entry.key},
-        );
-      },
-    );
-  }
-
-  Widget _buildRight(Map<String, List<Music>> artistGroups) {
-    if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_paths.isEmpty && !Platform.isAndroid) {
-      return const AppEmptyState(
-        icon: Icons.person_rounded,
-        title: "还没有扫描目录",
-        subtitle: "添加目录后，这里会自动整理出艺术家内容",
-        compact: true,
-      );
-    }
-
-    if (!_isScanning && artistGroups.isEmpty) {
-      return const AppEmptyState(
-        icon: Icons.audio_file_rounded,
-        title: "没有找到音频文件",
-        subtitle: "当前范围内没有可显示的音频文件",
-        compact: true,
-      );
-    }
-
-    final albums = artistGroups.entries.toList();
-    return _buildCollectionGrid(
-      albums,
-      emptyIcon: Icons.person_rounded,
-      titleBuilder: (entry) => entry.key,
-      subtitleBuilder: (entry) => "${entry.value.length} 首",
-      onTap: (entry) {
-        context.push(
-          "/user/files/album-detail",
-          extra: {"albumName": entry.key},
-        );
-      },
-    );
-  }
-
-  Widget _buildCollectionGrid(
-    List<MapEntry<String, List<Music>>> entries, {
+  /// 统一的 Tab 页面工厂，通过参数化消灭三大块重复逻辑
+  Widget _buildTabContent({
+    required Map<String, List<Music>> groups,
     required IconData emptyIcon,
+    required String emptySubtitle,
     required String Function(MapEntry<String, List<Music>> entry) titleBuilder,
-    required String Function(MapEntry<String, List<Music>> entry)
-    subtitleBuilder,
-    required void Function(MapEntry<String, List<Music>> entry) onTap,
   }) {
+    // 状态 1：正在全新扫描且暂无任何缓存歌曲展示
+    if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 状态 2：未选路径（非安卓端）
+    if (_paths.isEmpty && !Platform.isAndroid) {
+      return AppEmptyState(
+        icon: emptyIcon,
+        title: "还没有扫描目录",
+        subtitle: emptySubtitle,
+        compact: true,
+      );
+    }
+
+    // 状态 3：扫描完成了但是啥也没找到
+    if (!_isScanning && groups.isEmpty) {
+      return const AppEmptyState(
+        icon: Icons.audio_file_rounded,
+        title: "没有找到音频文件",
+        subtitle: "当前范围内没有可显示的音频文件",
+        compact: true,
+      );
+    }
+
+    final entries = groups.entries.toList();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxExtent = constraints.maxWidth >= 1400
@@ -379,9 +305,7 @@ class _FilesPageState extends State<FilesPage>
             : 220.0;
 
         return RefreshIndicator(
-          onRefresh: () async {
-            _startScan(_paths);
-          },
+          onRefresh: () async => _startScan(_paths),
           child: CustomScrollView(
             slivers: [
               SliverPadding(
@@ -396,21 +320,26 @@ class _FilesPageState extends State<FilesPage>
                   itemCount: entries.length,
                   itemBuilder: (context, i) {
                     final entry = entries[i];
-                    final cover = entry.value
-                        .firstWhere(
-                          (song) =>
-                              song.coverBytes != null &&
-                              song.coverBytes!.isNotEmpty,
-                          orElse: () => entry.value.first,
-                        )
-                        .coverBytes;
+
+                    // 优化提取 Cover 的逻辑，使用 fast-path 优先定位非空封面
+                    final coverSong = entry.value.firstWhere(
+                      (song) =>
+                          song.coverBytes != null &&
+                          song.coverBytes!.isNotEmpty,
+                      orElse: () => entry.value.first,
+                    );
 
                     return MediaOverlayCard(
                       title: titleBuilder(entry),
-                      subtitle: subtitleBuilder(entry),
-                      coverBytes: cover,
+                      subtitle: "${entry.value.length} 首",
+                      coverBytes: coverSong.coverBytes,
                       fallbackIcon: emptyIcon,
-                      onTap: () => onTap(entry),
+                      onTap: () {
+                        context.push(
+                          "/user/files/album-detail",
+                          extra: {"albumName": entry.key},
+                        );
+                      },
                     );
                   },
                 ),
@@ -421,7 +350,4 @@ class _FilesPageState extends State<FilesPage>
       },
     );
   }
-
-  @override
-  bool get wantKeepAlive => true; // 返回 true 以保持状态
 }

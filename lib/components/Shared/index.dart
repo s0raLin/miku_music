@@ -839,12 +839,12 @@ class _WavySliderPainter extends CustomPainter {
   }
 }
 
-class ObservableGridCard extends StatefulWidget {
+class ObservableMusicGridCard extends StatefulWidget {
   final int index;
   final Music music;
   final VoidCallback? onTap;
 
-  const ObservableGridCard({
+  const ObservableMusicGridCard({
     super.key,
     required this.music,
     this.onTap,
@@ -852,10 +852,11 @@ class ObservableGridCard extends StatefulWidget {
   });
 
   @override
-  State<ObservableGridCard> createState() => _ObservableGridCardState();
+  State<ObservableMusicGridCard> createState() =>
+      _ObservableMusicGridCardState();
 }
 
-class _ObservableGridCardState extends State<ObservableGridCard> {
+class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
   bool _isLoading = false;
 
   @override

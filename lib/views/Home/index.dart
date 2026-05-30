@@ -148,7 +148,7 @@ class _HomePageState extends State<HomePage> {
                       },
                       itemBuilder: (context, index) {
                         final item = history[index];
-                        return ObservableGridCard(
+                        return ObservableMusicGridCard(
                           index: index,
                           music: item,
                           onTap: () {

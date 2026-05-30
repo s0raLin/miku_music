@@ -85,9 +85,10 @@ class MusicProvider extends ChangeNotifier {
     await _loadAppInfo();
   }
 
-  /// 全局更新与合并歌曲库（已修复懒加载封面丢失问题）
+  
+  /// 全局更新与合并歌曲库（彻底解决流式扫描与按需懒加载的冲突）
   void updateLibrary(List<Music> scannedSongs) {
-    // 1. 先把现有的旧歌存入 Map，方便以 id 快速检索
+    // 1. 先把现有的、内存里【已经饱含懒加载封面】的旧歌存入 Map
     final Map<String, Music> uniqueMap = {
       for (var song in _library) song.id: song,
     };
@@ -97,26 +98,31 @@ class MusicProvider extends ChangeNotifier {
       final oldSong = uniqueMap[newSong.id];
 
       if (oldSong != null) {
-        // 检查新旧歌曲的封面状态
+        // 提取旧歌和新歌的封面状态
         final hasOldCover =
             oldSong.coverBytes != null && oldSong.coverBytes!.isNotEmpty;
         final hasNewCover =
             newSong.coverBytes != null && newSong.coverBytes!.isNotEmpty;
 
-        // 核心：如果新歌没有封面(null)而旧歌有，利用 copyWith 让新歌继承旧封面
+        // 核心保护：如果内存中的老歌已经有了封面（不管是播放时洗出来的，还是滑到可见区域懒加载出来的）
+        // 而新扫出来的对象封面是 null，绝对不允许覆盖！利用 copyWith 让新歌继承原有的封面。
         if (hasOldCover && !hasNewCover) {
           uniqueMap[newSong.id] = newSong.copyWith(
             coverBytes: oldSong.coverBytes,
+            // 同理：如果旧歌已经有了懒加载的歌词，新歌没有，也可以顺手保留
+            lyrics: (newSong.lyrics == null || newSong.lyrics!.isEmpty)
+                ? oldSong.lyrics
+                : newSong.lyrics,
           );
-          continue; // 处理完毕，跳过普通赋值
+          continue; // 封面已完美继承，直接跳过后面的无脑覆盖
         }
       }
 
-      // 如果是全新歌曲，或者新歌自带新封面，直接存入/覆盖
+      // 只有当这是首全新歌，或者新歌确实带了新封面时，才允许写入/覆盖
       uniqueMap[newSong.id] = newSong;
     }
 
-    // 3. 刷新全局列表并通知 UI
+    // 3. 直接赋新引用，触发 context.select 粒度化重绘
     _library = uniqueMap.values.toList();
     notifyListeners();
   }

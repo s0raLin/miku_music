@@ -41,7 +41,7 @@ class MusicProvider extends ChangeNotifier {
   // ───────────────────────────
   // 歌曲库 & 核心播放队列
   // ───────────────────────────
-  final List<Music> _library = [];
+  List<Music> _library = [];
   List<Music> get library => _library;
 
   List<Music> _queue = [];
@@ -85,17 +85,39 @@ class MusicProvider extends ChangeNotifier {
     await _loadAppInfo();
   }
 
+  /// 全局更新与合并歌曲库（已修复懒加载封面丢失问题）
   void updateLibrary(List<Music> scannedSongs) {
-    final Map<String, Music> uniqueMap = {};
-    for (var song in _library) {
-      uniqueMap[song.id] = song;
+    // 1. 先把现有的旧歌存入 Map，方便以 id 快速检索
+    final Map<String, Music> uniqueMap = {
+      for (var song in _library) song.id: song,
+    };
+
+    // 2. 遍历新扫出来的歌曲
+    for (var newSong in scannedSongs) {
+      final oldSong = uniqueMap[newSong.id];
+
+      if (oldSong != null) {
+        // 检查新旧歌曲的封面状态
+        final hasOldCover =
+            oldSong.coverBytes != null && oldSong.coverBytes!.isNotEmpty;
+        final hasNewCover =
+            newSong.coverBytes != null && newSong.coverBytes!.isNotEmpty;
+
+        // 核心：如果新歌没有封面(null)而旧歌有，利用 copyWith 让新歌继承旧封面
+        if (hasOldCover && !hasNewCover) {
+          uniqueMap[newSong.id] = newSong.copyWith(
+            coverBytes: oldSong.coverBytes,
+          );
+          continue; // 处理完毕，跳过普通赋值
+        }
+      }
+
+      // 如果是全新歌曲，或者新歌自带新封面，直接存入/覆盖
+      uniqueMap[newSong.id] = newSong;
     }
-    for (var song in scannedSongs) {
-      uniqueMap[song.id] = song;
-    }
-    _library
-      ..clear()
-      ..addAll(uniqueMap.values);
+
+    // 3. 刷新全局列表并通知 UI
+    _library = uniqueMap.values.toList();
     notifyListeners();
   }
 

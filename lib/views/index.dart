@@ -48,20 +48,20 @@ class _MainPageState extends State<MainPage> {
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
 
-      body: Column(
+      body: Row(
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                SideBar(currentIndex: currentIndex, onTap: onTabChanged),
-                const VerticalDivider(thickness: 1, width: 1),
+          SideBar(currentIndex: currentIndex, onTap: onTabChanged),
+          const VerticalDivider(thickness: 1, width: 1),
 
-                //主内容区
+          //主内容区
+          Expanded(
+            child: Column(
+              children: [
                 Expanded(child: widget.navigationShell),
+                if (!isMiniMode) NowPlayingBar(),
               ],
             ),
           ),
-          if (!isMiniMode) NowPlayingBar(),
         ],
       ),
       floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,

@@ -69,7 +69,7 @@ class _SearchPageState extends State<SearchPage> {
     return Scaffold(
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // 1. M3 标准 SearchBar 区域（已整合返回按钮）
             Padding(
@@ -79,7 +79,7 @@ class _SearchPageState extends State<SearchPage> {
                 focusNode: _focusNode,
                 hintText: "搜索歌曲、歌手、专辑...",
 
-                // 🌟 核心修改：将默认的搜索图标替换为符合路由返回逻辑的后退按钮
+                // 核心修改：将默认的搜索图标替换为符合路由返回逻辑的后退按钮
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_rounded),
                   onPressed: () {

@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.31.0](https://github.com/s0raLin/miku_music/compare/v1.30.0...v1.31.0) (2026-05-30)
+
+
+### Features
+
+* **history:** implement history clearing functionality ([d2bd1cd](https://github.com/s0raLin/miku_music/commit/d2bd1cdf765f4254cff84e8060cf3b82fa5395ed))
+* **music:** add search and sorting functionality to music page ([24d2f82](https://github.com/s0raLin/miku_music/commit/24d2f82561d9187fe6990a77860e5ead52fee3f8))
+* **providers:** implement reactive playlist filtering via ProxyProvider ([a65c2a8](https://github.com/s0raLin/miku_music/commit/a65c2a8f06d6d3331a1f6564ca5fdaf788b3a90c))
+* **system:** implement tray management and window minimization to tray ([2acfb34](https://github.com/s0raLin/miku_music/commit/2acfb34a3917b4f422b1585054588a5a13eb8292))
+* **ui:** implement slider style selection and music action menu ([024c5e8](https://github.com/s0raLin/miku_music/commit/024c5e8b5eb03941700a8d66b69e4291f0e0b772))
+* **user:** add search and sorting capabilities to playlist and history views ([5e90093](https://github.com/s0raLin/miku_music/commit/5e90093c38f3f71e08d2556e1d606193ede092ee))
+* **user:** optimize music scanning logic and state management ([a2b20db](https://github.com/s0raLin/miku_music/commit/a2b20db6379a103a3c5d6aeff6f0da0c1e6412cb))
+
+
+### Bug Fixes
+
+* **user:** unfocus search input on query change ([385552b](https://github.com/s0raLin/miku_music/commit/385552bdb4801a21909d4b0d93680bec0a7e444f))
+
 ## [1.30.0](https://github.com/s0raLin/miku_music/compare/v1.29.0...v1.30.0) (2026-05-29)
 
 

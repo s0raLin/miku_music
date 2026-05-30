@@ -294,8 +294,6 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
                             ),
                           ),
                           onChanged: (value) {
-                            // 在切换排序类型时，强行让当前所有焦点组件失焦，收起软键盘
-                            FocusManager.instance.primaryFocus?.unfocus();
                             setState(() => _searchQuery = value);
                           },
                         ),
@@ -309,6 +307,8 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         onSelected: (type) {
+                          // 在切换排序类型时，强行让当前所有焦点组件失焦，收起软键盘
+                          FocusManager.instance.primaryFocus?.unfocus();
                           setState(() => _sortType = type);
                         },
                         itemBuilder: (context) => [

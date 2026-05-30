@@ -51,13 +51,12 @@ class InitializationService {
       debugPrint("Warning: Could not load .env file, using default values.");
     }
 
-    if (!kIsWeb && Platform.isLinux || Platform.isWindows) {
-      JustAudioMediaKit.ensureInitialized(
-        linux: true,
-        windows: true,
-        android: true,
-      );
-    }
+    JustAudioMediaKit.ensureInitialized(
+      android: Platform.isAndroid,
+      windows: Platform.isWindows,
+      linux: Platform.isLinux,
+      macOS: Platform.isMacOS,
+    );
 
     //初始化窗口管理器
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {

@@ -14,7 +14,7 @@ class StartupProvider extends ChangeNotifier {
   String? _errorMessage;
   int _completedSteps = 0;
 
-  static const int _totalSteps = 3;
+  static const int _totalSteps = 4;
 
   StartupStatus get status => _status;
   String get currentModule => _currentModule;
@@ -63,11 +63,12 @@ class StartupProvider extends ChangeNotifier {
 
       await playlistProvider.bootstrap(
         onProgress: (module, detail) => _setStage(module, detail),
+        currentLibrary: songs,
       );
       _finishStep('恢复播放器状态', '播放器状态恢复完成');
 
       _status = StartupStatus.completed;
-      _setStage('启动完成', '正在进入首页');
+      _finishStep('启动完成', '正在进入首页');
     } catch (e) {
       _status = StartupStatus.failed;
       _errorMessage = e.toString();

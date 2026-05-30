@@ -1,5 +1,3 @@
-// The original content is temporarily commented out to allow generating a self-contained demo - feel free to uncomment later.
-
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -14,6 +12,7 @@ import 'package:myapp/service/Initialization/index.dart';
 import 'package:provider/provider.dart';
 
 late MyAudioHandler globalAudioHandler; // 定义全局句柄
+
 Future<void> main() async {
   await InitializationService.preRunInit();
 
@@ -31,10 +30,26 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+
+        // 1. 先注入 MusicProvider，因为下面的 PlaylistProvider 需要依赖它
         ChangeNotifierProvider(
           create: (_) => MusicProvider(audioHandler: globalAudioHandler),
         ),
-        ChangeNotifierProvider(create: (_) => PlaylistProvider()),
+
+        // 2. 🟢 优雅合并：删除了原先独立的 Provider，仅保留这一个代理 ProxyProvider
+        ChangeNotifierProxyProvider<MusicProvider, PlaylistProvider>(
+          create: (_) => PlaylistProvider(),
+          update: (context, musicProvider, playlistProvider) {
+            if (playlistProvider == null) return PlaylistProvider();
+
+            // 拿到当前内存中真实存在的本地歌曲 ID 集合
+            final localSongIds = musicProvider.library.map((s) => s.id).toSet();
+
+            // 反应式通知：本地乐库一变，歌单展示数量立刻计算并刷新
+            return playlistProvider..updateActivePlaylists(localSongIds);
+          },
+        ),
+
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => NavProvider()),
         ChangeNotifierProvider(create: (_) => StartupProvider()),

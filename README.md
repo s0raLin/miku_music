@@ -1,4 +1,7 @@
 # M3Music
+![Build macOS](https://github.com/s0raLin/miku_music/actions/workflows/build-macos.yml/badge.svg)
+![Build Windows](https://github.com/s0raLin/miku_music/actions/workflows/build-windows.yml/badge.svg)
+![Version](https://img.shields.io/badge/version-1.31.1%2B37-blue)
 
 基于 Flutter + Rust 的跨平台本地音乐播放器项目，当前代码已实现启动初始化、本地音乐扫描（Rust 并行）、播放控制、主题切换、歌单/收藏/历史恢复、歌词在线搜索、网易云歌单导入，以及可选的登录注册接口对接。
 

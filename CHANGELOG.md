@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.1](https://github.com/s0raLin/miku_music/compare/v1.31.0...v1.31.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **ui:** correct favorite status toast notification logic ([9cb34aa](https://github.com/s0raLin/miku_music/commit/9cb34aa7349f0d716bca5663a848a8b6330c3d7c))
+
 ## [1.31.0](https://github.com/s0raLin/miku_music/compare/v1.30.0...v1.31.0) (2026-05-30)
 
 

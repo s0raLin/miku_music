@@ -1178,4 +1178,37 @@ class AdaptiveMenu {
       if (action != null) action();
     });
   }
+
+  static Widget buildAnchor(
+    BuildContext context, {
+    required List<AdaptiveMenuItem> items,
+    String? title,
+    IconData icon = Icons.more_vert_rounded,
+    double iconSize = 20,
+  }) {
+    // 使用 Material + InkWell 强制裁剪出标准的 M3 圆形图标触控反馈
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTapDown: (details) {
+          show(context, items: items, details: details, title: title);
+        },
+        onTap: () {}, // 激活水波纹
+        customBorder: const CircleBorder(), // 强制水波纹为正圆形
+        splashColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.12),
+        child: Padding(
+          padding: const EdgeInsets.all(
+            10.0,
+          ), // 恰到好处的热区：20(Icon) + 10*2 = 40dp 完美的点击块
+          child: Icon(
+            icon,
+            size: iconSize,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
 }

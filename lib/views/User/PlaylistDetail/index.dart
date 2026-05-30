@@ -766,35 +766,14 @@ class _M3SongTile extends StatelessWidget {
             color: isFav ? colorScheme.primary : null,
             onPressed: () => playlistProvider.toggleMusicFavorite(song),
           ),
-          // PopupMenuButton<String>(
-          // icon: const Icon(Icons.more_vert_rounded),
-          //   shape: RoundedRectangleBorder(
-          //     borderRadius: BorderRadius.circular(12),
-          //   ),
-          //   onSelected: (val) {
-          //     if (val == "remove") onRemove?.call();
-          //     if (val == "add") onAddToPlaylist();
-          //   },
-          //   itemBuilder: (context) => [
-          //     const PopupMenuItem(value: "add", child: Text("添加到歌单")),
-          //     if (onRemove != null)
-          //       const PopupMenuItem(value: "remove", child: Text("从歌单移除")),
-          //   ],
-          // ),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (details) {
-              AdaptiveMenu.show(
-                context,
-                items: [
-                  AdaptiveMenuItem(title: "添加到歌单", onTap: onAddToPlaylist),
-                  if (onRemove != null)
-                    AdaptiveMenuItem(title: "从歌单移除", onTap: onRemove!),
-                ],
-                details: details,
-              );
-            },
-            child: const Icon(Icons.more_vert_rounded),
+          AdaptiveMenu.buildAnchor(
+            context,
+            icon: Icons.more_vert_rounded,
+            items: [
+              AdaptiveMenuItem(title: "添加到歌单", onTap: onAddToPlaylist),
+              if (onRemove != null)
+                AdaptiveMenuItem(title: "从歌单移除", onTap: onRemove!),
+            ],
           ),
         ],
       ),

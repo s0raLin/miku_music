@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/router/Extensions/router.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Permissions/index.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SetupWizardScreen extends StatefulWidget {
@@ -157,9 +159,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
           children: [
             Icon(Icons.security_rounded, color: colorScheme.primary),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text("系统权限", style: textTheme.headlineSmall),
-            ),
+            Expanded(child: Text("系统权限", style: textTheme.headlineSmall)),
           ],
         ),
         const SizedBox(height: 8),
@@ -175,9 +175,12 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
           subtitle: "用于读取你的本地音频文件列表（Android 13+ 常见）",
           icon: Icons.audio_file_rounded,
           state: audio,
-          onRequest: _busy ? null : () => _requestPermission(AppPermissionKey.audio),
-          onOpenSettings:
-              _busy ? null : () => PermissionService.openSystemSettings(),
+          onRequest: _busy
+              ? null
+              : () => _requestPermission(AppPermissionKey.audio),
+          onOpenSettings: _busy
+              ? null
+              : () => PermissionService.openSystemSettings(),
         ),
         const SizedBox(height: 12),
         _PermissionCard(
@@ -185,10 +188,12 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
           subtitle: "用于读取你选择的目录（Android 12- 常见）",
           icon: Icons.folder_open_rounded,
           state: storage,
-          onRequest:
-              _busy ? null : () => _requestPermission(AppPermissionKey.storage),
-          onOpenSettings:
-              _busy ? null : () => PermissionService.openSystemSettings(),
+          onRequest: _busy
+              ? null
+              : () => _requestPermission(AppPermissionKey.storage),
+          onOpenSettings: _busy
+              ? null
+              : () => PermissionService.openSystemSettings(),
         ),
         const SizedBox(height: 16),
         FilledButton.icon(
@@ -233,8 +238,10 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -252,7 +259,11 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
               children: _paths
                   .map(
                     (p) => ListTile(
-                      title: Text(p, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      title: Text(
+                        p,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       leading: const Icon(Icons.folder_rounded),
                       trailing: IconButton(
                         icon: const Icon(Icons.close_rounded),
@@ -320,10 +331,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
       final s = await PermissionService.request(key);
       if (!mounted) return;
       setState(() {
-        _permissionStates = {
-          ..._permissionStates,
-          key: s,
-        };
+        _permissionStates = {..._permissionStates, key: s};
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -354,6 +362,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
     await pfs.setBool("is_first_run", false);
 
     if (!mounted) return;
+
     //跳转到主页
     context.toHome();
   }
@@ -394,9 +403,7 @@ class _PermissionCard extends StatelessWidget {
               children: [
                 Icon(icon, color: colorScheme.primary),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(title, style: textTheme.titleMedium),
-                ),
+                Expanded(child: Text(title, style: textTheme.titleMedium)),
                 _StatusChip(label: statusLabel, color: statusColor),
               ],
             ),
@@ -415,10 +422,7 @@ class _PermissionCard extends StatelessWidget {
                   child: const Text("申请"),
                 ),
                 const SizedBox(width: 12),
-                TextButton(
-                  onPressed: onOpenSettings,
-                  child: const Text("去设置"),
-                ),
+                TextButton(onPressed: onOpenSettings, child: const Text("去设置")),
               ],
             ),
           ],

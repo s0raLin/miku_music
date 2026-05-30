@@ -57,7 +57,7 @@ class _FilesPageState extends State<FilesPage>
     });
 
     final musicProvider = context.read<MusicProvider>();
-    final pageContext = context;
+    // final pageContext = context;
 
     _scanSubscription = MusicService.scanDirectories(paths).listen(
       (progress) {
@@ -71,24 +71,24 @@ class _FilesPageState extends State<FilesPage>
         }
       },
       onDone: () {
-        if (!pageContext.mounted) return;
+        if (!mounted) return;
         musicProvider.updateLibrary(List.from(_scannedSongs));
         setState(() => _isScanning = false);
 
         if (_scannedSongs.isNotEmpty) {
           AppToast.success(
-            pageContext,
+            context,
             message: '扫描完成，共 ${_scannedSongs.length} 首歌曲',
           );
         } else {
-          AppToast.neutral(pageContext, message: '未发现音频文件');
+          AppToast.neutral(context, message: '未发现音频文件');
         }
       },
       onError: (err) {
         if (!mounted) return;
         setState(() => _isScanning = false);
-        if (!pageContext.mounted) return;
-        AppToast.error(pageContext, message: '扫描出错: $err', title: '扫描失败');
+        if (!context.mounted) return;
+        AppToast.error(context, message: '扫描出错: $err', title: '扫描失败');
       },
     );
   }
@@ -263,38 +263,24 @@ class _FilesPageState extends State<FilesPage>
   }
 
   /// 统一的 Tab 页面工厂，通过参数化消灭三大块重复逻辑
+ /// 统一的 Tab 页面工厂，通过参数化消灭三大块重复逻辑
   Widget _buildTabContent({
     required Map<String, List<Music>> groups,
     required IconData emptyIcon,
     required String emptySubtitle,
     required String Function(MapEntry<String, List<Music>> entry) titleBuilder,
   }) {
-    // 状态 1：正在全新扫描且暂无任何缓存歌曲展示
+    // 状态 1：正在全新扫描且暂无任何缓存歌曲展示（保留原地 Loading）
     if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // 状态 2：未选路径（非安卓端）
-    if (_paths.isEmpty && !Platform.isAndroid) {
-      return AppEmptyState(
-        icon: emptyIcon,
-        title: "还没有扫描目录",
-        subtitle: emptySubtitle,
-        compact: true,
-      );
-    }
-
-    // 状态 3：扫描完成了但是啥也没找到
-    if (!_isScanning && groups.isEmpty) {
-      return const AppEmptyState(
-        icon: Icons.audio_file_rounded,
-        title: "没有找到音频文件",
-        subtitle: "当前范围内没有可显示的音频文件",
-        compact: true,
-      );
-    }
-
     final entries = groups.entries.toList();
+
+    // ✨ 将状态 2 和状态 3 统一合并到下方的视口渲染中，通过 showEmptyState 标记
+    final bool showNoPathsState = _paths.isEmpty && !Platform.isAndroid;
+    final bool showNoSongsState = !_isScanning && groups.isEmpty;
+    final bool useSliverEmpty = showNoPathsState || showNoSongsState;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -307,43 +293,66 @@ class _FilesPageState extends State<FilesPage>
         return RefreshIndicator(
           onRefresh: () async => _startScan(_paths),
           child: CustomScrollView(
+            // ✨ 关键物理特性：当内容为空时，强行允许垂直方向的滚动弹性，确保空状态下也能丝滑触发下拉
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                sliver: SliverGrid.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: maxExtent,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.0,
+              if (useSliverEmpty)
+                // ✨ 核心更改：将空状态塞进 Sliver 容器中，占满剩余屏幕
+                SliverFillRemaining(
+                  hasScrollBody: false, // 允许非滚动组件在物理弹性下伸缩
+                  child: Center(
+                    child: showNoPathsState
+                        ? AppEmptyState(
+                            icon: emptyIcon,
+                            title: "还没有扫描目录",
+                            subtitle: emptySubtitle,
+                            compact: true,
+                          )
+                        : const AppEmptyState(
+                            icon: Icons.audio_file_rounded,
+                            title: "没有找到音频文件",
+                            subtitle: "当前范围内没有可显示的音频文件",
+                            compact: true,
+                          ),
                   ),
-                  itemCount: entries.length,
-                  itemBuilder: (context, i) {
-                    final entry = entries[i];
+                )
+              else
+                // 状态 4：正常渲染网格数据
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                  sliver: SliverGrid.builder(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: maxExtent,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: entries.length,
+                    itemBuilder: (context, i) {
+                      final entry = entries[i];
 
-                    // 优化提取 Cover 的逻辑，使用 fast-path 优先定位非空封面
-                    final coverSong = entry.value.firstWhere(
-                      (song) =>
-                          song.coverBytes != null &&
-                          song.coverBytes!.isNotEmpty,
-                      orElse: () => entry.value.first,
-                    );
+                      final coverSong = entry.value.firstWhere(
+                        (song) =>
+                            song.coverBytes != null &&
+                            song.coverBytes!.isNotEmpty,
+                        orElse: () => entry.value.first,
+                      );
 
-                    return MediaOverlayCard(
-                      title: titleBuilder(entry),
-                      subtitle: "${entry.value.length} 首",
-                      coverBytes: coverSong.coverBytes,
-                      fallbackIcon: emptyIcon,
-                      onTap: () {
-                        context.push(
-                          "/user/files/album-detail",
-                          extra: {"albumName": entry.key},
-                        );
-                      },
-                    );
-                  },
+                      return MediaOverlayCard(
+                        title: titleBuilder(entry),
+                        subtitle: "${entry.value.length} 首",
+                        coverBytes: coverSong.coverBytes,
+                        fallbackIcon: emptyIcon,
+                        onTap: () {
+                          context.push(
+                            "/user/files/album-detail",
+                            extra: {"albumName": entry.key},
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         );

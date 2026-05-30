@@ -107,385 +107,381 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
       (prev, s) => prev + s.duration,
     );
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 280,
-            pinned: true,
-            stretch: true,
-            scrolledUnderElevation: 2,
-            leading: const BackButton(),
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: false,
-              titlePadding: const EdgeInsets.only(
-                left: 56.0,
-                bottom: 16.0,
-                right: 56.0,
-              ),
-              title: Text(
-                "最近播放",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
+    return GestureDetector(
+      onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 280,
+              pinned: true,
+              stretch: true,
+              scrolledUnderElevation: 2,
+              leading: const BackButton(),
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: false,
+                titlePadding: const EdgeInsets.only(
+                  left: 56.0,
+                  bottom: 16.0,
+                  right: 56.0,
                 ),
-              ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colorScheme.primaryContainer.withValues(alpha: 0.4),
-                          colorScheme.surface,
-                        ],
-                      ),
-                    ),
-                  ),
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colorScheme.shadow.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.history_rounded,
-                              size: 60,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "本地播放历史",
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    height: 1.4,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  "${filteredSongs.length} 首歌曲",
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  _formatDuration(totalDuration),
-                                  style: theme.textTheme.labelLarge?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                FilledButton.icon(
-                                  onPressed: filteredSongs.isNotEmpty
-                                      ? () {
-                                          musicProvider.replaceQueue(
-                                            filteredSongs,
-                                            startIndex: 0,
-                                          );
-                                          context.push(
-                                            "/music-detail",
-                                            extra: filteredSongs.first,
-                                          );
-                                        }
-                                      : null,
-                                  icon: const Icon(
-                                    Icons.play_arrow_rounded,
-                                    size: 24,
-                                  ),
-                                  label: const Text("播放全部"),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: colorScheme.primary,
-                                    foregroundColor: colorScheme.onPrimary,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 10,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              IconButton(
-                onPressed: () async {
-                  await playlistProvider.clearHistory();
-                },
-                icon: Icon(Icons.auto_delete_rounded),
-              ),
-              const Padding(padding: EdgeInsets.only(right: 8)),
-            ],
-          ),
-
-          // ================= ✨ 核心改动：真正的 SliverPersistentHeader 吸顶组件 =================
-          if (rawSongs.isNotEmpty)
-            SliverPersistentHeader(
-              pinned: true, // 🔒 开启吸顶锁，让它停留在 SliverAppBar 下方
-              delegate: _SliverSearchHeaderDelegate(
-                child: Container(
-                  // 🔒 必须给定不透明底色，阻挡下方滚上来的内容
-                  color: colorScheme.surface,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: SearchBar(
-                          controller: _searchController,
-                          hintText: "搜索最近播放...",
-                          leading: const Icon(Icons.search_rounded),
-                          trailing: _searchQuery.isNotEmpty
-                              ? [
-                                  IconButton(
-                                    icon: const Icon(Icons.clear_rounded),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() => _searchQuery = "");
-                                    },
-                                  ),
-                                ]
-                              : null,
-                          elevation: WidgetStateProperty.all(0),
-                          backgroundColor: WidgetStateProperty.all(
-                            colorScheme.surfaceContainerLow,
-                          ),
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onChanged: (value) {
-                            setState(() => _searchQuery = value);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      PopupMenuButton<SongSortType>(
-                        icon: const Icon(Icons.sort_rounded),
-                        tooltip: "排序方式",
-                        initialValue: _sortType,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        onSelected: (type) {
-                          // 在切换排序类型时，强行让当前所有焦点组件失焦，收起软键盘
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          setState(() => _sortType = type);
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: SongSortType.recent,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  color: _sortType == SongSortType.recent
-                                      ? colorScheme.primary
-                                      : null,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text("最近播放"),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: SongSortType.title,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.sort_by_alpha_rounded,
-                                  color: _sortType == SongSortType.title
-                                      ? colorScheme.primary
-                                      : null,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text("歌曲标题 (A-Z)"),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: SongSortType.artist,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.person_outline_rounded,
-                                  color: _sortType == SongSortType.artist
-                                      ? colorScheme.primary
-                                      : null,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text("歌手名称 (A-Z)"),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                title: Text(
+                  "最近播放",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
                   ),
                 ),
-              ),
-            ),
-
-          // ================= 歌曲列表 =================
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            sliver: filteredSongs.isEmpty
-                ? SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _searchQuery.isNotEmpty
-                                ? Icons.search_off_rounded
-                                : Icons.history_toggle_off_rounded,
-                            size: 64,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _searchQuery.isNotEmpty ? "未找到相关歌曲" : "暂无播放记录",
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            colorScheme.primaryContainer.withValues(alpha: 0.4),
+                            colorScheme.surface,
+                          ],
+                        ),
                       ),
                     ),
-                  )
-                : SliverList.builder(
-                    itemCount: filteredSongs.length,
-                    itemBuilder: (context, index) {
-                      final song = filteredSongs[index];
-                      final isCurrent =
-                          musicProvider.currentMusic?.id == song.id;
-                      final isFav = playlistProvider
-                          .getPlaylistSongs(
-                            PlaylistProvider.favoritesPlaylistId,
-                            musicProvider.library,
-                          )
-                          .any((m) => m.id == song.id);
-
-                      return ListTile(
-                        onTap: () {
-                          musicProvider.playFromLibrary(song);
-                          context.push("/music-detail", extra: song);
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
                         ),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            color: colorScheme.surfaceContainerHighest,
-                            child: song.coverBytes?.isNotEmpty == true
-                                ? Image.memory(
-                                    song.coverBytes!,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Icon(
-                                    Icons.music_note_rounded,
-                                    color: colorScheme.primary,
-                                  ),
-                          ),
-                        ),
-                        title: Text(
-                          song.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: isCurrent
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isCurrent ? colorScheme.primary : null,
-                          ),
-                        ),
-                        subtitle: Text(
-                          song.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Row(
                           children: [
-                            IconButton(
-                              icon: Icon(
-                                isFav
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                size: 20,
+                            Container(
+                              width: 140,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colorScheme.shadow.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
                               ),
-                              color: isFav ? colorScheme.primary : null,
-                              onPressed: () =>
-                                  playlistProvider.toggleMusicFavorite(song),
+                              child: Icon(
+                                Icons.history_rounded,
+                                size: 60,
+                                color: colorScheme.primary,
+                              ),
                             ),
-                            PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert_rounded),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "本地播放历史",
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                      height: 1.4,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "${filteredSongs.length} 首歌曲",
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  Text(
+                                    _formatDuration(totalDuration),
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  FilledButton.icon(
+                                    onPressed: filteredSongs.isNotEmpty
+                                        ? () {
+                                            musicProvider.replaceQueue(
+                                              filteredSongs,
+                                              startIndex: 0,
+                                            );
+                                            context.push(
+                                              "/music-detail",
+                                              extra: filteredSongs.first,
+                                            );
+                                          }
+                                        : null,
+                                    icon: const Icon(
+                                      Icons.play_arrow_rounded,
+                                      size: 24,
+                                    ),
+                                    label: const Text("播放全部"),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: colorScheme.primary,
+                                      foregroundColor: colorScheme.onPrimary,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 10,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              onSelected: (val) {
-                                if (val == "add") {
-                                  _showAddToPlaylistSheet(context, song);
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: "add",
-                                  child: Text("添加到歌单"),
-                                ),
-                              ],
                             ),
                           ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                IconButton(
+                  onPressed: () async {
+                    await playlistProvider.clearHistory();
+                  },
+                  icon: Icon(Icons.auto_delete_rounded),
+                ),
+                const Padding(padding: EdgeInsets.only(right: 8)),
+              ],
+            ),
+
+            // ================= ✨ 核心改动：真正的 SliverPersistentHeader 吸顶组件 =================
+            if (rawSongs.isNotEmpty)
+              SliverPersistentHeader(
+                pinned: true, // 🔒 开启吸顶锁，让它停留在 SliverAppBar 下方
+                delegate: _SliverSearchHeaderDelegate(
+                  child: Container(
+                    // 🔒 必须给定不透明底色，阻挡下方滚上来的内容
+                    color: colorScheme.surface,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SearchBar(
+                            controller: _searchController,
+                            hintText: "搜索最近播放...",
+                            leading: const Icon(Icons.search_rounded),
+                            trailing: _searchQuery.isNotEmpty
+                                ? [
+                                    IconButton(
+                                      icon: const Icon(Icons.clear_rounded),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() => _searchQuery = "");
+                                      },
+                                    ),
+                                  ]
+                                : null,
+                            elevation: WidgetStateProperty.all(0),
+                            backgroundColor: WidgetStateProperty.all(
+                              colorScheme.surfaceContainerLow,
+                            ),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() => _searchQuery = value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        PopupMenuButton<SongSortType>(
+                          icon: const Icon(Icons.sort_rounded),
+                          tooltip: "排序方式",
+                          initialValue: _sortType,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          onSelected: (type) {
+                            setState(() => _sortType = type);
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: SongSortType.recent,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    color: _sortType == SongSortType.recent
+                                        ? colorScheme.primary
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text("最近播放"),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: SongSortType.title,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.sort_by_alpha_rounded,
+                                    color: _sortType == SongSortType.title
+                                        ? colorScheme.primary
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text("歌曲标题 (A-Z)"),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: SongSortType.artist,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.person_outline_rounded,
+                                    color: _sortType == SongSortType.artist
+                                        ? colorScheme.primary
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text("歌手名称 (A-Z)"),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+                ),
+              ),
+
+            // ================= 歌曲列表 =================
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              sliver: filteredSongs.isEmpty
+                  ? SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _searchQuery.isNotEmpty
+                                  ? Icons.search_off_rounded
+                                  : Icons.history_toggle_off_rounded,
+                              size: 64,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isNotEmpty ? "未找到相关歌曲" : "暂无播放记录",
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : SliverList.builder(
+                      itemCount: filteredSongs.length,
+                      itemBuilder: (context, index) {
+                        final song = filteredSongs[index];
+                        final isCurrent =
+                            musicProvider.currentMusic?.id == song.id;
+                        final isFav = playlistProvider
+                            .getPlaylistSongs(
+                              PlaylistProvider.favoritesPlaylistId,
+                              musicProvider.library,
+                            )
+                            .any((m) => m.id == song.id);
+
+                        return ListTile(
+                          onTap: () {
+                            musicProvider.playFromLibrary(song);
+                            context.push("/music-detail", extra: song);
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              color: colorScheme.surfaceContainerHighest,
+                              child: song.coverBytes?.isNotEmpty == true
+                                  ? Image.memory(
+                                      song.coverBytes!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Icon(
+                                      Icons.music_note_rounded,
+                                      color: colorScheme.primary,
+                                    ),
+                            ),
+                          ),
+                          title: Text(
+                            song.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: isCurrent
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isCurrent ? colorScheme.primary : null,
+                            ),
+                          ),
+                          subtitle: Text(
+                            song.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  isFav
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 20,
+                                ),
+                                color: isFav ? colorScheme.primary : null,
+                                onPressed: () =>
+                                    playlistProvider.toggleMusicFavorite(song),
+                              ),
+                              AdaptiveMenu.buildAnchor(
+                                context,
+                                icon: Icons.more_vert_rounded,
+                                items: [
+                                  AdaptiveMenuItem(
+                                    title: "添加到歌单",
+                                    onTap: () =>
+                                        _showAddToPlaylistSheet(context, song),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }

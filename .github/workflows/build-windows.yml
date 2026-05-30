@@ -1,0 +1,57 @@
+name: Build Flutter Windows (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: "选择编译模式 (release / debug)"
+        required: true
+        default: "release"
+        type: choice
+        options:
+          - release
+          - debug
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Clone Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Enable Windows Support
+        run: flutter config --enable-windows-desktop
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # 如果使用了 build_runner，可以取消下方的注释
+      # - name: Run Build Runner
+      #   run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Build Windows Application
+        run: flutter build windows --${{ github.event.inputs.build_mode }}
+
+      - name: Archive Production Artifacts
+        shell: pwsh
+        run: |
+          # 根据选择的模式动态定位打包路径
+          $mode = "${{ github.event.inputs.build_mode }}".Substring(0,1).ToUpper() + "${{ github.event.inputs.build_mode }}".Substring(1)
+          cd build/windows/x64/runner/$mode
+          Compress-Archive -Path * -DestinationPath ../../../../../flutter-windows-$mode.zip
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-windows-${{ github.event.inputs.build_mode }}
+          path: |
+            flutter-windows-Release.zip
+            flutter-windows-Debug.zip
+          if-no-files-found: warn

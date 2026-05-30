@@ -20,11 +20,17 @@ class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
   }
 }
 
+/// 进度条样式
+enum SliderStyle {
+  straight, // 标准直线
+  wave, // 蛇形波浪
+}
+
 class ThemeProvider extends ChangeNotifier {
   // 设置默认值，防止在数据加载完成前出现空引用
   ThemeMode _themeMode = ThemeMode.system;
   Color _seedColor = const Color(0xFF6750A4);
-  String _sliderStyle = "straight";
+  SliderStyle _sliderStyle = SliderStyle.wave;
   String _listDensity = "normal";
   String _audioQuality = "normal";
   bool _showLyricCover = true;
@@ -39,7 +45,7 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
   Color get seedColor => _seedColor;
-  String get sliderStyle => _sliderStyle;
+  SliderStyle get sliderStyle => _sliderStyle;
   String get listDensity => _listDensity;
   String get audioQuality => _audioQuality;
   bool get showLyricCover => _showLyricCover;
@@ -54,7 +60,13 @@ class ThemeProvider extends ChangeNotifier {
     // 使用 ?? 语法确保如果 Map 里的值缺失，保留当前的默认值
     _seedColor = data['seedColor'] ?? _seedColor;
     _themeMode = data['themeMode'] ?? _themeMode;
-    _sliderStyle = data['sliderStyle'] ?? _sliderStyle;
+    // 3. 从本地恢复时，将字符串安全地解析回枚举
+    final savedStyleStr = data['sliderStyle'];
+    if (savedStyleStr == 'wave') {
+      _sliderStyle = SliderStyle.wave;
+    } else {
+      _sliderStyle = SliderStyle.straight;
+    }
     _listDensity = data['listDensity'] ?? _listDensity;
     _audioQuality = data['audioQuality'] ?? _audioQuality;
     _showLyricCover = data['showLyricCover'] ?? _showLyricCover;
@@ -84,10 +96,10 @@ class ThemeProvider extends ChangeNotifier {
     SettingService.setColor(color);
   }
 
-  void setSliderStyle(String sliderStyle) {
+  void setSliderStyle(SliderStyle sliderStyle) {
     _sliderStyle = sliderStyle;
     notifyListeners();
-    SettingService.setSliderStyle(sliderStyle);
+    SettingService.setSliderStyle(sliderStyle.name);
   }
 
   void setListDensity(String density) {

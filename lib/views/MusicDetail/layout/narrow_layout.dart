@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/views/MusicDetail/widgets/cover_tab_content.dart';
 import 'package:myapp/views/MusicDetail/widgets/lyrics_section.dart';
+import 'package:myapp/views/MusicDetail/widgets/music_action_menu.dart';
 import 'package:myapp/views/MusicDetail/widgets/playback_queue_drawer.dart';
 
 class NarrowLayout extends StatefulWidget {
@@ -40,12 +40,7 @@ class _NarrowLayoutState extends State<NarrowLayout> {
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapDown: (details) {
-              AdaptiveMenu.show(
-                title: "更多选项",
-                context,
-                items: [AdaptiveMenuItem(title: "设置进度条样式", onTap: () {})],
-                details: details,
-              );
+              MusicActionMenu.showMoreOptions(context, details);
             },
             child: const Padding(
               padding: EdgeInsets.all(8.0),

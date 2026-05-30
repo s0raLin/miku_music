@@ -198,100 +198,103 @@ class _LyricsSectionState extends State<LyricsSection>
         return Stack(
           children: [
             // 5. 包裹 NotificationListener 用于捕获用户的滚动开始和结束手势
-            NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollStartNotification) {
-                  if (notification.dragDetails != null) {
-                    _dragEndTimer?.cancel();
-                    setState(() {
-                      _isUserDragging = true;
-                    });
-                  }
-                } else if (notification is ScrollEndNotification) {
-                  // 用户松开手 3 秒后，恢复自动滚动
-                  _dragEndTimer?.cancel();
-                  _dragEndTimer = Timer(const Duration(seconds: 3), () {
-                    if (mounted) {
+            ScrollConfiguration(
+              behavior: const ScrollBehavior().copyWith(scrollbars: false), //默认滚动条
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollStartNotification) {
+                    if (notification.dragDetails != null) {
+                      _dragEndTimer?.cancel();
                       setState(() {
-                        _isUserDragging = false;
+                        _isUserDragging = true;
                       });
                     }
-                  });
-                }
-                return false;
-              },
-              child: ScrollablePositionedList.builder(
-                itemScrollController: _scrollController,
-                itemPositionsListener: _positionsListener, // 注入位置监听器
-                itemCount: lyrics.length,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 240,
-                ), // 增加上下边距，让首尾歌词也能滚到正中间
-                itemBuilder: (context, index) {
-                  final item = lyrics[index];
-                  final isTextEmpty = item.text.trim().isEmpty;
-
-                  // 如果在拖动中，被聚焦的行高亮；否则正在播放的行高亮
-                  final isActive = _isUserDragging
-                      ? (index == _focusedIndex)
-                      : (index == currentIndex);
-                  final isNear = _isUserDragging
-                      ? ((index - _focusedIndex).abs() == 1)
-                      : ((index - currentIndex).abs() == 1);
-
-                  // 基础样式分级分配
-                  var style = isActive
-                      ? TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: cs.primary,
-                          height: 1.4,
-                        )
-                      : isNear
-                      ? TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: cs.onSurface.withValues(alpha: 0.6),
-                          height: 1.4,
-                        )
-                      : TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w400,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                          height: 1.4,
-                        );
-
-                  // 💡 视觉调优：如果当前行为波浪号（~）且非当前高亮激活行，将其色彩调淡并转换为细体，防止背景杂乱
-                  if (isTextEmpty && !isActive) {
-                    style = style.copyWith(
-                      color: style.color?.withValues(alpha: 0.25),
-                      fontWeight: FontWeight.w300,
-                    );
+                  } else if (notification is ScrollEndNotification) {
+                    // 用户松开手 3 秒后，恢复自动滚动
+                    _dragEndTimer?.cancel();
+                    _dragEndTimer = Timer(const Duration(seconds: 3), () {
+                      if (mounted) {
+                        setState(() {
+                          _isUserDragging = false;
+                        });
+                      }
+                    });
                   }
+                  return false;
+                },
+                child: ScrollablePositionedList.builder(
+                  itemScrollController: _scrollController,
+                  itemPositionsListener: _positionsListener, // 注入位置监听器
+                  itemCount: lyrics.length,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 240,
+                  ), // 增加上下边距，让首尾歌词也能滚到正中间
+                  itemBuilder: (context, index) {
+                    final item = lyrics[index];
+                    final isTextEmpty = item.text.trim().isEmpty;
 
-                  return InkWell(
-                    onTap: () => context.read<MusicProvider>().player.seek(
-                      Duration(milliseconds: item.timeMs),
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 24,
+                    // 如果在拖动中，被聚焦的行高亮；否则正在播放的行高亮
+                    final isActive = _isUserDragging
+                        ? (index == _focusedIndex)
+                        : (index == currentIndex);
+                    final isNear = _isUserDragging
+                        ? ((index - _focusedIndex).abs() == 1)
+                        : ((index - currentIndex).abs() == 1);
+
+                    // 基础样式分级分配
+                    var style = isActive
+                        ? TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: cs.primary,
+                            height: 1.4,
+                          )
+                        : isNear
+                        ? TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                            height: 1.4,
+                          )
+                        : TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                            height: 1.4,
+                          );
+
+                    // 💡 视觉调优：如果当前行为波浪号（~）且非当前高亮激活行，将其色彩调淡并转换为细体，防止背景杂乱
+                    if (isTextEmpty && !isActive) {
+                      style = style.copyWith(
+                        color: style.color?.withValues(alpha: 0.25),
+                        fontWeight: FontWeight.w300,
+                      );
+                    }
+
+                    return InkWell(
+                      onTap: () => context.read<MusicProvider>().player.seek(
+                        Duration(milliseconds: item.timeMs),
                       ),
-                      child: AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut,
-                        style: style,
-                        child: Text(
-                          // 如果歌词文本为空或者全是空格，则替换为 '~'
-                          isTextEmpty ? '~' : item.text,
-                          textAlign: TextAlign.center,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 24,
+                        ),
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                          style: style,
+                          child: Text(
+                            // 如果歌词文本为空或者全是空格，则替换为 '~'
+                            isTextEmpty ? '~' : item.text,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
 

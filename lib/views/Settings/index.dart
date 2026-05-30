@@ -94,19 +94,19 @@ class SettingsPage extends StatelessWidget {
                       subtitle: Text(
                         _getSliderStyleName(themeProvider.sliderStyle),
                       ),
-                      trailing: SegmentedButton<String>(
+                      trailing: SegmentedButton<SliderStyle>(
                         segments: const [
                           ButtonSegment(
-                            value: "straight",
+                            value: SliderStyle.straight,
                             icon: Icon(Icons.horizontal_rule_rounded),
                           ),
                           ButtonSegment(
-                            value: "wavy",
+                            value: SliderStyle.wave,
                             icon: Icon(Icons.waves_rounded),
                           ),
                         ],
                         selected: {themeProvider.sliderStyle},
-                        onSelectionChanged: (Set<String> newSelection) {
+                        onSelectionChanged: (Set<SliderStyle> newSelection) {
                           themeProvider.setSliderStyle(newSelection.first);
                         },
                         showSelectedIcon: false,
@@ -441,14 +441,12 @@ class SettingsPage extends StatelessWidget {
     }
   }
 
-  String _getSliderStyleName(String style) {
+  String _getSliderStyleName(SliderStyle style) {
     switch (style) {
-      case "straight":
+      case SliderStyle.straight:
         return "直线型";
-      case "wavy":
+      case SliderStyle.wave:
         return "蛇形波浪";
-      default:
-        return "直线型";
     }
   }
 

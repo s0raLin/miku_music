@@ -39,6 +39,11 @@ jobs:
       - name: Create .env file
         run: echo "" > .env
 
+      # 🛠️ 核心修复：在这里注入环境变量，强行压制微软新版编译器的过时硬报错
+      - name: Suppress VS Deprecation Error
+        run: echo "CL=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS" >> $env:GITHUB_ENV
+        shell: pwsh
+
       - name: Build Windows Application
         run: flutter build windows --${{ github.event.inputs.build_mode }}
 

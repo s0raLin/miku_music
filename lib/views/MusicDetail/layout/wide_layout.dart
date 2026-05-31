@@ -8,9 +8,9 @@ import 'package:myapp/views/MusicDetail/widgets/playback_queue_drawer.dart';
 
 class WideLayout extends StatelessWidget {
   final Music music;
-  final bool isLiked;
+  
 
-  const WideLayout({super.key, required this.music, required this.isLiked});
+  const WideLayout({super.key, required this.music});
 
   @override
   Widget build(BuildContext context) {

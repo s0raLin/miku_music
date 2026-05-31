@@ -20,8 +20,6 @@ class MusicDetailPage extends StatefulWidget {
 class _MusicDetailPageState extends State<MusicDetailPage> {
   @override
   Widget build(BuildContext context) {
-    final musicProvider = context.read<MusicProvider>();
-    final playlistProvider = context.read<PlaylistProvider>();
     final music = context.select<MusicProvider, Music?>((p) => p.currentMusic);
 
     if (music == null) {
@@ -31,17 +29,10 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
         subtitle: "请选择歌曲再试",
       );
     }
-
-    final isLiked = playlistProvider
-        .getPlaylistSongs(
-          PlaylistProvider.favoritesPlaylistId,
-          musicProvider.library,
-        )
-        .any((m) => m.id == music.id);
     final isWide = MediaQuery.sizeOf(context).width > 700;
 
     return isWide
-        ? WideLayout(music: music, isLiked: isLiked)
-        : NarrowLayout(music: music, isLiked: isLiked);
+        ? WideLayout(music: music)
+        : NarrowLayout(music: music);
   }
 }

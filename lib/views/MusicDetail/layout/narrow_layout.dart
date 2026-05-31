@@ -8,9 +8,9 @@ import 'package:myapp/views/MusicDetail/widgets/playback_queue_drawer.dart';
 
 class NarrowLayout extends StatefulWidget {
   final Music music;
-  final bool isLiked;
 
-  const NarrowLayout({super.key, required this.music, required this.isLiked});
+
+  const NarrowLayout({super.key, required this.music});
 
   @override
   State<NarrowLayout> createState() => _NarrowLayoutState();

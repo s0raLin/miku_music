@@ -106,7 +106,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
     // 计算底部栏完整的设计高度
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
     final double totalBottomBarHeight =
-        kBottomNavigationBarHeight + bottomPadding;
+        kBottomNavigationBarHeight + bottomPadding + 8;
 
     return Scaffold(
       key: rootScaffoldKey,

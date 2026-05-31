@@ -46,7 +46,7 @@ class AppNavItem {
     this.routes = const [],
   });
 }
-
+final List<String> rootRoutes = navItems.map((item) => item.path).toList();
 final List<AppNavItem> navItems = [
   AppNavItem(
     name: "home",

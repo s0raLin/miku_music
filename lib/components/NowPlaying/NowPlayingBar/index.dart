@@ -12,9 +12,7 @@ class NowPlayingBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final music = context.select<MusicProvider, Music?>(
-      (p) => p.currentMusic,
-    );
+    final music = context.select<MusicProvider, Music?>((p) => p.currentMusic);
 
     // 如果没有播放歌曲，彻底隐藏
     if (music == null) return const SizedBox.shrink();
@@ -25,7 +23,7 @@ class NowPlayingBar extends StatelessWidget {
       child: InkWell(
         onTap: () => context.push("/music-detail"),
         child: SizedBox(
-          height: 72,
+          height: 56,
           child: Stack(
             children: [
               // 1. 全端统一：顶部的迷你触控进度条（吸附在容器上边缘）
@@ -39,7 +37,7 @@ class NowPlayingBar extends StatelessWidget {
               // 2. 主体内容行：弹性自适应，不再用 width 判断宽度
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     children: [
                       // 左侧：歌曲信息（自动占据剩余空间的最左侧）
@@ -75,7 +73,6 @@ class _TrackInfoTile extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // M3 Shape: small (8dp 圆角)
         Hero(
           tag: 'music_cover_${music.id}',
           child: ClipRRect(
@@ -83,13 +80,13 @@ class _TrackInfoTile extends StatelessWidget {
             child: music.coverBytes != null && music.coverBytes!.isNotEmpty
                 ? Image.memory(
                     music.coverBytes!,
-                    width: 48,
-                    height: 48,
+                    width: 40,
+                    height: 40,
                     fit: BoxFit.cover,
                   )
                 : Container(
-                    width: 48,
-                    height: 48,
+                    width: 40,
+                    height: 40,
                     color: cs.surfaceContainerHighest,
                     child: Icon(
                       Icons.music_note_rounded,

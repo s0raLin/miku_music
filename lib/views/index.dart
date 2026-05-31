@@ -7,6 +7,7 @@ import 'package:myapp/components/SideBar/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
+
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -51,6 +52,13 @@ class _MainPageState extends State<MainPage> with WindowListener {
     showNavigationDrawer = MediaQuery.of(context).size.width >= 450;
   }
 
+  bool get _isRootBranch {
+    // 当前激活分支的导航器，栈深度为 1 说明在根路由
+    return widget.navigationShell.shellRouteContext.navigatorKey.currentState
+            ?.canPop() ==
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return showNavigationDrawer
@@ -92,6 +100,14 @@ class _MainPageState extends State<MainPage> with WindowListener {
     final nav = context.watch<NavProvider>();
     final currentIndex = nav.shell?.currentIndex ?? 0;
     final isMiniMode = mp.isMiniMode;
+
+    final isRoot = _isRootBranch;
+
+    // 计算底部栏完整的设计高度
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    final double totalBottomBarHeight =
+        kBottomNavigationBarHeight + bottomPadding;
+
     return Scaffold(
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
@@ -102,9 +118,24 @@ class _MainPageState extends State<MainPage> with WindowListener {
         ],
       ),
       floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,
-      bottomNavigationBar: BottomBar(
-        currentIndex: currentIndex,
-        onTap: onTabChanged,
+
+      // ── 2. 完美的底部导航栏裁剪收缩动画 ──
+      bottomNavigationBar: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.fastOutSlowIn,
+        // 核心：如果是根路由则为全高，非根路由则必须为 0
+        height: isRoot ? totalBottomBarHeight : 0.0,
+        child: ClipRect(
+          // ClipRect 会把超出当前 Container 高度范围的所有子内容无情裁剪掉
+          child: OverflowBox(
+            // OverflowBox 允许子组件打破父级的 0 高度限制，强行按照设定的最大高度去渲染
+            // 这样 BottomBar 内部就不会因为空间变小而崩溃或者撑开父容器
+            alignment: Alignment.topCenter,
+            minHeight: totalBottomBarHeight,
+            maxHeight: totalBottomBarHeight,
+            child: BottomBar(currentIndex: currentIndex, onTap: onTabChanged),
+          ),
+        ),
       ),
     );
   }

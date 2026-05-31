@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.0](https://github.com/s0raLin/miku_music/compare/v1.32.0...v1.33.0) (2026-05-31)
+
+
+### Features
+
+* **music:** implement lazy loading for album covers ([be8dfe8](https://github.com/s0raLin/miku_music/commit/be8dfe84370fcdda69d0e500511c48323c44e488))
+
 ## [1.32.0](https://github.com/s0raLin/miku_music/compare/v1.31.1...v1.32.0) (2026-05-30)
 
 

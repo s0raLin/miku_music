@@ -12,11 +12,13 @@ class LibraryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final musicProvider = context.watch<MusicProvider>();
+    final musicProvider = context.read<MusicProvider>();
+
+    // 🌟 1. 粒度化监听：只有当整个 library 指针改变（即扫描、新增、或封面更新生成新引用）时，才重新计算分组
+    // 这样完美避免了不相关的刷新导致 UI 线程重复跑 for 循环
     final library = context.select<MusicProvider, List<Music>>(
       (p) => p.library,
     );
-    // final currentMusic = musicProvider.currentMusic;
 
     if (library.isEmpty) {
       return RefreshIndicator(
@@ -49,7 +51,7 @@ class LibraryTab extends StatelessWidget {
       );
     }
 
-    // 1. 核心整合：在乐库内部直接计算专辑分类
+    // 🌟 2. 局部计算与状态解耦：将分组结果的推导限制在作用域内，确保引用的一致性
     final albumsMap = <String, List<Music>>{};
     for (final song in library) {
       final albumName = song.album ?? "未知专辑";
@@ -61,7 +63,7 @@ class LibraryTab extends StatelessWidget {
       onRefresh: () async {},
       child: CustomScrollView(
         slivers: [
-          // 2. 顶部专辑板块：如果存在专辑，则横向展现
+          // 2. 顶部专辑板块：横向展现
           if (albums.isNotEmpty) ...[
             const SliverToBoxAdapter(
               child: Padding(
@@ -74,8 +76,6 @@ class LibraryTab extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: SizedBox(
-                // 1. 让外层容器的高度，严格等于【卡片宽度140】加上【上下的Padding间距】
-                // 如果你想保留卡片上下的一点空隙，可以设为 140 + 上下间距
                 height: 140,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -85,31 +85,50 @@ class LibraryTab extends StatelessWidget {
                     final entry = albums[index];
                     final albumName = entry.key;
                     final songs = entry.value;
-                    final cover = songs
-                        .firstWhere(
-                          (s) =>
-                              s.coverBytes != null && s.coverBytes!.isNotEmpty,
-                          orElse: () => songs.first,
-                        )
-                        .coverBytes;
 
-                    return Padding(
-                      // 2. 只需要给左右加间距（horizontal: 6），不要再加 vertical 间距让它缩放
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: SizedBox(
-                        width: 140, // 🔒 宽度保持 140，配合外层高度 140，实现 1:1 完美正方形释放
-                        child: AlbumCard(
-                          albumName: albumName,
-                          songCount: songs.length,
-                          coverBytes: cover,
-                          onTap: () {
-                            context.push(
-                              "/user/files/album-detail",
-                              extra: {'albumName': albumName, 'songs': songs},
-                            );
-                          },
-                        ),
-                      ),
+                    //* 3. 封面决策机制：优先选取已经洗出封面的歌曲作为专辑代表
+                    final coverSong = songs.firstWhere(
+                      (s) => s.coverBytes != null && s.coverBytes!.isNotEmpty,
+                      orElse: () => songs.first,
+                    );
+
+                    //* 4. 主动触发懒加载核心：如果整个专辑代表歌曲还没封面，立马静默调度后台解析
+                    if (coverSong.coverBytes == null ||
+                        coverSong.coverBytes!.isEmpty) {
+                      musicProvider.loadCoverLazy(coverSong.id);
+                    }
+
+                    //* 5. 高级响应式优化：利用局部的 Consumer 或 context.select，
+                    // 确保当这首特定代表歌曲的“正在加载状态”或“封面改变”时，卡片能以毫秒级刷新
+                    return Consumer<MusicProvider>(
+                      builder: (context, provider, _) {
+                        final isCurrentCoverLoading = provider.isCoverLoading(
+                          coverSong.id,
+                        );
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: SizedBox(
+                            width: 140,
+                            child: AlbumCard(
+                              albumName: albumName,
+                              songCount: songs.length,
+                              coverBytes: coverSong.coverBytes,
+                              isLoading:
+                                  isCurrentCoverLoading, // 支持加载状态转菊花
+                              onTap: () {
+                                context.push(
+                                  "/user/files/album-detail",
+                                  extra: {
+                                    'albumName': albumName,
+                                    'songs': songs,
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -117,7 +136,7 @@ class LibraryTab extends StatelessWidget {
             ),
           ],
 
-          // 3. 歌曲列表板块
+          // 3. 所有单曲列表板块
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -134,13 +153,16 @@ class LibraryTab extends StatelessWidget {
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
                 final music = library[index];
+                // 🌟 6. 使用显式 ValueKey 提升 Flutter Diff 算法的效率，配合无状态的专属 ListItem
                 return RepaintBoundary(
-                  child: ObservableMusicListItem(music: music),
+                  child: ObservableMusicListItem(
+                    key: ValueKey(music.id),
+                    music: music,
+                  ),
                 );
               },
             ),
           ),
-          // 底部留白，防止被可能存在的底栏挡住
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),

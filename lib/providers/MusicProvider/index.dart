@@ -85,7 +85,6 @@ class MusicProvider extends ChangeNotifier {
     await _loadAppInfo();
   }
 
-  
   /// 全局更新与合并歌曲库（彻底解决流式扫描与按需懒加载的冲突）
   void updateLibrary(List<Music> scannedSongs) {
     // 1. 先把现有的、内存里【已经饱含懒加载封面】的旧歌存入 Map
@@ -255,7 +254,7 @@ class MusicProvider extends ChangeNotifier {
       MusicService.parse(music.id)
           .then((updated) {
             // 🌟 触发封面更新方法
-            updateCoverBytes(music.id, updated.coverBytes);
+            _updateCoverBytes(music.id, updated.coverBytes);
           })
           .catchError((_) {});
     }
@@ -271,16 +270,59 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
-  void updateCoverBytes(String musicId, Uint8List? coverBytes) {
+  // ==========================================
+  // 1. 在 MusicProvider 内部添加解析锁集合
+  // ==========================================
+  final Set<String> _loadingCoverIds = {};
+
+  /// 查询某首歌曲当前是否正在后台解析封面
+  bool isCoverLoading(String musicId) {
+    return _loadingCoverIds.contains(musicId);
+  }
+
+  Future<void> loadCoverLazy(String musicId) async {
+    // 如果已经有封面，或者该歌曲当前正在解析中，则直接拦截，杜绝重复 I/O
+    if (_loadingCoverIds.contains(musicId)) return;
+
+    _loadingCoverIds.add(musicId);
+
+    try {
+      // 异步执行底层解析
+      final updated = await MusicService.parse(musicId);
+      if (updated.coverBytes != null && updated.coverBytes!.isNotEmpty) {
+        _updateCoverBytes(musicId, updated.coverBytes);
+      }
+    } catch (e) {
+      debugPrint('懒加载音频封面失败 [$musicId]: $e');
+    } finally {
+      // 无论成功还是失败，最后必须释放锁
+      _loadingCoverIds.remove(musicId);
+    }
+  }
+
+  void _updateCoverBytes(String musicId, Uint8List? coverBytes) {
     if (coverBytes == null || coverBytes.isEmpty) return;
+
+    bool hasChanged = false;
+
     void patch(List<Music> list) {
       final index = list.indexWhere((m) => m.id == musicId);
-      if (index != -1) list[index].coverBytes = coverBytes;
+      if (index != -1) {
+        // 只有在真的没有封面时才赋值，避免无意义的指针覆盖
+        if (list[index].coverBytes == null || list[index].coverBytes!.isEmpty) {
+          list[index].coverBytes = coverBytes;
+          hasChanged = true;
+        }
+      }
     }
 
     patch(_library);
     patch(_queue);
-    notifyListeners();
+
+    // 只有数据真正被动过，才通知视图刷新，防止切歌或高频更新时的全局无效重绘
+    if (hasChanged) {
+      notifyListeners();
+    }
   }
 
   void togglePlay() {

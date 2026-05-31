@@ -7,9 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/service/Music/index.dart';
 import 'package:provider/provider.dart';
-// import 'package:fluttertoast/fluttertoast.dart' as ft;
 
 enum MediaGridCardTextLayout { below, overlay }
 
@@ -839,7 +837,7 @@ class _WavySliderPainter extends CustomPainter {
   }
 }
 
-class ObservableMusicGridCard extends StatefulWidget {
+class ObservableMusicGridCard extends StatelessWidget {
   final int index;
   final Music music;
   final VoidCallback? onTap;
@@ -847,54 +845,23 @@ class ObservableMusicGridCard extends StatefulWidget {
   const ObservableMusicGridCard({
     super.key,
     required this.music,
-    this.onTap,
     required this.index,
+    this.onTap,
   });
-
-  @override
-  State<ObservableMusicGridCard> createState() =>
-      _ObservableMusicGridCardState();
-}
-
-class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    debugPrint('initState: ${widget.music.title}');
-    _loadCover();
-  }
-
-  void _loadCover() async {
-    if (widget.music.coverBytes != null &&
-        widget.music.coverBytes!.isNotEmpty) {
-      return;
-    }
-
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-
-    try {
-      final updatedMusic = await MusicService.parse(widget.music.id);
-      if (mounted) {
-        context.read<MusicProvider>().updateCoverBytes(
-          widget.music.id,
-          updatedMusic.coverBytes,
-        );
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final musicProvider = context.read<MusicProvider>();
+
+    // 核心：纯响应式延迟加载
+    // 当卡片滚入屏幕触发 build 且发现没有封面数据时，静默通知全局 Provider 去调度解析
+    final bool hasNoCover =
+        music.coverBytes == null || music.coverBytes!.isEmpty;
+    if (hasNoCover) {
+      musicProvider.loadCoverLazy(music.id);
+    }
 
     // 角标背景颜色适配
     final badgeBackground = colorScheme.surfaceContainerHigh.withValues(
@@ -902,12 +869,14 @@ class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
     );
 
     return MediaOverlayCard(
-      title: widget.music.title,
-      subtitle: widget.music.artist,
-      coverBytes: widget.music.coverBytes,
+      title: music.title,
+      subtitle: music.artist,
+      coverBytes: music.coverBytes,
       fallbackIcon: Icons.music_note_rounded,
-      onTap: widget.onTap,
-      isLoading: _isLoading, // 将加载状态传给公共组件，使其自动在没图时渲染菊花图
+      onTap: onTap,
+      // 优化加载动画：如果正在读取中，可以向 MediaOverlayCard 传递正在加载状态
+      // 这里我们可以通过检查 Provider 中的全局锁 _loadingCoverIds 状态来得知当前这首歌是不是正在解析中
+      isLoading: hasNoCover && musicProvider.isCoverLoading(music.id),
       badge: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
@@ -918,7 +887,7 @@ class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
           borderRadius: BorderRadius.circular(999), // 椭圆胶囊
         ),
         child: Text(
-          '#${widget.index + 1}',
+          '#${index + 1}',
           style: textTheme.labelSmall?.copyWith(
             color: colorScheme.onSurface,
             fontWeight: FontWeight.w700,
@@ -967,73 +936,42 @@ class SongTile extends StatelessWidget {
   }
 }
 
-class ObservableMusicListItem extends StatefulWidget {
+class ObservableMusicListItem extends StatelessWidget {
   final Music music;
 
   const ObservableMusicListItem({super.key, required this.music});
 
   @override
-  State<ObservableMusicListItem> createState() =>
-      _ObservableMusicListItemState();
-}
-
-class _ObservableMusicListItemState extends State<ObservableMusicListItem> {
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    debugPrint('initState: ${widget.music.title}');
-    _loadCover();
-  }
-
-  void _loadCover() async {
-    if (widget.music.coverBytes != null &&
-        widget.music.coverBytes!.isNotEmpty) {
-      return;
-    }
-
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-
-    try {
-      final updatedMusic = await MusicService.parse(widget.music.id);
-      if (mounted) {
-        setState(() {
-          context.read<MusicProvider>().updateCoverBytes(
-            widget.music.id,
-            updatedMusic.coverBytes,
-          );
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final musicProvider = context.read<MusicProvider>();
+
+    // 利用 context.select 进行高精度、粒度化追踪
+    // 只有当当前播放歌曲的 ID 发生切换，且与本组件相关时，本组件才会重新 build。
+    // 其他任何音量改变、歌词更新、队列重排，都不会影响到当前这一行的渲染！
     final isCurrent = context.select<MusicProvider, bool>(
-      (p) => p.currentMusic?.id == widget.music.id,
+      (p) => p.currentMusic?.id == music.id,
     );
 
+    // 纯响应式的延迟加载触发表：
+    // 当视图滑到可见区域执行 build，且发现该音频未携带封面时，静默触发全局 Provider 去调度解析
+    if (music.coverBytes == null || music.coverBytes!.isNotEmpty == false) {
+      musicProvider.loadCoverLazy(music.id);
+    }
+
     return SongTile(
-      music: widget.music,
+      music: music,
+      isCurrent: isCurrent,
       onTap: () {
-        musicProvider.playFromLibrary(widget.music);
+        musicProvider.playFromLibrary(music);
         context.push("/music-detail");
       },
       onPressed: () {
-        final currentMusic = musicProvider.currentMusic;
-        if (currentMusic == null || currentMusic.id != widget.music.id) {
-          musicProvider.playFromLibrary(widget.music);
+        if (!isCurrent) {
+          musicProvider.playFromLibrary(music);
         } else {
           musicProvider.togglePlay();
         }
       },
-      isCurrent: isCurrent,
     );
   }
 }

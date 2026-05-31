@@ -133,30 +133,20 @@ class _FilesPageState extends State<FilesPage>
   // ==========================================
 
   void _updateGroupsIfNeeded(List<Music> currentSongs) {
-    // 只有当歌曲列表的引用真的发生改变时，才重新计算分组
-    if (identical(_lastSongsReference, currentSongs)) return;
 
-    _lastSongsReference = currentSongs;
-
-    // 1. 文件夹分组
     final folders = <String, List<Music>>{};
-    // 2. 专辑分组
     final albums = <String, List<Music>>{};
-    // 3. 艺术家分组
     final artists = <String, List<Music>>{};
 
     for (final song in currentSongs) {
-      // 文件夹
       folders.putIfAbsent(p.dirname(song.id), () => []).add(song);
 
-      // 专辑
       final albumName = song.album?.trim();
       final albumKey = (albumName != null && albumName.isNotEmpty)
           ? albumName
           : '未知专辑';
       albums.putIfAbsent(albumKey, () => []).add(song);
 
-      // 艺术家
       artists.putIfAbsent(song.artist, () => []).add(song);
     }
 
@@ -302,7 +292,7 @@ class _FilesPageState extends State<FilesPage>
                     itemBuilder: (context, i) {
                       final entry = entries[i];
 
-                      // 使用 firstWhereOrNull 逻辑思维或直接高效获取封面
+                      // 1. 挑出一首带有封面的歌，如果都没有，就拿第一首歌当代表
                       final coverSong = entry.value.firstWhere(
                         (song) =>
                             song.coverBytes != null &&
@@ -310,11 +300,24 @@ class _FilesPageState extends State<FilesPage>
                         orElse: () => entry.value.first,
                       );
 
+                      // 🌟 2. 关键补丁：如果连作为代表的 coverSong 都没有封面，
+                      // 说明这个分组的所有歌都没洗出封面呢，立刻对这首代表歌曲发起后台懒加载！
+                      if (coverSong.coverBytes == null ||
+                          coverSong.coverBytes!.isEmpty) {
+                        context.read<MusicProvider>().loadCoverLazy(
+                          coverSong.id,
+                        );
+                      }
+
                       return MediaOverlayCard(
                         title: titleBuilder(entry),
                         subtitle: "${entry.value.length} 首",
                         coverBytes: coverSong.coverBytes,
                         fallbackIcon: emptyIcon,
+                        // 智能化转菊花：只要当前作为代表的歌还在后台解析中，卡片就展示 loading 动画
+                        isLoading: context.select<MusicProvider, bool>(
+                          (p) => p.isCoverLoading(coverSong.id),
+                        ),
                         onTap: () {
                           context.push(
                             "/user/files/album-detail",
@@ -322,7 +325,7 @@ class _FilesPageState extends State<FilesPage>
                           );
                         },
                       );
-                    },
+                    }
                   ),
                 ),
             ],

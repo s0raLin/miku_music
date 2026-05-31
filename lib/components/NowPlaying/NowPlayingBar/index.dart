@@ -21,16 +21,10 @@ class NowPlayingBar extends StatelessWidget {
       // 采用 M3 规范的 surfaceContainer 颜色
       color: cs.surfaceContainer,
 
-      child: SafeArea(
-        top: false, // 顶部不需要
-        left: false,
-        right: false,
-        bottom: true, // 只处理底部
-        child: InkWell(
+      child: InkWell(
           onTap: () => context.push("/music-detail"),
           child: SizedBox(
-            height: 72,
-            width: double.infinity,
+            height: 72 ,
             child: Stack(
               children: [
                 // 1. 全端统一：顶部的迷你触控进度条（吸附在容器上边缘）
@@ -61,7 +55,6 @@ class NowPlayingBar extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }

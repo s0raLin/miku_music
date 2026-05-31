@@ -7,7 +7,6 @@ import 'package:myapp/components/SideBar/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
-
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -29,7 +28,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
     windowManager.addListener(this); // 注册监听
   }
 
-  // 【最关键】拦截关闭事件
+  // 拦截关闭事件
   @override
   void onWindowClose() async {
     await windowManager.hide(); // 隐藏到托盘
@@ -41,9 +40,10 @@ class _MainPageState extends State<MainPage> with WindowListener {
     super.dispose();
   }
 
+  // 修复点：移除了多余的 setState(() {});
+  // StatefulNavigationShell 的 goBranch 会自行处理分支切换引起的局部或整体通知刷新。
   void onTabChanged(int idx) {
     widget.navigationShell.goBranch(idx);
-    setState(() {});
   }
 
   @override
@@ -74,13 +74,12 @@ class _MainPageState extends State<MainPage> with WindowListener {
     return Scaffold(
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
-
       body: Row(
         children: [
           SideBar(currentIndex: currentIndex, onTap: onTabChanged),
           const VerticalDivider(thickness: 1, width: 1),
 
-          //主内容区
+          // 主内容区
           Expanded(
             child: Column(
               children: [
@@ -118,8 +117,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
         ],
       ),
       floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,
-
-      // ── 2. 完美的底部导航栏裁剪收缩动画 ──
+      // ── 底部导航栏裁剪收缩动画 ──
       bottomNavigationBar: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.fastOutSlowIn,
@@ -129,7 +127,6 @@ class _MainPageState extends State<MainPage> with WindowListener {
           // ClipRect 会把超出当前 Container 高度范围的所有子内容无情裁剪掉
           child: OverflowBox(
             // OverflowBox 允许子组件打破父级的 0 高度限制，强行按照设定的最大高度去渲染
-            // 这样 BottomBar 内部就不会因为空间变小而崩溃或者撑开父容器
             alignment: Alignment.bottomCenter,
             minHeight: totalBottomBarHeight,
             maxHeight: totalBottomBarHeight,

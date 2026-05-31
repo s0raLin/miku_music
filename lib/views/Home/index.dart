@@ -46,16 +46,16 @@ class _HomePageState extends State<HomePage> {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
-    // 根据 M3 黄金比例计算轮播图高度
-    final double carouselHeight = (MediaQuery.sizeOf(context).width * 0.52)
-        .clamp(160.0, 220.0);
+    // 修复点：去掉 width == 0 的直接返回拦截。
+    // clamp(160.0, 220.0) 保证了即使在一开始 width 为 0 时，高度也会被安全的限制在 160.0，不会引发崩溃或导致页面空白。
+    final size = MediaQuery.sizeOf(context);
+    final double carouselHeight = (size.width * 0.52).clamp(160.0, 220.0);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── 1. 标准 Material 3 顶栏（去毛玻璃，纯色联动） ─────────────────────────
           Header(
             pinned: true,
             leading: IconButton(

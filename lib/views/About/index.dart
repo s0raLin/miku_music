@@ -275,6 +275,7 @@ class _LinksCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,10 +284,7 @@ class _LinksCard extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             '链接',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: cs.onSurfaceVariant,
-              letterSpacing: 0.6,
-            ),
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         Card(

@@ -57,7 +57,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
               },
               icon: const Icon(Icons.menu),
             ),
-            title: const Text("个人主页"),
+            title: Text(
+              "个人主页",
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             actions: [
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),

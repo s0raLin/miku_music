@@ -23,7 +23,7 @@ class NowPlayingBar extends StatelessWidget {
       child: InkWell(
         onTap: () => context.push("/music-detail"),
         child: SizedBox(
-          height: 56,
+          height: 72,
           child: Stack(
             children: [
               // 1. 全端统一：顶部的迷你触控进度条（吸附在容器上边缘）
@@ -37,7 +37,7 @@ class NowPlayingBar extends StatelessWidget {
               // 2. 主体内容行：弹性自适应，不再用 width 判断宽度
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                   child: Row(
                     children: [
                       // 左侧：歌曲信息（自动占据剩余空间的最左侧）
@@ -80,17 +80,17 @@ class _TrackInfoTile extends StatelessWidget {
             child: music.coverBytes != null && music.coverBytes!.isNotEmpty
                 ? Image.memory(
                     music.coverBytes!,
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     fit: BoxFit.cover,
                   )
                 : Container(
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     color: cs.surfaceContainerHighest,
                     child: Icon(
                       Icons.music_note_rounded,
-                      size: 24,
+                      size: 28,
                       color: cs.onSurfaceVariant,
                     ),
                   ),

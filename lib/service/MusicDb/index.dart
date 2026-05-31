@@ -30,7 +30,7 @@ class MusicDbService {
       final docDir = await getApplicationDocumentsDirectory();
       final dbPath = "${docDir.path}/m3_music.db";
 
-      // ⚠️ 关键点：调用构造函数初始化 Rust 的 DbManager
+      // 关键点：调用构造函数初始化 Rust 的 DbManager
       // 注：FRB 通常会额外生成一个静态方法或顶层构造函数，如 rust_api.DbManager.newInstance(dbPath: dbPath)
       // 如果你的本地没有 newInstance，可以直接看看生成文件里是否有类似 `crateApiAudioDbDbManagerNew({required String dbPath})` 的工厂方法。
       // 这里假设你用的是工厂方法或关联函数：

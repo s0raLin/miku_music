@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -29,34 +30,10 @@ class AboutPage extends StatelessWidget {
             centerTitle: false,
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             sliver: SliverList.list(
               children: [
-                _AppBanner(version: version),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MetricCard(
-                        icon: Icons.new_releases_outlined,
-                        label: '版本号',
-                        value: 'v$version',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _MetricCard(
-                        icon: Icons.developer_board_outlined,
-                        label: '构建号',
-                        value: buildNumber,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const _TechStackCard(),
-                const SizedBox(height: 8),
-                const _FeaturesCard(),
+                _AppBanner(version: version, buildNumber: buildNumber),
                 const SizedBox(height: 8),
                 const _LinksCard(),
                 const SizedBox(height: 24),
@@ -74,65 +51,52 @@ class AboutPage extends StatelessWidget {
 // 应用标识 Banner
 // ─────────────────────────────────────────────────────────────────────────────
 class _AppBanner extends StatelessWidget {
-  const _AppBanner({required this.version});
+  const _AppBanner({required this.version, required this.buildNumber});
 
   final String version;
+  final String buildNumber;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return Card.filled(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.asset(
+            MyAssets.mikulogo,
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Text(
+          'M3Music',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: cs.onSurface,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '跨平台音乐播放器',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 6,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.asset(
-                MyAssets.mikulogo,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'M3Music',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '跨平台音乐播放器',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 6,
-                    children: [
-                      _VersionBadge(label: 'v$version'),
-                      _VersionBadge(label: 'Stable', filled: true),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            _VersionBadge(label: 'v$version'),
+            _VersionBadge(label: buildNumber, filled: true),
           ],
         ),
-      ),
+      ],
     );
   }
 }
@@ -165,282 +129,98 @@ class _VersionBadge extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 指标卡片 — M3 OutlinedCard，固定高度避免 IntrinsicHeight
-// ─────────────────────────────────────────────────────────────────────────────
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+// // ─────────────────────────────────────────────────────────────────────────────
+// // 链接列表 — clipBehavior + 标准 ListTile
+// // ─────────────────────────────────────────────────────────────────────────────
+// class _LinksCard extends StatelessWidget {
+//   const _LinksCard();
 
-  final IconData icon;
-  final String label;
-  final String value;
+//   @override
+//   Widget build(BuildContext context) {
+//     return Card(
+//       margin: EdgeInsets.zero,
+//       clipBehavior: Clip.antiAlias,
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           _LinkTile(
+//             icon: Icons.code_rounded,
+//             title: '项目信息',
+//             subtitle: '查看源代码/报告问题',
+//             url: 'https://github.com/s0raLin/miku_music',
+//           ),
+//           const Divider(indent: 56, endIndent: 16, height: 1),
+//           _LinkTile(
+//             icon: Icons.history_rounded,
+//             title: '更新日志',
+//             subtitle: '查看版本动态',
+//             url: 'https://github.com/s0raLin/miku_music/releases',
+//           ),
+//           const Divider(indent: 56, endIndent: 16, height: 1),
+//           _LinkTile(
+//             icon: Icons.gavel_rounded,
+//             title: '开源协议',
+//             subtitle: 'MIT License',
+//             url: 'https://opensource.org/licenses/MIT',
+//           ),
+//           const Divider(indent: 56, endIndent: 16, height: 1),
+//           const _LinkTile(
+//             icon: Icons.favorite_rounded,
+//             title: '开发者',
+//             subtitle: '蒼璃 · Made with care',
+//             url: '',
+//             isAction: false,
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+// // ─────────────────────────────────────────────────────────────────────────────
+// // 链接行
+// // ─────────────────────────────────────────────────────────────────────────────
+// class _LinkTile extends StatelessWidget {
+//   const _LinkTile({
+//     required this.icon,
+//     required this.title,
+//     required this.subtitle,
+//     required this.url,
+//     this.isAction = true,
+//   });
 
-    return Card.outlined(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: cs.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+//   final IconData icon;
+//   final String title;
+//   final String subtitle;
+//   final String url;
+//   final bool isAction;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 技术栈卡片 — 独立全宽卡片，使用标准 ListTile
-// ─────────────────────────────────────────────────────────────────────────────
-class _TechStackCard extends StatelessWidget {
-  const _TechStackCard();
+//   Future<void> _launch(BuildContext context) async {
+//     final uri = Uri.parse(url);
+//     if (await canLaunchUrl(uri)) {
+//       await launchUrl(uri, mode: LaunchMode.externalApplication);
+//     }
+//   }
 
-  static const _items = [
-    (label: '框架', value: 'Flutter 3.x'),
-    (label: '设计系统', value: 'Material 3'),
-    (label: '分发平台', value: 'GitHub'),
-    (label: '协议', value: 'MIT License'),
-  ];
+//   @override
+//   Widget build(BuildContext context) {
+//     final cs = Theme.of(context).colorScheme;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: cs.secondary),
-                const SizedBox(width: 8),
-                Text(
-                  '技术栈',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 20, indent: 16, endIndent: 16),
-          for (final item in _items)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    item.label,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                  Text(
-                    item.value,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 12),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 核心特性卡片 — 独立全宽，M3 AssistChip 替代自定义 Chip
-// ─────────────────────────────────────────────────────────────────────────────
-class _FeaturesCard extends StatelessWidget {
-  const _FeaturesCard();
-
-  static const _features = ['动态主题', '歌词同步', '本地管理', '跨平台'];
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.auto_awesome_rounded, size: 18, color: cs.tertiary),
-                const SizedBox(width: 8),
-                Text(
-                  '核心特性',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 20),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _features
-                  .map(
-                    (f) => Chip(
-                      label: Text(f, style: theme.textTheme.labelSmall),
-                      visualDensity: VisualDensity.compact,
-                      side: BorderSide.none,
-                      backgroundColor: cs.secondaryContainer,
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 链接列表 — clipBehavior + 标准 ListTile
-// ─────────────────────────────────────────────────────────────────────────────
-class _LinksCard extends StatelessWidget {
-  const _LinksCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _LinkTile(
-            icon: Icons.code_rounded,
-            title: '源代码',
-            subtitle: 'GitHub / s0raLin',
-            url: 'https://github.com/s0raLin/miku_music',
-          ),
-          const Divider(indent: 56, endIndent: 16, height: 1),
-          _LinkTile(
-            icon: Icons.history_rounded,
-            title: '更新日志',
-            subtitle: '查看版本动态',
-            url: 'https://github.com/s0raLin/miku_music/releases',
-          ),
-          const Divider(indent: 56, endIndent: 16, height: 1),
-          _LinkTile(
-            icon: Icons.gavel_rounded,
-            title: '开源协议',
-            subtitle: 'MIT License',
-            url: 'https://opensource.org/licenses/MIT',
-          ),
-          const Divider(indent: 56, endIndent: 16, height: 1),
-          const _LinkTile(
-            icon: Icons.favorite_rounded,
-            title: '开发者',
-            subtitle: '蒼璃 · Made with care',
-            url: '',
-            isAction: false,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 链接行
-// ─────────────────────────────────────────────────────────────────────────────
-class _LinkTile extends StatelessWidget {
-  const _LinkTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.url,
-    this.isAction = true,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String url;
-  final bool isAction;
-
-  Future<void> _launch(BuildContext context) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return ListTile(
-      leading: Icon(icon, color: cs.onSurfaceVariant),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: isAction
-          ? Icon(
-              Icons.open_in_new_rounded,
-              size: 18,
-              color: cs.onSurfaceVariant,
-            )
-          : null,
-      onTap: isAction ? () => _launch(context) : null,
-    );
-  }
-}
+//     return ListTile(
+//       leading: Icon(icon, color: cs.onSurfaceVariant),
+//       title: Text(title),
+//       subtitle: Text(subtitle),
+//       trailing: isAction
+//           ? Icon(
+//               Icons.open_in_new_rounded,
+//               size: 18,
+//               color: cs.onSurfaceVariant,
+//             )
+//           : null,
+//       onTap: isAction ? () => _launch(context) : null,
+//     );
+//   }
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 页脚
@@ -458,6 +238,318 @@ class _FooterText extends StatelessWidget {
         ),
         textAlign: TextAlign.center,
       ),
+    );
+  }
+}
+
+// 彩色图标容器
+class _ColoredIcon extends StatelessWidget {
+  const _ColoredIcon({
+    required this.icon,
+    required this.backgroundColor,
+    required this.iconColor,
+  });
+
+  final IconData icon;
+  final Color backgroundColor;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, color: iconColor, size: 18),
+    );
+  }
+}
+
+// _LinksCard — 增加 section 标题 + 彩色图标
+class _LinksCard extends StatelessWidget {
+  const _LinksCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            '链接',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ),
+        Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LinkTile(
+                icon: Icons.code_rounded,
+                iconBg: cs.primaryContainer,
+                iconColor: cs.onPrimaryContainer,
+                title: '项目信息',
+                subtitle: '查看源代码 / 报告问题',
+                url: 'https://github.com/s0raLin/miku_music',
+              ),
+              const Divider(indent: 66, endIndent: 16, height: 1),
+              _LinkTile(
+                icon: Icons.history_rounded,
+                iconBg: cs.tertiaryContainer,
+                iconColor: cs.onTertiaryContainer,
+                title: '更新日志',
+                subtitle: '查看版本动态',
+                url: 'https://github.com/s0raLin/miku_music/releases',
+              ),
+              const Divider(indent: 66, endIndent: 16, height: 1),
+              _LinkTile(
+                icon: Icons.gavel_rounded,
+                iconBg: cs.secondaryContainer,
+                iconColor: cs.onSecondaryContainer,
+                title: '开源协议',
+                subtitle: 'MIT License',
+                url: 'https://opensource.org/licenses/MIT',
+              ),
+              const Divider(indent: 66, endIndent: 16, height: 1),
+              Builder(
+                builder: (ctx) => ListTile(
+                  leading: _ColoredIcon(
+                    icon: Icons.favorite_rounded,
+                    backgroundColor: const Color(0xFFFFE4EF),
+                    iconColor: const Color(0xFF993556),
+                  ),
+                  title: const Text('开发者'),
+                  subtitle: const Text('蒼璃 · Made with care'),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  onTap: () => _showDeveloperDialog(ctx),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// _LinkTile — 替换 leading 为彩色容器
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.url,
+  }) : isAction = true;
+
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final String url;
+  final bool isAction;
+
+  Future<void> _launch(BuildContext context) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return ListTile(
+      leading: _ColoredIcon(
+        icon: icon,
+        backgroundColor: iconBg,
+        iconColor: iconColor,
+      ),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: isAction
+          ? Icon(
+              Icons.open_in_new_rounded,
+              size: 16,
+              color: cs.onSurfaceVariant,
+            )
+          : null,
+      onTap: isAction ? () => _launch(context) : null,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 开发者联系弹窗
+// ─────────────────────────────────────────────────────────────────────────────
+void _showDeveloperDialog(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    useRootNavigator: true,
+    showDragHandle: true,
+    builder: (_) => const _DeveloperSheet(),
+  );
+}
+
+class _DeveloperSheet extends StatelessWidget {
+  const _DeveloperSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 头部
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.person_rounded,
+                    color: cs.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '蒼璃',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Made with care',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            // 联系方式列表
+            _ContactTile(
+              icon: Icons.chat_bubble_rounded,
+              iconBg: const Color(0xFFE3F2FD),
+              iconColor: const Color(0xFF1565C0),
+              label: 'QQ',
+              value: '892581781',
+            ),
+            _ContactTile(
+              icon: Icons.email_rounded,
+              iconBg: cs.tertiaryContainer,
+              iconColor: cs.onTertiaryContainer,
+              label: '邮箱',
+              value: '892581781@qq.com',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 单条联系方式 — 点击复制
+// ─────────────────────────────────────────────────────────────────────────────
+class _ContactTile extends StatefulWidget {
+  const _ContactTile({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String label;
+  final String value;
+
+  @override
+  State<_ContactTile> createState() => _ContactTileState();
+}
+
+class _ContactTileState extends State<_ContactTile> {
+  bool _copied = false;
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: widget.value));
+    if (!mounted) return;
+    setState(() => _copied = true);
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) setState(() => _copied = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: widget.iconBg,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(widget.icon, color: widget.iconColor, size: 18),
+      ),
+      title: Text(widget.label),
+      subtitle: Text(widget.value),
+      trailing: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: _copied
+            ? Icon(
+                Icons.check_circle_rounded,
+                key: const ValueKey('check'),
+                color: cs.primary,
+                size: 20,
+              )
+            : Icon(
+                Icons.copy_rounded,
+                key: const ValueKey('copy'),
+                color: cs.onSurfaceVariant,
+                size: 20,
+              ),
+      ),
+      onTap: _copy,
     );
   }
 }

@@ -1,5 +1,4 @@
 class MyAssets {
-  static const String mikulogo = "assets/app_icon.png";
   static const String avatar = "assets/miku.png";
   static const String music_note = "assets/music.jpg";
   static const String home = "assets/h.png";

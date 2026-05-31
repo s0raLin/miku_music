@@ -1,5 +1,6 @@
 // ─── 右侧边栏播放队列组件 ──────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -135,7 +136,10 @@ class PlaybackQueueDrawer extends StatelessWidget {
                                     Icons.close_rounded,
                                     size: 16,
                                   ),
-                                  onPressed: () => mp.removeFromQueue(index),
+                                  onPressed: () {
+                                    context.pop();
+                                    mp.removeFromQueue(index);
+                                  },
                                 ),
                                 onTap: () => mp.playByIndex(index),
                               );

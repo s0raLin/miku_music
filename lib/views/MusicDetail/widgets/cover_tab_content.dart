@@ -155,7 +155,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
         ),
         const SizedBox(height: 24),
 
-        // 💡 仅用于包裹进度条与时间文本的 StreamBuilder
+        // 仅用于包裹进度条与时间文本的 StreamBuilder
         StreamBuilder<PositionData>(
           stream: musicProvider.positionDataStream,
           builder: (context, snapshot) {

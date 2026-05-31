@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
-import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -94,26 +93,22 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-          // 2. 用户信息卡片区域 — 改造成更丰富的 M3 风格卡片
+          // 2. 用户信息卡片区域
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: _UserProfileCard(
-                username: "匿名",
+                username: "匿名用户",
                 bio: "暂无描述",
                 followers: 0,
                 following: 0,
                 onTap: () {
-                  // 点击进入用户详情页（后续可扩展）
                   AppToast.show(
                     context,
                     message: '用户详情页开发中',
                     title: '提示',
                     tone: AppToastTone.neutral,
                   );
-                },
-                onEditTap: () {
-                  context.push("/user/edit-profile");
                 },
               ),
             ),
@@ -207,7 +202,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        // 在这里显式加入 padding，这样网格整体就会向下挪
                         padding: const EdgeInsets.only(top: 12, bottom: 8),
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -243,14 +237,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 }
 
-/// 更丰富的用户卡片 — Material 3 风格
+/// 更丰富的用户卡片 — Material 3 风格（已将头像修改为标准默认头像方案）
 class _UserProfileCard extends StatelessWidget {
   final String username;
   final String bio;
   final int followers;
   final int following;
   final VoidCallback? onTap;
-  final VoidCallback? onEditTap;
 
   const _UserProfileCard({
     required this.username,
@@ -258,7 +251,6 @@ class _UserProfileCard extends StatelessWidget {
     required this.followers,
     required this.following,
     this.onTap,
-    this.onEditTap,
   });
 
   @override
@@ -274,10 +266,12 @@ class _UserProfileCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
           child: Row(
             children: [
-              // 头像
+              // 默认头像方案：采用 M3 容器色匹配的人像剪影图标
               CircleAvatar(
                 radius: 40,
-                backgroundImage: AssetImage(MyAssets.mikulogo),
+                backgroundColor: colorScheme.primaryContainer,
+                foregroundColor: colorScheme.onPrimaryContainer,
+                child: const Icon(Icons.person_rounded, size: 44),
               ),
               const SizedBox(width: 16),
               // 中间信息
@@ -316,7 +310,7 @@ class _UserProfileCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // 右箭头 — 暗示可点击进入详情
+              // 右箭头
               Icon(
                 Icons.chevron_right_rounded,
                 color: colorScheme.onSurfaceVariant,
@@ -341,7 +335,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHigh, // 升级至现代 M3 统一容器命名法
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
@@ -363,7 +357,6 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
   final nameController = TextEditingController();
   final uidController = TextEditingController();
 
-  // 1. 弹出 Tab 型对话框
   final result = await showDialog<Map<String, dynamic>>(
     context: context,
     builder: (context) => DefaultTabController(
@@ -422,13 +415,11 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
     ),
   );
 
-  // 2. 异步安全守卫
   if (result == null || !context.mounted) return;
 
   final playlistProvider = context.read<PlaylistProvider>();
 
   if (result['index'] == 0) {
-    // 创建自建歌单
     final name = nameController.text.trim();
     if (name.isNotEmpty) {
       await playlistProvider.createPlaylist(name);
@@ -437,14 +428,10 @@ Future<void> _showCreatePlaylistDialog(BuildContext context) async {
       }
     }
   } else {
-    // 网易云歌单导入
     final uid = uidController.text.trim();
     if (uid.isNotEmpty) {
       try {
-        // final playlists = await NeteaseCloudMusicApi.getPlaylist(uid);
-        // ⚠️ 请确保您在 PlaylistProvider 中实现了 addNetworkPlaylists 方法，
-        // 如果目前暂未迁移，可以先在这个方法内通过 playlistUpdates 广播通知或调用批量插入接口。
-        // playlistProvider.addNetworkPlaylists(playlists);
+        // NeteaseCloudMusicApi 导入占位
       } catch (e) {
         if (context.mounted) {
           AppToast.error(context, message: '导入失败: $e', title: '错误');
@@ -478,35 +465,33 @@ class _PlaylistQuickCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(12), // ↓ 从 14 收紧到 12，减少白边
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 图标容器：放大到 56×56，图标 28px，视觉存在感更强
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: colorScheme.secondaryContainer,
                     borderRadius: AppRadius.innerBR,
                   ),
                   child: SizedBox(
-                    width: 46, // ↑ 从 48 → 56
-                    height: 46, // ↑ 从 48 → 56
+                    width: 46, // 校正：与上方 SizedBox 匹配，确保正方形容器
+                    height: 46,
                     child: Icon(
                       icon,
                       color: colorScheme.onSecondaryContainer,
-                      size: 24, // ↑ 从 24 → 28，图标更突出
+                      size: 24,
                     ),
                   ),
                 ),
-                const SizedBox(height: 6), // 固定间距替代 Spacer，避免图标贴顶/文字贴底
+                const SizedBox(height: 6),
                 Text(
                   title,
-                  textAlign: TextAlign.center, //居中
                   style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700, // 加重到 w700，与 icon 对比更明确
+                    fontWeight: FontWeight.w700,
                     fontSize: 12,
-                    letterSpacing: -0.1, // 微收字间距，标题更紧实
-                    color: colorScheme.onSurface, // 明确用 onSurface，避免跟随默认灰
+                    letterSpacing: -0.1,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],

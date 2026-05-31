@@ -68,7 +68,7 @@ class _AppBanner extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
-            MyAssets.mikulogo,
+            MyAssets.app_icon,
             width: 80,
             height: 80,
             fit: BoxFit.cover,

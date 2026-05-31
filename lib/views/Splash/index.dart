@@ -139,7 +139,7 @@ class _SplashPageState extends State<SplashPage>
                       height: 108,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => Image.asset(
-                        MyAssets.mikulogo,
+                        MyAssets.app_icon,
                         width: 108,
                         height: 108,
                         fit: BoxFit.contain,

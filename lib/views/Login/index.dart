@@ -126,7 +126,7 @@ class _LoginViewState extends State<LoginView> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(
-                    MyAssets.mikulogo,
+                    MyAssets.app_icon,
                     width: 100,
                     height: 100,
                     fit: BoxFit.contain,

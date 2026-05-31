@@ -51,12 +51,20 @@ class InitializationService {
       debugPrint("Warning: Could not load .env file, using default values.");
     }
 
-    JustAudioMediaKit.ensureInitialized(
-      android: Platform.isAndroid,
-      windows: Platform.isWindows,
-      linux: Platform.isLinux,
-      macOS: Platform.isMacOS,
-    );
+    try {
+      JustAudioMediaKit.ensureInitialized(
+        android: false,
+        iOS: false,
+        windows: Platform.isWindows,
+        linux: Platform.isLinux,
+        macOS: Platform.isMacOS,
+      );
+      debugPrint("JustAudioMediaKit 初始化成功");
+    } catch (e, stackTrace) {
+      // 就算报错了，也只是打印出来，不破坏整个主流程
+      debugPrint("❌ JustAudioMediaKit 初始化失败: $e");
+      debugPrint("堆栈信息: $stackTrace");
+    }
 
     //初始化窗口管理器
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {

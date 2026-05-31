@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/router/IndexRouter/index.dart'; // 确保 rootRoutes 从这里暴露
 import 'package:provider/provider.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 
@@ -34,5 +33,5 @@ extension RouterCtx on BuildContext {
     }
   }
 
-  
+
 }

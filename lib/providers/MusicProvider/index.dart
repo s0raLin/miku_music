@@ -280,23 +280,34 @@ class MusicProvider extends ChangeNotifier {
     return _loadingCoverIds.contains(musicId);
   }
 
+  // MusicProvider 里加一个"已经尝试过、但确实没有封面"的集合
+  final Set<String> _noCoverIds = {};
+
+  bool hasNoCover(String musicId) => _noCoverIds.contains(musicId);
+
   Future<void> loadCoverLazy(String musicId) async {
-    // 如果已经有封面，或者该歌曲当前正在解析中，则直接拦截，杜绝重复 I/O
+    // 新增：已确认无封面的歌曲，直接放行，不再重试
+    if (_noCoverIds.contains(musicId)) return;
     if (_loadingCoverIds.contains(musicId)) return;
 
     _loadingCoverIds.add(musicId);
+    notifyListeners(); // 让 isLoading 立即变 true
 
     try {
-      // 异步执行底层解析
       final updated = await MusicService.parse(musicId);
       if (updated.coverBytes != null && updated.coverBytes!.isNotEmpty) {
         _updateCoverBytes(musicId, updated.coverBytes);
+      } else {
+        // 解析完了，但确实没有封面，记录进黑名单，不再重试
+        _noCoverIds.add(musicId);
       }
     } catch (e) {
       debugPrint('懒加载音频封面失败 [$musicId]: $e');
+      // 失败也加入黑名单，避免每次 build 都重试
+      _noCoverIds.add(musicId);
     } finally {
-      // 无论成功还是失败，最后必须释放锁
       _loadingCoverIds.remove(musicId);
+      notifyListeners();
     }
   }
 

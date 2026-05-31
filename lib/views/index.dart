@@ -130,7 +130,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
           child: OverflowBox(
             // OverflowBox 允许子组件打破父级的 0 高度限制，强行按照设定的最大高度去渲染
             // 这样 BottomBar 内部就不会因为空间变小而崩溃或者撑开父容器
-            alignment: Alignment.topCenter,
+            alignment: Alignment.bottomCenter,
             minHeight: totalBottomBarHeight,
             maxHeight: totalBottomBarHeight,
             child: BottomBar(currentIndex: currentIndex, onTap: onTabChanged),

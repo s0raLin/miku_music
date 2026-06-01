@@ -46,11 +46,6 @@ class _HomePageState extends State<HomePage> {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
-    // 修复点：去掉 width == 0 的直接返回拦截。
-    // clamp(160.0, 220.0) 保证了即使在一开始 width 为 0 时，高度也会被安全的限制在 160.0，不会引发崩溃或导致页面空白。
-    final size = MediaQuery.sizeOf(context);
-    final double carouselHeight = (size.width * 0.52).clamp(160.0, 220.0);
-
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
@@ -77,21 +72,27 @@ class _HomePageState extends State<HomePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: carouselHeight),
-                child: CarouselView.weighted(
-                  itemSnapping: true,
-                  controller: controller,
-                  flexWeights: const <int>[1, 7, 1],
-                  onTap: (index) => controller.animateToItem(
-                    index,
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOutCubic,
-                  ),
-                  children: ImageInfo.values
-                      .map((image) => HeroLayoutCard(imageInfo: image))
-                      .toList(),
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final double carouselHeight = (constraints.maxWidth * 0.52)
+                      .clamp(160.0, 220.0);
+                  return SizedBox(
+                    height: carouselHeight,
+                    child: CarouselView.weighted(
+                      itemSnapping: true,
+                      controller: controller,
+                      flexWeights: const <int>[1, 7, 1],
+                      onTap: (index) => controller.animateToItem(
+                        index,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOutCubic,
+                      ),
+                      children: ImageInfo.values
+                          .map((image) => HeroLayoutCard(imageInfo: image))
+                          .toList(),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -137,6 +138,7 @@ class _HomePageState extends State<HomePage> {
           // ── 4. 最近播放横向列表 ─────────────────────────────────────────────
           history.isEmpty
               ? SliverToBoxAdapter(
+                  key: const ValueKey('history-empty'),
                   child: AppPanel(
                     child: Row(
                       children: [
@@ -160,6 +162,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 )
               : SliverToBoxAdapter(
+                  key: const ValueKey('history-list'),
                   child: SizedBox(
                     height: 180,
                     child: ListView.separated(

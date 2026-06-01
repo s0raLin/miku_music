@@ -837,7 +837,7 @@ class _WavySliderPainter extends CustomPainter {
   }
 }
 
-class ObservableMusicGridCard extends StatelessWidget {
+class ObservableMusicGridCard extends StatefulWidget {
   final int index;
   final Music music;
   final VoidCallback? onTap;
@@ -850,20 +850,51 @@ class ObservableMusicGridCard extends StatelessWidget {
   });
 
   @override
+  State<ObservableMusicGridCard> createState() =>
+      _ObservableMusicGridCardState();
+}
+
+class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
+  void _triggerLazyCover() {
+    final hasNoCover =
+        widget.music.coverBytes == null || widget.music.coverBytes!.isEmpty;
+    if (hasNoCover) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<MusicProvider>().loadCoverLazy(widget.music.id);
+        }
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _triggerLazyCover();
+  }
+
+  @override
+  void didUpdateWidget(ObservableMusicGridCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.music.id != widget.music.id) {
+      _triggerLazyCover();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final musicProvider = context.read<MusicProvider>();
+    final musicProvider = context.watch<MusicProvider>();
 
-    // 核心：纯响应式延迟加载
-    // 当卡片滚入屏幕触发 build 且发现没有封面数据时，静默通知全局 Provider 去调度解析
+    final music = musicProvider.library.firstWhere(
+      (m) => m.id == widget.music.id,
+      orElse: () => widget.music,
+    );
+
     final bool hasNoCover =
         music.coverBytes == null || music.coverBytes!.isEmpty;
-    if (hasNoCover) {
-      musicProvider.loadCoverLazy(music.id);
-    }
 
-    // 角标背景颜色适配
     final badgeBackground = colorScheme.surfaceContainerHigh.withValues(
       alpha: colorScheme.brightness == Brightness.dark ? 0.88 : 0.82,
     );
@@ -873,9 +904,7 @@ class ObservableMusicGridCard extends StatelessWidget {
       subtitle: music.artist,
       coverBytes: music.coverBytes,
       fallbackIcon: Icons.music_note_rounded,
-      onTap: onTap,
-      // 优化加载动画：如果正在读取中，可以向 MediaOverlayCard 传递正在加载状态
-      // 这里我们可以通过检查 Provider 中的全局锁 _loadingCoverIds 状态来得知当前这首歌是不是正在解析中
+      onTap: widget.onTap,
       isLoading: hasNoCover && musicProvider.isCoverLoading(music.id),
       badge: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -884,10 +913,10 @@ class ObservableMusicGridCard extends StatelessWidget {
           border: Border.all(
             color: colorScheme.outlineVariant.withValues(alpha: 0.45),
           ),
-          borderRadius: BorderRadius.circular(999), // 椭圆胶囊
+          borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
-          '#${index + 1}',
+          '#${widget.index + 1}',
           style: textTheme.labelSmall?.copyWith(
             color: colorScheme.onSurface,
             fontWeight: FontWeight.w700,

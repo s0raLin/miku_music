@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/providers/ThemeProvider/index.dart';
-import 'package:provider/provider.dart';
+// import 'package:myapp/providers/ThemeProvider/index.dart';
+// import 'package:provider/provider.dart';
 
 class MusicActionMenu {
   /// 弹出主更多选项菜单

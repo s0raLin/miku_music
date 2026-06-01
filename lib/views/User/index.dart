@@ -56,6 +56,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               },
               icon: const Icon(Icons.menu),
             ),
+            centerTitle: false,
             title: Text(
               "个人主页",
               style: textTheme.titleLarge?.copyWith(

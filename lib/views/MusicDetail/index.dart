@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/providers/PlaylistProvider/index.dart';
+// import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/views/MusicDetail/layout/narrow_layout.dart';
 import 'package:myapp/views/MusicDetail/layout/wide_layout.dart';
 

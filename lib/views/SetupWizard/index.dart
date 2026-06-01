@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:myapp/providers/MusicProvider/index.dart';
+// import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/router/Extensions/router.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Permissions/index.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SetupWizardScreen extends StatefulWidget {

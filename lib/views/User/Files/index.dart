@@ -32,7 +32,6 @@ class _FilesPageState extends State<FilesPage>
   Map<String, List<Music>> _folderGroups = {};
   Map<String, List<Music>> _albumGroups = {};
   Map<String, List<Music>> _artistGroups = {};
-  List<Music>? _lastSongsReference; // 跟踪上次的数据引用
 
   @override
   void initState() {

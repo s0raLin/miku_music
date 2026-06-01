@@ -805,13 +805,17 @@ class _WavySliderPainter extends CustomPainter {
     final double midY = size.height / 2;
     final double trackLeft = hPadding;
     final double trackRight = size.width - hPadding;
-    final double trackWidth = (trackRight - trackLeft).clamp(0.0, double.infinity);
+    final double trackWidth = (trackRight - trackLeft).clamp(
+      0.0,
+      double.infinity,
+    );
     final double thumbX = trackLeft + trackWidth * progress;
 
     if (trackWidth <= 0) return;
 
     // 1. 未播放区域：从滑块右边缘开始绘制水平直线
-    final double inactiveStartX = (thumbX + _SliderSettings.thumbWidth / 2).clamp(trackLeft, trackRight);
+    final double inactiveStartX = (thumbX + _SliderSettings.thumbWidth / 2)
+        .clamp(trackLeft, trackRight);
     if (inactiveStartX < trackRight) {
       canvas.drawLine(
         Offset(inactiveStartX, midY),
@@ -826,7 +830,10 @@ class _WavySliderPainter extends CustomPainter {
 
     // 2. 已播放区域：波浪正弦曲线（终点完美对接滑块左边缘）
     // 🔥 核心优化：波浪终点向左回缩半个滑块宽度，防止浪头刺穿指示器
-    final double waveMaxX = (thumbX - _SliderSettings.thumbWidth / 2).clamp(trackLeft, trackRight);
+    final double waveMaxX = (thumbX - _SliderSettings.thumbWidth / 2).clamp(
+      trackLeft,
+      trackRight,
+    );
 
     if (waveMaxX > trackLeft) {
       final path = Path();
@@ -842,9 +849,11 @@ class _WavySliderPainter extends CustomPainter {
         // 淡出因子改用物理边缘 waveMaxX 计算，确保在撞击滑块前完美收尾
         final double distanceFromThumb = waveMaxX - x;
         final double fadeOutFactor = (distanceFromThumb / 32.0).clamp(0.0, 1.0);
-        final double currentAmplitude = maxAmplitude * fadeInFactor * fadeOutFactor;
+        final double currentAmplitude =
+            maxAmplitude * fadeInFactor * fadeOutFactor;
 
-        final double y = midY + math.sin(relativeX * 2 * math.pi - phase) * currentAmplitude;
+        final double y =
+            midY + math.sin(relativeX * 2 * math.pi - phase) * currentAmplitude;
         path.lineTo(x, y);
       }
       // 严丝合缝地连回滑块左边缘的中轴线
@@ -1130,44 +1139,9 @@ class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
   }
 }
 
-class SongTile extends StatelessWidget {
-  final Music music;
-  final bool isCurrent;
-  final VoidCallback onTap;
-  final VoidCallback onPressed;
-
-  const SongTile({
-    super.key,
-    required this.music,
-    required this.isCurrent,
-    required this.onTap,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isPlaying = context.select<MusicProvider, bool>(
-      (p) => p.player.playing,
-    );
-    return SongListCardTile(
-      title: music.title,
-      subtitle: music.artist,
-      coverBytes: music.coverBytes,
-      fallbackIcon: Icons.music_note_rounded,
-      onTap: onTap,
-      highlighted: isCurrent,
-      trailing: FilledButton(
-        onPressed: onPressed,
-        child: Icon(
-          isCurrent && isPlaying
-              ? Icons.pause_rounded
-              : Icons.play_arrow_rounded,
-        ),
-      ),
-    );
-  }
-}
-
+// ---------------------------------------------------------------------------
+// ObservableMusicListItem
+// ---------------------------------------------------------------------------
 class ObservableMusicListItem extends StatelessWidget {
   final Music music;
 
@@ -1177,33 +1151,47 @@ class ObservableMusicListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final musicProvider = context.read<MusicProvider>();
 
-    // 利用 context.select 进行高精度、粒度化追踪
-    // 只有当当前播放歌曲的 ID 发生切换，且与本组件相关时，本组件才会重新 build。
-    // 其他任何音量改变、歌词更新、队列重排，都不会影响到当前这一行的渲染！
+    // 1. 粒度化追踪：当前歌曲是否正在被选中（高亮）
     final isCurrent = context.select<MusicProvider, bool>(
       (p) => p.currentMusic?.id == music.id,
     );
 
-    // 纯响应式的延迟加载触发表：
-    // 当视图滑到可见区域执行 build，且发现该音频未携带封面时，静默触发全局 Provider 去调度解析
-    if (music.coverBytes == null || music.coverBytes!.isNotEmpty == false) {
+    // 2. 粒度化追踪：全局播放状态
+    final isPlaying = context.select<MusicProvider, bool>(
+      (p) => p.player.playing,
+    );
+
+    // 3. 纯响应式的延迟加载封面触发
+    if (music.coverBytes == null || music.coverBytes!.isEmpty) {
       musicProvider.loadCoverLazy(music.id);
     }
 
-    return SongTile(
-      music: music,
-      isCurrent: isCurrent,
+    return SongListCardTile(
+      title: music.title,
+      subtitle: music.artist,
+      coverBytes: music.coverBytes,
+      fallbackIcon: Icons.music_note_rounded,
+      highlighted: isCurrent,
       onTap: () {
         musicProvider.playFromLibrary(music);
         context.push("/music-detail");
       },
-      onPressed: () {
-        if (!isCurrent) {
-          musicProvider.playFromLibrary(music);
-        } else {
-          musicProvider.togglePlay();
-        }
-      },
+      // 4. 彻底干掉 SongTile 后的多按钮组排放
+      trailing: FilledButton.tonal(
+        onPressed: () {
+          if (!isCurrent) {
+            musicProvider.playFromLibrary(music);
+          } else {
+            musicProvider.togglePlay();
+          }
+        },
+        child: Icon(
+          isCurrent && isPlaying
+              ? Icons.pause_rounded
+              : Icons.play_arrow_rounded,
+          size: 20, // 减小尺寸让胶囊包得更紧凑
+        ),
+      ),
     );
   }
 }

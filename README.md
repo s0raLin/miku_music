@@ -1,4 +1,5 @@
 # M3Music
+
 ![Build macOS](https://github.com/s0raLin/miku_music/actions/workflows/build-macos.yml/badge.svg)
 ![Build Windows](https://github.com/s0raLin/miku_music/actions/workflows/build-windows.yml/badge.svg)
 ![Version](https://img.shields.io/badge/version-1.31.1%2B37-blue)
@@ -17,18 +18,18 @@
 ### 1. 启动与初始化
 
 - 启动页位于 [lib/views/Splash/index.dart](lib/views/Splash/index.dart)，会展示初始化进度和失败重试。
-- 初始化流程由 [lib/providers/StartupProvider/index.dart](lib/providers/StartupProvider/index.dart) 编排，分为 3 步：
+- 初始化流程由 [lib/providers/StartupProvider/index.dart](lib/providers/StartupProvider/index.dart) 编排，分为 4 步：
   - 加载界面设置
   - 扫描本地音乐
   - 恢复播放器状态
+  - 启动完成
 - Android 首次启动会跳转到 [lib/views/SetupWizard/index.dart](lib/views/SetupWizard/index.dart) 申请权限；非 Android 平台启动完成后直接进入首页。
 
 ### 2. 路由与界面结构
 
-- 主导航包含 4 个一级页面：
+- 主导航包含 3 个一级页面：
   - `/home` 首页
   - `/music` 音乐库
-  - `/dashboard` 仪表盘
   - `/user` 我的
 - 附加页面包括：
   - `/settings` 设置
@@ -46,7 +47,7 @@
   - 三种播放模式：顺序播放、随机播放、单曲循环
   - 音量持久化（SharedPreferences）
   - 播放队列管理（增删、替换、清空）
-  - 收藏与播放历史（上限 200 条，持久化到本地）
+  - 收藏与播放历史（上限可配置为 50/100/300/500 条，持久化到本地）
   - 用户歌单 CRUD（含系统歌单：我喜欢、最近播放）
   - LRC 歌词解析与缓存，支持在线搜索与编辑保存
   - 应用版本号读取（package_info_plus）
@@ -63,7 +64,8 @@
 - 当前代码中可确认的设置项包括：
   - 主题模式（浅色/深色/跟随系统）
   - 主题种子色（8 种预设色，含 Material 3 颜色调和 blend.harmonize）
-  - 列表密度（紧凑/正常/宽松）
+  - 列表密度（紧凑/正常）
+  - 进度条样式（直线型/蛇形波浪）
   - 音质选项（低/标准/高）
   - 歌词页是否显示封面
   - 启动时自动播放
@@ -97,8 +99,8 @@
 
 当前仓库还没有统一维护的正式截图，这里先放入占位图，后续可以直接替换同名文件。
 
-| 页面     | 占位图                                                |
-| -------- | ----------------------------------------------------- |
+| 页面     | 占位图                                    |
+| -------- | ----------------------------------------- |
 | 启动页   | ![启动页占位](docs/previews/splash.png)   |
 | 音乐库   | ![音乐库占位](docs/previews/library.png)  |
 | 播放详情 | ![播放详情占位](docs/previews/player.png) |
@@ -112,12 +114,18 @@ lib/
 ├── api/                 # 网络请求与数据模型
 ├── components/          # 通用组件与播放控制条
 ├── config/              # 环境配置读取
-├── contants/            # 资源与主题常量
+├── constants/           # 资源与主题常量
 ├── model/               # 本地业务模型
 ├── providers/           # 全局状态
 ├── router/              # go_router 路由配置
 ├── service/             # 初始化、设置、音频、文件等服务
+├── src/                 # Rust FFI 生成代码
+├── utils/               # 工具类
 └── views/               # 页面视图
+
+rust/
+└── src/
+    └── api/             # Rust 扫描与音频解析逻辑 (jwalk, lofty)
 
 backend/
 └── ...                  # 可选后端服务
@@ -158,17 +166,3 @@ flutter run
 - Linux / Windows：已包含桌面窗口初始化与本地扫描逻辑
 - iOS：工程存在，但本 README 未额外声明已验证的本地权限流程
 - macOS：工程存在，窗口管理已接入，但音频链路未在文档中视为已验证
-
-## 文档核对结论
-
-这份 README 已按当前仓库代码重新整理，并刻意移除了以下不适合继续直接宣称的内容：
-
-- 没有再写死“功能全部完成”或“代码质量指标”这类容易过时的数据
-- 没有把 Web 平台列为当前文档中的主支持目标
-- 没有把后端登录能力描述成应用运行的前置条件
-- 没有把未在代码中稳定体现的功能写成既成事实
-
-## 补充文档
-
-- [docs/m3-color-guidelines.md](docs/m3-color-guidelines.md)
-- [docs/shared-components.md](docs/shared-components.md)

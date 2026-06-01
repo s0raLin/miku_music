@@ -49,7 +49,7 @@ class SettingService {
 
   static Future<void> setSliderStyle(String sliderStyle) async {
     final pfs = await SharedPreferences.getInstance();
-    await pfs.setString("sliderStyle", "straight");
+    await pfs.setString("sliderStyle", sliderStyle);
   }
 
   static Future<String> loadSliderStyle() async {

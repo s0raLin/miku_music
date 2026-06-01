@@ -20,7 +20,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> saveToken(String newToken) async {
-    await _storage.write(key: jwtKey, value: token);
+    await _storage.write(key: jwtKey, value: newToken);
   }
 
   // String? get username => _user?.username;

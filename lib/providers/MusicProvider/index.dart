@@ -253,7 +253,7 @@ class MusicProvider extends ChangeNotifier {
     if (music.coverBytes == null || music.coverBytes!.isEmpty) {
       MusicService.parse(music.id)
           .then((updated) {
-            // 🌟 触发封面更新方法
+            // 触发封面更新方法
             _updateCoverBytes(music.id, updated.coverBytes);
           })
           .catchError((_) {});
@@ -261,9 +261,8 @@ class MusicProvider extends ChangeNotifier {
 
     if (autoPlay) {
       // _addToHistory(music);
-      // 🌟 核心：触发外部钩子，通知最近播放列表
+      // 核心：触发外部钩子，通知最近播放列表
       onMusicPlayed?.call(music);
-      audioHandler.playMusic(music);
       audioHandler.playMusic(music);
     } else {
       audioHandler.playMusic(music, autoPlay: false);

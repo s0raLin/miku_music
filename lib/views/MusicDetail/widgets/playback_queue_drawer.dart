@@ -99,6 +99,7 @@ class PlaybackQueueDrawer extends StatelessWidget {
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 20,
                                 ),
+                                
                                 title: Text(
                                   song.title,
                                   maxLines: 1,

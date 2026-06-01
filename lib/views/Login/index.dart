@@ -77,7 +77,7 @@ class _LoginViewState extends State<LoginView> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      print("正在登录: ${_usernameController.text}");
+      debugPrint("正在登录: ${_usernameController.text}");
 
       final user = await UserApi.login(
         username: _usernameController.text,

@@ -135,14 +135,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   // 构建大头像预览
   Widget _buildAvatarSection(ColorScheme colorScheme) {
     return Center(
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: colorScheme.primaryContainer, width: 4),
-            ),
-            child: CircleAvatar(
+      child: GestureDetector(
+        onTap: _pickAvatar,
+        child: Stack(
+          children: [
+            CircleAvatar(
               radius: 50,
               backgroundColor: colorScheme.primaryContainer,
               backgroundImage: _avatarImage != null
@@ -156,25 +153,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     )
                   : null,
             ),
-          ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Material(
-              color: colorScheme.primary,
-              shape: const CircleBorder(),
-              elevation: 4,
-              child: IconButton(
-                onPressed: _pickAvatar,
-                icon: Icon(
-                  Icons.camera_alt_rounded,
-                  color: colorScheme.onPrimary,
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.camera_alt,
                   size: 20,
+                  color: colorScheme.onPrimary,
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

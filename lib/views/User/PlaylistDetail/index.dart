@@ -123,12 +123,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 await context
                                     .read<PlaylistProvider>()
                                     .addToPlaylist(widget.playlistId, music);
-                                if (context.mounted) {
-                                  AppToast.success(
-                                    context,
-                                    message: '已添加「${music.title}」',
-                                  );
-                                }
                               },
                             ),
                           );

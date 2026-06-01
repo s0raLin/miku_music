@@ -90,71 +90,74 @@ class _CoverTabContentState extends State<CoverTabContent> {
         const SizedBox(height: 28),
 
         // 歌曲元信息区域
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.music.title,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
-                      letterSpacing: -0.5,
+        // 歌曲元信息区域 (增加了左右 4 像素的 Padding，与下方进度条轨道完美对齐)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.music.title,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurface,
+                        letterSpacing: -0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${widget.music.artist} · ${widget.music.album}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 4),
+                    Text(
+                      '${widget.music.artist} · ${widget.music.album}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: () {
-                // 1. 在取反之前，先获取“当前”是否已经是喜欢状态
-                final wasLiked = playlistProvider
-                    .getPlaylistSongs(
-                      PlaylistProvider.favoritesPlaylistId,
-                      musicProvider.library,
-                    )
-                    .any((m) => m.id == widget.music.id);
-
-                // 2. 执行切换
-                playlistProvider.toggleMusicFavorite(widget.music);
-
-                // 3. 根据切换前的状态（wasLiked）来提示：如果以前是喜欢，那现在就是取消了；反之亦然。
-                AppToast.neutral(
-                  context,
-                  message: wasLiked ? '已取消收藏' : '已添加到喜欢',
-                );
-              },
-              icon: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, anim) =>
-                    ScaleTransition(scale: anim, child: child),
-                child: Icon(
-                  isLiked
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  key: ValueKey<bool>(isLiked),
-                  color: isLiked ? cs.primary : cs.onSurfaceVariant,
-                  size: 28,
+                  ],
                 ),
               ),
-            ),
-          ],
+              IconButton(
+                onPressed: () {
+                  final wasLiked = playlistProvider
+                      .getPlaylistSongs(
+                        PlaylistProvider.favoritesPlaylistId,
+                        musicProvider.library,
+                      )
+                      .any((m) => m.id == widget.music.id);
+
+                  playlistProvider.toggleMusicFavorite(widget.music);
+
+                  AppToast.neutral(
+                    context,
+                    message: wasLiked ? '已取消收藏' : '已添加到喜欢',
+                  );
+                },
+                // 稍微扣除一点 IconButton 自带的内部 padding 影响，让心形边缘对齐更极致
+                visualDensity: VisualDensity.compact,
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, anim) =>
+                      ScaleTransition(scale: anim, child: child),
+                  child: Icon(
+                    isLiked
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    key: ValueKey<bool>(isLiked),
+                    color: isLiked ? cs.primary : cs.onSurfaceVariant,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
 

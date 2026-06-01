@@ -126,7 +126,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   AppSectionHeader(title: "我的音乐"),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: 88,
+                    height: 90,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemBuilder: (BuildContext context, int index) =>
@@ -466,7 +466,7 @@ class _PlaylistQuickCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

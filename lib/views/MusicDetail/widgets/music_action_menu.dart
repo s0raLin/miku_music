@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/components/Shared/index.dart';
+import 'package:myapp/providers/ThemeProvider/index.dart';
+import 'package:provider/provider.dart';
 // import 'package:myapp/providers/ThemeProvider/index.dart';
 // import 'package:provider/provider.dart';
 
@@ -42,17 +44,17 @@ class MusicActionMenu {
       details: details,
       items: [
         AdaptiveMenuItem(
-          title: "标准直线 (默认)",
+          title: "标准直线",
           onTap: () {
-            // TODO
+            context.read<ThemeProvider>().setSliderStyle(SliderStyle.straight);
             AppToast.neutral(context, message: "已切换为标准直线");
           },
         ),
         AdaptiveMenuItem(
-          title: "灵动波浪",
+          title: "波浪",
           onTap: () {
-            // TODO
-            AppToast.neutral(context, message: "已切换为灵动波浪");
+            context.read<ThemeProvider>().setSliderStyle(SliderStyle.wave);
+            AppToast.neutral(context, message: "已切换为波浪");
           },
         ),
       ],

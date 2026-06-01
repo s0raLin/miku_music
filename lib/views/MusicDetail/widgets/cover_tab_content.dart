@@ -5,6 +5,7 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
+import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:provider/provider.dart';
 
 class CoverTabContent extends StatefulWidget {
@@ -30,6 +31,8 @@ class _CoverTabContentState extends State<CoverTabContent> {
     final playlistProvider = context.watch<PlaylistProvider>();
     final musicProvider = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
+    final themeProvider = context.watch<ThemeProvider>();
+    final useWave = themeProvider.sliderStyle == SliderStyle.wave;
 
     final isLiked = playlistProvider
         .getPlaylistSongs(
@@ -178,24 +181,30 @@ class _CoverTabContentState extends State<CoverTabContent> {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: WavySlider(
-                    value: sliderValue.clamp(0.0, safeTotal),
-                    max: safeTotal,
-                    isWaving: isWaving,
-                    onChanged: (v) {
-                      setState(() {
-                        _draggingValue = v;
-                      });
-                    },
-                    onChangeEnd: (v) async {
-                      await musicProvider.player.seek(
-                        Duration(milliseconds: v.toInt()),
-                      );
-                      setState(() {
-                        _draggingValue = null;
-                      });
-                    },
-                  ),
+                  child: useWave
+                      ? WavySlider(
+                          value: sliderValue.clamp(0.0, safeTotal),
+                          max: safeTotal,
+                          isWaving: isWaving,
+                          onChanged: (v) => setState(() => _draggingValue = v),
+                          onChangeEnd: (v) async {
+                            await musicProvider.player.seek(
+                              Duration(milliseconds: v.toInt()),
+                            );
+                            setState(() => _draggingValue = null);
+                          },
+                        )
+                      : StraightSlider(
+                          value: sliderValue.clamp(0.0, safeTotal),
+                          max: safeTotal,
+                          onChanged: (v) => setState(() => _draggingValue = v),
+                          onChangeEnd: (v) async {
+                            await musicProvider.player.seek(
+                              Duration(milliseconds: v.toInt()),
+                            );
+                            setState(() => _draggingValue = null);
+                          },
+                        ),
                 ),
                 const SizedBox(height: 8),
                 Padding(

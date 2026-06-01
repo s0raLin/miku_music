@@ -653,9 +653,19 @@ class AppEmptySliver extends StatelessWidget {
   }
 }
 
-/// M3 蛇形进度条
-/// 已播放区域：正弦波曲线；未播放区域：水平直线；thumb：固定在中轴线的圆点。
-// ─── 智能动画蛇形进度条组件 (原M3波浪动效) ─────────────────────────────────────────
+// ─── 统一的级联尺寸与设计规范 ──────────────────────────────────────────────────
+class _SliderSettings {
+  static const double hPadding = 16.0; // 统一两端留白，防止滑块溢出边界
+  static const double componentHeight = 44.0; // 统一点击热区高度
+  static const double trackHeight = 6.0; // 统一轨道物理粗细
+
+  // 胶囊主滑块参数
+  static const double thumbWidth = 4.0;
+  static const double thumbHeight = 20.0; // 20dp 的高度更协调，既保留了刻度感又不会过于突兀
+  static const double thumbRadius = 2.0; // 微小的圆角，保持硬朗的胶囊质感
+}
+
+// ─── 1. 胶囊竖线版 M3 蛇形进度条 (WavySlider) ──────────────────────────────────
 class WavySlider extends StatefulWidget {
   final double value;
   final double max;
@@ -673,10 +683,10 @@ class WavySlider extends StatefulWidget {
   });
 
   @override
-  State<WavySlider> createState() => _M3WavySliderState();
+  State<WavySlider> createState() => _WavySliderState();
 }
 
-class _M3WavySliderState extends State<WavySlider>
+class _WavySliderState extends State<WavySlider>
     with SingleTickerProviderStateMixin {
   late AnimationController _waveController;
 
@@ -706,19 +716,16 @@ class _M3WavySliderState extends State<WavySlider>
     super.dispose();
   }
 
-  void _handleDrag(DragUpdateDetails details, double maxWidth) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final localPosition = box.globalToLocal(details.globalPosition);
-    final percent = (localPosition.dx / maxWidth).clamp(0.0, 1.0);
-    widget.onChanged(percent * widget.max);
+  double _clamp(double v) {
+    final safeMax = widget.max > 0 ? widget.max : 0.0;
+    return v.clamp(0.0, safeMax);
   }
 
-  void _handleTap(TapUpDetails details, double maxWidth) {
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final localPosition = box.globalToLocal(details.globalPosition);
-    final percent = (localPosition.dx / maxWidth).clamp(0.0, 1.0);
-    widget.onChanged(percent * widget.max);
-    widget.onChangeEnd?.call(percent * widget.max);
+  double _xToValue(double x, double totalWidth) {
+    final trackWidth = totalWidth - _SliderSettings.hPadding * 2;
+    if (trackWidth <= 0) return 0.0;
+    final ratio = ((x - _SliderSettings.hPadding) / trackWidth).clamp(0.0, 1.0);
+    return ratio * widget.max;
   }
 
   @override
@@ -727,27 +734,42 @@ class _M3WavySliderState extends State<WavySlider>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final percent = widget.max > 0
-            ? (widget.value / widget.max).clamp(0.0, 1.0)
-            : 0.0;
+        final totalWidth = constraints.maxWidth;
 
         return GestureDetector(
-          onHorizontalDragUpdate: (details) => _handleDrag(details, maxWidth),
-          onHorizontalDragEnd: (details) =>
-              widget.onChangeEnd?.call(widget.value),
-          onTapUp: (details) => _handleTap(details, maxWidth),
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragUpdate: (d) {
+            final box = context.findRenderObject() as RenderBox?;
+            if (box == null) return;
+            final localX = box.globalToLocal(d.globalPosition).dx;
+            widget.onChanged(_clamp(_xToValue(localX, totalWidth)));
+          },
+          onHorizontalDragEnd: (d) {
+            widget.onChangeEnd?.call(_clamp(widget.value));
+          },
+          onTapDown: (d) {
+            final box = context.findRenderObject() as RenderBox?;
+            if (box == null) return;
+            final localX = box.globalToLocal(d.globalPosition).dx;
+            final v = _clamp(_xToValue(localX, totalWidth));
+            widget.onChanged(v);
+            widget.onChangeEnd?.call(v);
+          },
           child: AnimatedBuilder(
             animation: _waveController,
             builder: (context, child) {
-              return CustomPaint(
-                size: const Size(double.infinity, 32),
-                painter: _WavySliderPainter(
-                  percent: percent,
-                  phase: _waveController.value * 2 * math.pi,
-                  activeColor: cs.primary,
-                  inactiveColor: cs.primary.withValues(alpha: 0.15),
-                  thumbColor: cs.primary,
+              return SizedBox(
+                height: _SliderSettings.componentHeight,
+                child: CustomPaint(
+                  size: Size.infinite,
+                  painter: _WavySliderPainter(
+                    value: widget.value,
+                    max: widget.max,
+                    phase: _waveController.value * 2 * math.pi,
+                    activeColor: cs.primary,
+                    inactiveColor: cs.surfaceContainerHighest,
+                    hPadding: _SliderSettings.hPadding,
+                  ),
                 ),
               );
             },
@@ -759,82 +781,263 @@ class _M3WavySliderState extends State<WavySlider>
 }
 
 class _WavySliderPainter extends CustomPainter {
-  final double percent;
+  final double value;
+  final double max;
   final double phase;
   final Color activeColor;
   final Color inactiveColor;
-  final Color thumbColor;
+  final double hPadding;
 
   _WavySliderPainter({
-    required this.percent,
+    required this.value,
+    required this.max,
     required this.phase,
     required this.activeColor,
     required this.inactiveColor,
-    required this.thumbColor,
+    required this.hPadding,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final safeMax = max > 0 ? max : 1.0;
+    final progress = (value / safeMax).clamp(0.0, 1.0);
+
     final double midY = size.height / 2;
-    final double thumbX = size.width * percent;
+    final double trackLeft = hPadding;
+    final double trackRight = size.width - hPadding;
+    final double trackWidth = (trackRight - trackLeft).clamp(0.0, double.infinity);
+    final double thumbX = trackLeft + trackWidth * progress;
 
-    final inactivePaint = Paint()
-      ..color = inactiveColor
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
+    if (trackWidth <= 0) return;
 
-    if (thumbX < size.width) {
+    // 1. 未播放区域：从滑块右边缘开始绘制水平直线
+    final double inactiveStartX = (thumbX + _SliderSettings.thumbWidth / 2).clamp(trackLeft, trackRight);
+    if (inactiveStartX < trackRight) {
       canvas.drawLine(
-        Offset(thumbX, midY),
-        Offset(size.width, midY),
-        inactivePaint,
+        Offset(inactiveStartX, midY),
+        Offset(trackRight, midY),
+        Paint()
+          ..color = inactiveColor
+          ..strokeWidth = _SliderSettings.trackHeight
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke,
       );
     }
 
-    final activePaint = Paint()
-      ..color = activeColor
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
+    // 2. 已播放区域：波浪正弦曲线（终点完美对接滑块左边缘）
+    // 🔥 核心优化：波浪终点向左回缩半个滑块宽度，防止浪头刺穿指示器
+    final double waveMaxX = (thumbX - _SliderSettings.thumbWidth / 2).clamp(trackLeft, trackRight);
 
-    if (thumbX > 0) {
+    if (waveMaxX > trackLeft) {
       final path = Path();
-      path.moveTo(0, midY);
+      path.moveTo(trackLeft, midY);
 
-      const double maxAmplitude = 3.0;
-      const double waveLength = 54.0;
+      const double maxAmplitude = 3.5;
+      const double waveLength = 48.0;
 
-      for (double x = 0; x <= thumbX; x += 1.0) {
-        final double relativeX = x / waveLength;
-        final double fadeInFactor = (x / 48.0).clamp(0.0, 1.0);
-        final double distanceFromThumb = thumbX - x;
+      for (double x = trackLeft; x <= waveMaxX; x += 1.0) {
+        final double relativeX = (x - trackLeft) / waveLength;
+
+        final double fadeInFactor = ((x - trackLeft) / 32.0).clamp(0.0, 1.0);
+        // 淡出因子改用物理边缘 waveMaxX 计算，确保在撞击滑块前完美收尾
+        final double distanceFromThumb = waveMaxX - x;
         final double fadeOutFactor = (distanceFromThumb / 32.0).clamp(0.0, 1.0);
-        final double currentAmplitude =
-            maxAmplitude * fadeInFactor * fadeOutFactor;
+        final double currentAmplitude = maxAmplitude * fadeInFactor * fadeOutFactor;
 
-        final double y =
-            midY + math.sin(relativeX * 2 * math.pi - phase) * currentAmplitude;
+        final double y = midY + math.sin(relativeX * 2 * math.pi - phase) * currentAmplitude;
         path.lineTo(x, y);
       }
-      path.lineTo(thumbX, midY);
-      canvas.drawPath(path, activePaint);
+      // 严丝合缝地连回滑块左边缘的中轴线
+      path.lineTo(waveMaxX, midY);
+
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = activeColor
+          ..strokeWidth = _SliderSettings.trackHeight
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke,
+      );
     }
 
-    final thumbPaint = Paint()
-      ..color = thumbColor
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(thumbX, midY), 6, thumbPaint);
+    // 3. 统一的胶囊竖线滑块
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          thumbX - _SliderSettings.thumbWidth / 2,
+          midY - _SliderSettings.thumbHeight / 2,
+          _SliderSettings.thumbWidth,
+          _SliderSettings.thumbHeight,
+        ),
+        const Radius.circular(_SliderSettings.thumbRadius),
+      ),
+      Paint()..color = activeColor,
+    );
   }
 
   @override
   bool shouldRepaint(covariant _WavySliderPainter oldDelegate) {
-    return oldDelegate.percent != percent ||
+    return oldDelegate.value != value ||
+        oldDelegate.max != max ||
         oldDelegate.phase != phase ||
         oldDelegate.activeColor != activeColor ||
         oldDelegate.inactiveColor != inactiveColor;
   }
+}
+
+// ─── 2. 胶囊竖线版 M3 直线进度条 (StraightSlider) ────────────────────────────────
+class StraightSlider extends StatefulWidget {
+  final double value;
+  final double max;
+  final ValueChanged<double>? onChanged;
+  final ValueChanged<double>? onChangeEnd;
+
+  const StraightSlider({
+    super.key,
+    required this.value,
+    required this.max,
+    this.onChanged,
+    this.onChangeEnd,
+  });
+
+  @override
+  State<StraightSlider> createState() => _StraightSliderState();
+}
+
+class _StraightSliderState extends State<StraightSlider> {
+  double _clamp(double v) {
+    final safeMax = widget.max > 0 ? widget.max : 0.0;
+    return v.clamp(0.0, safeMax);
+  }
+
+  double _xToValue(double x, double totalWidth) {
+    final trackWidth = totalWidth - _SliderSettings.hPadding * 2;
+    if (trackWidth <= 0) return 0.0;
+    final ratio = ((x - _SliderSettings.hPadding) / trackWidth).clamp(0.0, 1.0);
+    return ratio * widget.max;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragUpdate: (d) {
+            final box = context.findRenderObject() as RenderBox?;
+            if (box == null) return;
+            final localX = box.globalToLocal(d.globalPosition).dx;
+            widget.onChanged?.call(_clamp(_xToValue(localX, totalWidth)));
+          },
+          onHorizontalDragEnd: (d) {
+            widget.onChangeEnd?.call(_clamp(widget.value));
+          },
+          onTapDown: (d) {
+            final box = context.findRenderObject() as RenderBox?;
+            if (box == null) return;
+            final localX = box.globalToLocal(d.globalPosition).dx;
+            final v = _clamp(_xToValue(localX, totalWidth));
+            widget.onChanged?.call(v);
+            widget.onChangeEnd?.call(v);
+          },
+          child: SizedBox(
+            height: _SliderSettings.componentHeight,
+            child: CustomPaint(
+              size: Size.infinite,
+              painter: _StraightSliderPainter(
+                value: widget.value,
+                max: widget.max,
+                colorScheme: cs,
+                hPadding: _SliderSettings.hPadding,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StraightSliderPainter extends CustomPainter {
+  final double value;
+  final double max;
+  final ColorScheme colorScheme;
+  final double hPadding;
+
+  const _StraightSliderPainter({
+    required this.value,
+    required this.max,
+    required this.colorScheme,
+    required this.hPadding,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final safeMax = max > 0 ? max : 1.0;
+    final progress = (value / safeMax).clamp(0.0, 1.0);
+
+    final cy = size.height / 2;
+    final trackLeft = hPadding;
+    final trackRight = size.width - hPadding;
+    final trackWidth = (trackRight - trackLeft).clamp(0.0, double.infinity);
+    final thumbX = trackLeft + trackWidth * progress;
+
+    final cs = colorScheme;
+
+    if (trackWidth <= 0) return;
+
+    // 1. 轨道底色 (未播放部分)
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          trackLeft,
+          cy - _SliderSettings.trackHeight / 2,
+          trackWidth,
+          _SliderSettings.trackHeight,
+        ),
+        const Radius.circular(_SliderSettings.trackHeight / 2),
+      ),
+      Paint()..color = cs.surfaceContainerHighest,
+    );
+
+    // 2. 已播放进度填充
+    if (progress > 0) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            trackLeft,
+            cy - _SliderSettings.trackHeight / 2,
+            (thumbX - trackLeft).clamp(0.0, trackWidth),
+            _SliderSettings.trackHeight,
+          ),
+          const Radius.circular(_SliderSettings.trackHeight / 2),
+        ),
+        Paint()..color = cs.primary,
+      );
+    }
+
+    // 3. 统一的胶囊竖线滑块 (完全去除了原点和护翼，保持与 Wavy 一致)
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          thumbX - _SliderSettings.thumbWidth / 2,
+          cy - _SliderSettings.thumbHeight / 2,
+          _SliderSettings.thumbWidth,
+          _SliderSettings.thumbHeight,
+        ),
+        const Radius.circular(_SliderSettings.thumbRadius),
+      ),
+      Paint()..color = cs.primary,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StraightSliderPainter old) =>
+      old.value != value || old.max != max || old.colorScheme != colorScheme;
 }
 
 class ObservableMusicGridCard extends StatefulWidget {

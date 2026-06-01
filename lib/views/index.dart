@@ -113,7 +113,18 @@ class _MainPageState extends State<MainPage> with WindowListener {
       body: Column(
         children: [
           Expanded(child: widget.navigationShell),
-          if (!isMiniMode) NowPlayingBar(),
+          if (!isMiniMode) ...[
+            NowPlayingBar(),
+            // 当导航栏显示时，这里高度为 0；当导航栏隐藏时，这里平滑地垫起系统全面屏手势栏的高度
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.fastOutSlowIn,
+              height: isRoot ? 0.0 : bottomPadding,
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainer, // 颜色与 NowPlayingBar 保持一致，视觉一体
+            ),
+          ],
         ],
       ),
       floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,

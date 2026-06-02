@@ -55,7 +55,7 @@ class _SideBarState extends State<SideBar> {
           alignment: Alignment.bottomCenter,
           child: Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
-            child: IconButton(
+            child: IconButton.outlined(
               icon: const Icon(Icons.settings_outlined),
               tooltip: '设置',
               onPressed: () {

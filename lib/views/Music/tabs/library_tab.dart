@@ -159,12 +159,11 @@ class LibraryTab extends StatelessWidget {
             ),
           ),
 
-          SliverPadding(
+          SliverM3SongList(
+            songs: _buildLibraryEntries(context, sortedLibrary, musicProvider),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            sliver: SliverM3SongList(
-              songs: _buildLibraryEntries(context, sortedLibrary, musicProvider),
-              emptyWidget: const SliverToBoxAdapter(child: SizedBox.shrink()),
-            ),
+            emptyWidget: const SliverToBoxAdapter(child: SizedBox.shrink()),
+            coverLoader: musicProvider,
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 40)),

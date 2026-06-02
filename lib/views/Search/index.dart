@@ -213,7 +213,7 @@ class _SearchPageState extends State<SearchPage> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: M3SongList(songs: entries),
+      child: M3SongList(songs: entries, coverLoader: musicProvider),
     );
   }
 }

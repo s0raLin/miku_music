@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
 
 // ============================================================================
 // M3 歌曲列表容器 — 包裹在圆角 Card.filled 内，用 Divider 分隔，紧凑间距
@@ -39,6 +41,7 @@ class M3SongList extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final String? emptyTitle;
   final String? emptySubtitle;
+  final MusicProvider? coverLoader;
 
   const M3SongList({
     super.key,
@@ -46,6 +49,7 @@ class M3SongList extends StatelessWidget {
     this.padding = const EdgeInsets.all(12),
     this.emptyTitle,
     this.emptySubtitle,
+    this.coverLoader,
   });
 
   @override
@@ -98,7 +102,12 @@ class M3SongList extends StatelessWidget {
       itemBuilder: (context, index) {
         final isFirst = index == 0;
         final isLast = index == songs.length - 1;
-        return _M3SongRow(entry: songs[index], isFirst: isFirst, isLast: isLast);
+        return _M3SongRow(
+          entry: songs[index],
+          isFirst: isFirst,
+          isLast: isLast,
+          coverLoader: coverLoader,
+        );
       },
     );
   }
@@ -112,12 +121,14 @@ class SliverM3SongList extends StatelessWidget {
   final List<M3SongEntry> songs;
   final EdgeInsetsGeometry padding;
   final Widget? emptyWidget;
+  final MusicProvider? coverLoader;
 
   const SliverM3SongList({
     super.key,
     required this.songs,
     this.padding = const EdgeInsets.all(12),
     this.emptyWidget,
+    this.coverLoader,
   });
 
   @override
@@ -139,7 +150,12 @@ class SliverM3SongList extends StatelessWidget {
         itemBuilder: (context, index) {
           final isFirst = index == 0;
           final isLast = index == songs.length - 1;
-          return _M3SongRow(entry: songs[index], isFirst: isFirst, isLast: isLast);
+          return _M3SongRow(
+            entry: songs[index],
+            isFirst: isFirst,
+            isLast: isLast,
+            coverLoader: coverLoader,
+          );
         },
       ),
     );
@@ -154,10 +170,12 @@ class _M3SongRow extends StatelessWidget {
   final M3SongEntry entry;
   final bool isFirst;
   final bool isLast;
+  final MusicProvider? coverLoader;
   const _M3SongRow({
     required this.entry,
     this.isFirst = false,
     this.isLast = false,
+    this.coverLoader,
   });
 
   static const double _cornerRadius = 16; // 与 AppRadius.card 保持一致
@@ -174,6 +192,17 @@ class _M3SongRow extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final clipRadius = _clipRadius();
+
+    // 封面懒加载：当 coverBytes 为空且提供了 coverLoader 时，触发异步加载
+    if ((entry.coverBytes == null || entry.coverBytes!.isEmpty) &&
+        coverLoader != null) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (!coverLoader!.isCoverLoading(entry.id) &&
+            !coverLoader!.hasNoCover(entry.id)) {
+          coverLoader!.loadCoverLazy(entry.id);
+        }
+      });
+    }
 
     // 选中行使用 secondaryContainer 背景
     final rowColor =

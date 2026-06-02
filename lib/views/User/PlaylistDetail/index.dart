@@ -253,7 +253,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       );
     }).toList();
 
-    return SliverM3SongList(songs: entries, padding: const EdgeInsets.all(8));
+    return SliverM3SongList(songs: entries, padding: const EdgeInsets.all(8), coverLoader: musicProvider);
   }
 
   @override

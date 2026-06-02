@@ -71,6 +71,7 @@ class AlbumDetailPage extends StatelessWidget {
         child: M3SongList(
           songs: entries,
           emptyTitle: '专辑内无歌曲',
+          coverLoader: mp,
         ),
       ),
     );

@@ -54,7 +54,7 @@ impl DbManager {
     }
 
     /// 3. 获取所有收藏的歌曲列表
-    /// ✨ 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
+    /// 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
     pub fn get_favorite_songs(&self) -> Result<Vec<MusicInfo>, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(

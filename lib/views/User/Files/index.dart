@@ -4,14 +4,13 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path/path.dart' as p;
-import 'package:provider/provider.dart';
-
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -105,7 +104,6 @@ class _FilesPageState extends State<FilesPage>
   }
 
   Future<void> _showPickDialog() async {
-    // 将 Dialog 逻辑内部化，避免外部 state 过于臃肿
     final result = await showDialog<List<String>>(
       context: context,
       builder: (ctx) => _FolderPickDialog(initialPaths: _paths),
@@ -113,7 +111,6 @@ class _FilesPageState extends State<FilesPage>
 
     if (result == null || !mounted) return;
 
-    // 权限校验
     if (Platform.isAndroid &&
         !(await MusicService.ensureAndroidAudioPermission())) {
       if (mounted) {
@@ -132,7 +129,6 @@ class _FilesPageState extends State<FilesPage>
   // ==========================================
 
   void _updateGroupsIfNeeded(List<Music> currentSongs) {
-
     final folders = <String, List<Music>>{};
     final albums = <String, List<Music>>{};
     final artists = <String, List<Music>>{};
@@ -165,7 +161,7 @@ class _FilesPageState extends State<FilesPage>
     // 粒度化监听库文件
     final songs = context.select<MusicProvider, List<Music>>((p) => p.library);
 
-    // 在 build 触发时安全地按需更新分组（O(N) 一次性搞定，而不是三次）
+    // 在 build 触发时安全地按需更新分组
     _updateGroupsIfNeeded(songs);
 
     if (_isPathsLoading) {
@@ -247,7 +243,6 @@ class _FilesPageState extends State<FilesPage>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 改用更具伸缩性的计算方式
         final double width = constraints.maxWidth;
         final double maxExtent = width > 1200
             ? 180.0
@@ -289,46 +284,75 @@ class _FilesPageState extends State<FilesPage>
                     ),
                     itemCount: entries.length,
                     itemBuilder: (context, i) {
-                      final entry = entries[i];
-
-                      // 1. 挑出一首带有封面的歌，如果都没有，就拿第一首歌当代表
-                      final coverSong = entry.value.firstWhere(
-                        (song) =>
-                            song.coverBytes != null &&
-                            song.coverBytes!.isNotEmpty,
-                        orElse: () => entry.value.first,
+                      return _MediaGridItem(
+                        key: ValueKey(entries[i].key),
+                        entry: entries[i],
+                        emptyIcon: emptyIcon,
+                        titleBuilder: titleBuilder,
                       );
-
-                      // 🌟 2. 关键补丁：如果连作为代表的 coverSong 都没有封面，
-                      // 说明这个分组的所有歌都没洗出封面呢，立刻对这首代表歌曲发起后台懒加载！
-                      if (coverSong.coverBytes == null ||
-                          coverSong.coverBytes!.isEmpty) {
-                        context.read<MusicProvider>().loadCoverLazy(
-                          coverSong.id,
-                        );
-                      }
-
-                      return MediaOverlayCard(
-                        title: titleBuilder(entry),
-                        subtitle: "${entry.value.length} 首",
-                        coverBytes: coverSong.coverBytes,
-                        fallbackIcon: emptyIcon,
-                        // 智能化转菊花：只要当前作为代表的歌还在后台解析中，卡片就展示 loading 动画
-                        isLoading: context.select<MusicProvider, bool>(
-                          (p) => p.isCoverLoading(coverSong.id),
-                        ),
-                        onTap: () {
-                          context.push(
-                            "/user/files/album-detail",
-                            extra: {"albumName": entry.key},
-                          );
-                        },
-                      );
-                    }
+                    },
                   ),
                 ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+// ==========================================
+// 独立出来的网格单项子组件
+// ==========================================
+class _MediaGridItem extends StatelessWidget {
+  final MapEntry<String, List<Music>> entry;
+  final IconData emptyIcon;
+  final String Function(MapEntry<String, List<Music>> entry) titleBuilder;
+
+  const _MediaGridItem({
+    super.key,
+    required this.entry,
+    required this.emptyIcon,
+    required this.titleBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. 挑出一首带有封面的歌作为代表
+    final coverSong = entry.value.firstWhere(
+      (song) => song.coverBytes != null && song.coverBytes!.isNotEmpty,
+      orElse: () => entry.value.first,
+    );
+
+    // 2. 将后台懒加载行为挪到帧渲染后的安全期触发，杜绝 Build 期间的 setState 竞争
+    if (coverSong.coverBytes == null || coverSong.coverBytes!.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // 增加 context.mounted 树生命周期校验
+        if (context.mounted) {
+          final provider = context.read<MusicProvider>();
+          if (!provider.isCoverLoading(coverSong.id)) {
+            provider.loadCoverLazy(coverSong.id);
+          }
+        }
+      });
+    }
+
+    // 3. 用 Selector 代替 context.select，绑定局部的 BuildContext，实现网格卡片的点对点局部刷新
+    return Selector<MusicProvider, bool>(
+      selector: (_, provider) => provider.isCoverLoading(coverSong.id),
+      builder: (context, isLoading, _) {
+        return MediaOverlayCard(
+          title: titleBuilder(entry),
+          subtitle: "${entry.value.length} 首",
+          coverBytes: coverSong.coverBytes,
+          fallbackIcon: emptyIcon,
+          isLoading: isLoading,
+          onTap: () {
+            context.push(
+              "/user/files/album-detail",
+              extra: {"albumName": entry.key},
+            );
+          },
         );
       },
     );

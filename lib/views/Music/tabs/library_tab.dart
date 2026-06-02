@@ -13,7 +13,6 @@ class LibraryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final musicProvider = context.read<MusicProvider>();
-
     final library = context.select<MusicProvider, List<Music>>(
       (p) => p.library,
     );
@@ -49,26 +48,37 @@ class LibraryTab extends StatelessWidget {
       );
     }
 
-    // 2. 局部计算与状态解耦：将分组结果的推导限制在作用域内，确保引用的一致性
-    final albumsMap = <String, List<Music>>{};
-    for (final song in library) {
-      final albumName = song.album ?? "未知专辑";
-      albumsMap.putIfAbsent(albumName, () => []).add(song);
-    }
-    final albums = albumsMap.entries.toList();
+    // ==================== 排序逻辑 ====================
+    final sortTypeSongs = context.select<MusicProvider, SongSortType>(
+      (p) => p.songSortType,
+    );
+    final sortTypeAlbums = context.select<MusicProvider, AlbumSortType>(
+      (p) => p.albumSortType,
+    );
+    final sortedLibrary = context.select<MusicProvider, List<Music>>(
+      (p) => p.getSortedLibrary(),
+    );
+    final sortedAlbums = context
+        .select<MusicProvider, List<MapEntry<String, List<Music>>>>(
+          (p) => p.getSortedAlbums(),
+        );
 
     return RefreshIndicator(
       onRefresh: () async {},
       child: CustomScrollView(
         slivers: [
-          // 2. 顶部专辑板块：横向展现
-          if (albums.isNotEmpty) ...[
-            const SliverToBoxAdapter(
+          // ====================== 1. 按专辑浏览 ======================
+          if (sortedAlbums.isNotEmpty) ...[
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Text(
-                  "按专辑浏览",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: _buildSectionHeader(
+                  title: "按专辑浏览",
+                  currentSort: sortTypeAlbums,
+                  onSortChanged: (value) {
+                    musicProvider.setAlbumSortType(value);
+                  },
+                  sortOptions: AlbumSortType.values,
                 ),
               ),
             ),
@@ -78,32 +88,32 @@ class LibraryTab extends StatelessWidget {
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: albums.length,
+                  itemCount: sortedAlbums.length,
                   itemBuilder: (context, index) {
-                    final entry = albums[index];
+                    final entry = sortedAlbums[index];
                     final albumName = entry.key;
                     final songs = entry.value;
 
-                    //* 3. 封面决策机制：优先选取已经洗出封面的歌曲作为专辑代表
                     final coverSong = songs.firstWhere(
                       (s) => s.coverBytes != null && s.coverBytes!.isNotEmpty,
                       orElse: () => songs.first,
                     );
 
-                    //* 4. 主动触发懒加载核心：如果整个专辑代表歌曲还没封面，立马静默调度后台解析
+                    // 通过 addPostFrameCallback 安全避开 build 副作用
                     if (coverSong.coverBytes == null ||
                         coverSong.coverBytes!.isEmpty) {
-                      musicProvider.loadCoverLazy(coverSong.id);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        // 确保组件依然挂载，且当前歌曲未在加载中，才发起请求
+                        if (context.mounted &&
+                            !musicProvider.isCoverLoading(coverSong.id)) {
+                          musicProvider.loadCoverLazy(coverSong.id);
+                        }
+                      });
                     }
 
-                    //* 5. 高级响应式优化：利用局部的 Consumer 或 context.select，
-                    // 确保当这首特定代表歌曲的“正在加载状态”或“封面改变”时，卡片能以毫秒级刷新
                     return Consumer<MusicProvider>(
                       builder: (context, provider, _) {
-                        final isCurrentCoverLoading = provider.isCoverLoading(
-                          coverSong.id,
-                        );
-
+                        final isLoading = provider.isCoverLoading(coverSong.id);
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           child: SizedBox(
@@ -112,7 +122,7 @@ class LibraryTab extends StatelessWidget {
                               albumName: albumName,
                               songCount: songs.length,
                               coverBytes: coverSong.coverBytes,
-                              isLoading: isCurrentCoverLoading, // 支持加载状态转菊花
+                              isLoading: isLoading,
                               onTap: () {
                                 context.push(
                                   "/user/files/album-detail",
@@ -133,24 +143,28 @@ class LibraryTab extends StatelessWidget {
             ),
           ],
 
-          // 3. 所有单曲列表板块
-          const SliverToBoxAdapter(
+          // ====================== 2. 所有单曲 ======================
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
-              child: Text(
-                "所有单曲",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: _buildSectionHeader(
+                title: "所有单曲",
+                currentSort: sortTypeSongs,
+                onSortChanged: (value) {
+                  musicProvider.setSongSortType(value);
+                },
+                sortOptions: SongSortType.values,
               ),
             ),
           ),
+
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             sliver: SliverList.separated(
-              itemCount: library.length,
+              itemCount: sortedLibrary.length,
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
-                final music = library[index];
-                // 6. 使用显式 ValueKey 提升 Flutter Diff 算法的效率，配合无状态的专属 ListItem
+                final music = sortedLibrary[index];
                 return RepaintBoundary(
                   child: ObservableMusicListItem(
                     key: ValueKey(music.id),
@@ -160,9 +174,65 @@ class LibraryTab extends StatelessWidget {
               },
             ),
           ),
+
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
     );
+  }
+
+  // ==================== 通用标题组件 ====================
+  Widget _buildSectionHeader<T>({
+    required String title,
+    required T currentSort,
+    required ValueChanged<T> onSortChanged,
+    required List<T> sortOptions,
+  }) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const Spacer(),
+        PopupMenuButton<T>(
+          icon: const Icon(Icons.sort_rounded, size: 20),
+          tooltip: '排序',
+          initialValue: currentSort,
+          onSelected: onSortChanged,
+          itemBuilder: (context) => sortOptions.map((type) {
+            return PopupMenuItem<T>(
+              value: type,
+              child: Text(_getSortTypeLabel(type)),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  String _getSortTypeLabel<T>(T type) {
+    if (type is SongSortType) {
+      switch (type) {
+        case SongSortType.nameAsc:
+          return '歌名 A-Z';
+        case SongSortType.nameDesc:
+          return '歌名 Z-A';
+        case SongSortType.artistAsc:
+          return '歌手 A-Z';
+        case SongSortType.auto:
+          return '默认';
+      }
+    } else if (type is AlbumSortType) {
+      switch (type) {
+        case AlbumSortType.nameAsc:
+          return '专辑名 A-Z';
+        case AlbumSortType.nameDesc:
+          return '专辑名 Z-A';
+        case AlbumSortType.songCountDesc:
+          return '歌曲数量（多→少）';
+      }
+    }
+    return type.toString();
   }
 }

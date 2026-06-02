@@ -1178,6 +1178,12 @@ class ObservableMusicListItem extends StatelessWidget {
       },
       // 4. 彻底干掉 SongTile 后的多按钮组排放
       trailing: FilledButton.tonal(
+        style: FilledButton.styleFrom(
+          // 如果想进一步微调颜色，可以取消注释下面两行：
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 12), // 让胶囊更紧凑
+        ),
         onPressed: () {
           if (!isCurrent) {
             musicProvider.playFromLibrary(music);

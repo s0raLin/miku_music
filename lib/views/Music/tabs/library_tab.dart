@@ -14,8 +14,6 @@ class LibraryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final musicProvider = context.read<MusicProvider>();
 
-    // 🌟 1. 粒度化监听：只有当整个 library 指针改变（即扫描、新增、或封面更新生成新引用）时，才重新计算分组
-    // 这样完美避免了不相关的刷新导致 UI 线程重复跑 for 循环
     final library = context.select<MusicProvider, List<Music>>(
       (p) => p.library,
     );
@@ -114,8 +112,7 @@ class LibraryTab extends StatelessWidget {
                               albumName: albumName,
                               songCount: songs.length,
                               coverBytes: coverSong.coverBytes,
-                              isLoading:
-                                  isCurrentCoverLoading, // 支持加载状态转菊花
+                              isLoading: isCurrentCoverLoading, // 支持加载状态转菊花
                               onTap: () {
                                 context.push(
                                   "/user/files/album-detail",

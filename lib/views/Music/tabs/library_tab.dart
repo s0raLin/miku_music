@@ -49,7 +49,7 @@ class LibraryTab extends StatelessWidget {
       );
     }
 
-    // 🌟 2. 局部计算与状态解耦：将分组结果的推导限制在作用域内，确保引用的一致性
+    // 2. 局部计算与状态解耦：将分组结果的推导限制在作用域内，确保引用的一致性
     final albumsMap = <String, List<Music>>{};
     for (final song in library) {
       final albumName = song.album ?? "未知专辑";
@@ -150,7 +150,7 @@ class LibraryTab extends StatelessWidget {
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
                 final music = library[index];
-                // 🌟 6. 使用显式 ValueKey 提升 Flutter Diff 算法的效率，配合无状态的专属 ListItem
+                // 6. 使用显式 ValueKey 提升 Flutter Diff 算法的效率，配合无状态的专属 ListItem
                 return RepaintBoundary(
                   child: ObservableMusicListItem(
                     key: ValueKey(music.id),

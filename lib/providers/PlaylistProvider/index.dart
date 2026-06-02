@@ -43,7 +43,7 @@ class PlaylistProvider extends ChangeNotifier {
     updateActivePlaylists(_activeSongIds);
   }
 
-  /// ✨ 核心优雅逻辑：由 ProxyProvider 驱动，结合当前内存中有效的全局乐库动态瘦身
+  /// 由 ProxyProvider 驱动，结合当前内存中有效的全局乐库动态瘦身
   void updateActivePlaylists(Set<String> localSongIds) {
     _activeSongIds = localSongIds;
     // 过滤歌单内的无效 ID

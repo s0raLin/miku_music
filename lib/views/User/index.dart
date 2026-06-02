@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
+import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
@@ -174,7 +175,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       final userPlaylists = playlistProvider.userPlaylists;
                       if (userPlaylists.isEmpty) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.only(top: 12),
                           child: AppPanel(
                             child: Row(
                               children: [
@@ -200,30 +201,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           ),
                         );
                       }
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.only(top: 12, bottom: 8),
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 220,
-                              childAspectRatio: 1,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
-                        itemCount: userPlaylists.length,
-                        itemBuilder: (context, index) {
-                          final playlist = userPlaylists[index];
-                          return MediaOverlayCard(
+                      return M3SongList(
+                        padding: const EdgeInsets.only(top: 12),
+                        songs: userPlaylists.map((playlist) {
+                          return M3SongEntry(
+                            id: playlist.id,
                             title: playlist.name,
-                            subtitle: "${playlist.songIds.length} 首",
+                            subtitle: '${playlist.songIds.length} 首',
                             coverPath: playlist.coverPath,
                             fallbackIcon: Icons.playlist_play_rounded,
+                            trailing: Icon(
+                              Icons.chevron_right_rounded,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                             onTap: () {
                               context.push("/user/playlist/${playlist.id}");
                             },
                           );
-                        },
+                        }).toList(),
                       );
                     },
                   ),

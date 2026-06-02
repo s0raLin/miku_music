@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -13,6 +14,7 @@ class M3SongEntry {
   final String title;
   final String subtitle;
   final Uint8List? coverBytes;
+  final String? coverPath;
   final IconData fallbackIcon;
   final bool isHighlighted;
   final Widget? trailing;
@@ -24,6 +26,7 @@ class M3SongEntry {
     required this.title,
     required this.subtitle,
     this.coverBytes,
+    this.coverPath,
     this.fallbackIcon = Icons.music_note_rounded,
     this.isHighlighted = false,
     this.trailing,
@@ -187,6 +190,31 @@ class _M3SongRow extends StatelessWidget {
     return BorderRadius.zero;
   }
 
+  Widget _buildCoverImage(ColorScheme colorScheme) {
+    // 优先使用内存中的字节数据
+    if (entry.coverBytes != null && entry.coverBytes!.isNotEmpty) {
+      return Image.memory(entry.coverBytes!, fit: BoxFit.cover);
+    }
+    // 其次使用文件路径
+    if (entry.coverPath != null && entry.coverPath!.isNotEmpty) {
+      final file = File(entry.coverPath!);
+      if (file.existsSync()) {
+        return Image.file(file, fit: BoxFit.cover);
+      }
+    }
+    // 兜底图标
+    return ColoredBox(
+      color: colorScheme.surfaceContainerHighest,
+      child: Icon(
+        entry.fallbackIcon,
+        size: 24,
+        color: entry.isHighlighted
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -227,18 +255,7 @@ class _M3SongRow extends StatelessWidget {
                 child: SizedBox(
                   width: 48,
                   height: 48,
-                  child: entry.coverBytes != null && entry.coverBytes!.isNotEmpty
-                      ? Image.memory(entry.coverBytes!, fit: BoxFit.cover)
-                      : ColoredBox(
-                          color: colorScheme.surfaceContainerHighest,
-                          child: Icon(
-                            entry.fallbackIcon,
-                            size: 24,
-                            color: entry.isHighlighted
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                  child: _buildCoverImage(colorScheme),
                 ),
               ),
               const SizedBox(width: 12),

@@ -24,21 +24,27 @@ class _SideBarState extends State<SideBar> {
       onDestinationSelected: widget.onTap,
 
       // 顶部标题栏
-      leading: FloatingActionButton(
-        elevation: 0,
-        onPressed: () {
-          context.push("/search");
-        },
-        child: const Icon(Icons.search),
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: FloatingActionButton(
+          elevation: 0,
+          onPressed: () {
+            context.push("/search");
+          },
+          tooltip: '搜索',
+          child: const Icon(Icons.search),
+        ),
       ),
 
       // 导航项转换
       destinations: navItems.map((item) {
         return NavigationRailDestination(
-          // 选中时使用填色图标，未选中时使用描边图标
           icon: item.i!,
           selectedIcon: item.i,
-          label: Text(item.label),
+          label: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(item.label),
+          ),
         );
       }).toList(),
 
@@ -48,9 +54,10 @@ class _SideBarState extends State<SideBar> {
         child: Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: IconButton.outlined(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: IconButton(
               icon: const Icon(Icons.settings_outlined),
+              tooltip: '设置',
               onPressed: () {
                 setState(() {
                   context.push("/settings");

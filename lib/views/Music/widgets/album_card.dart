@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:myapp/components/Shared/index.dart'; 
+import 'package:myapp/components/Shared/index.dart';
 
 class AlbumCard extends StatelessWidget {
   final String albumName;
@@ -26,7 +26,7 @@ class AlbumCard extends StatelessWidget {
       coverBytes: coverBytes,
       fallbackIcon: Icons.album_rounded,
       onTap: onTap,
-      isLoading: isLoading, // 🌟 3. 完美透传给底层的公共卡片组件
+      isLoading: isLoading, // 3. 完美透传给底层的公共卡片组件
     );
   }
 }

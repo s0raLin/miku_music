@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -195,51 +196,24 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    return ListView.builder(
-      key: const ValueKey("results_list"),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final song = results[index];
-        final isCurrent = musicProvider.currentMusic?.id == song.id;
+    final entries = results.map((song) {
+      final isCurrent = musicProvider.currentMusic?.id == song.id;
+      return M3SongEntry(
+        id: song.id,
+        title: song.title,
+        subtitle: song.artist,
+        coverBytes: song.coverBytes,
+        isHighlighted: isCurrent,
+        onTap: () {
+          musicProvider.playFromLibrary(song);
+          context.push("/music-detail", extra: song);
+        },
+      );
+    }).toList();
 
-        return ListTile(
-          onTap: () {
-            musicProvider.playFromLibrary(song);
-            context.push("/music-detail", extra: song);
-          },
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              width: 48,
-              height: 48,
-              color: cs.surfaceContainerHighest,
-              child: song.coverBytes?.isNotEmpty == true
-                  ? Image.memory(song.coverBytes!, fit: BoxFit.cover)
-                  : Icon(Icons.music_note_rounded, color: cs.primary),
-            ),
-          ),
-          title: Text(
-            song.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-              color: isCurrent ? cs.primary : null,
-            ),
-          ),
-          subtitle: Text(
-            song.artist,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.bodySmall,
-          ),
-          trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-        );
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: M3SongList(songs: entries),
     );
   }
 }

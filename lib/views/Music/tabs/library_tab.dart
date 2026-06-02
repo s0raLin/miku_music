@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
+import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/views/Music/widgets/album_card.dart';
@@ -160,18 +161,9 @@ class LibraryTab extends StatelessWidget {
 
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            sliver: SliverList.separated(
-              itemCount: sortedLibrary.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 6),
-              itemBuilder: (context, index) {
-                final music = sortedLibrary[index];
-                return RepaintBoundary(
-                  child: ObservableMusicListItem(
-                    key: ValueKey(music.id),
-                    music: music,
-                  ),
-                );
-              },
+            sliver: SliverM3SongList(
+              songs: _buildLibraryEntries(context, sortedLibrary, musicProvider),
+              emptyWidget: const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
           ),
 
@@ -179,6 +171,50 @@ class LibraryTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<M3SongEntry> _buildLibraryEntries(
+    BuildContext bc,
+    List<Music> songs,
+    MusicProvider musicProvider,
+  ) {
+    final colorScheme = Theme.of(bc).colorScheme;
+    return songs.map((music) {
+      final isCurrent = musicProvider.currentMusic?.id == music.id;
+      final isPlaying = isCurrent && musicProvider.player.playing;
+      return M3SongEntry(
+        id: music.id,
+        title: music.title,
+        subtitle: music.artist,
+        coverBytes: music.coverBytes,
+        isHighlighted: isCurrent,
+        trailing: FilledButton.tonal(
+          style: FilledButton.styleFrom(
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            minimumSize: const Size(40, 36),
+          ),
+          onPressed: () {
+            if (!isCurrent) {
+              musicProvider.playFromLibrary(music);
+            } else {
+              musicProvider.togglePlay();
+            }
+          },
+          child: Icon(
+            isCurrent && isPlaying
+                ? Icons.pause_rounded
+                : Icons.play_arrow_rounded,
+            size: 18,
+          ),
+        ),
+        onTap: () {
+          musicProvider.playFromLibrary(music);
+          bc.push("/music-detail");
+        },
+      );
+    }).toList();
   }
 
   // ==================== 通用标题组件 ====================

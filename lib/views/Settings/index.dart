@@ -40,7 +40,7 @@ class SettingsPage extends StatelessWidget {
             children: [
               _buildSectionHeader(context, "外观设置"),
 
-              Card(
+              Card.filled(
                 child: Column(
                   children: [
                     ListTile(
@@ -156,7 +156,7 @@ class SettingsPage extends StatelessWidget {
               const SizedBox(height: 16),
               _buildSectionHeader(context, "播放设置"),
 
-              Card(
+              Card.filled(
                 child: Column(
                   children: [
                     // 音质设置
@@ -297,7 +297,7 @@ class SettingsPage extends StatelessWidget {
               const SizedBox(height: 16),
               _buildSectionHeader(context, "互动功能"),
 
-              Card(
+              Card.filled(
                 child: Column(
                   children: [
                     // 双击播放
@@ -362,7 +362,7 @@ class SettingsPage extends StatelessWidget {
               const SizedBox(height: 16),
               _buildSectionHeader(context, "通知设置"),
 
-              Card(
+              Card.filled(
                 child: Column(
                   children: [
                     ListTile(
@@ -390,7 +390,7 @@ class SettingsPage extends StatelessWidget {
 
               _buildSectionHeader(context, "关于"),
 
-              Card(
+              Card.filled(
                 child: Column(
                   children: [
                     ListTile(

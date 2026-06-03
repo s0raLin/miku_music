@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:myapp/api/Client/Auth/index.dart';
 import 'package:myapp/api/Model/User/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
@@ -20,7 +21,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _emailController;
   late final TextEditingController _bioController; // 新增：个性签名
   final _imagePicker = ImagePicker();
+
+  /// 已存在的服务器头像 URL
+  String? _existingAvatarUrl;
+
+  /// 本地新选择的头像文件
   XFile? _avatarImage;
+
+  /// 是否正在上传头像
+  bool _isUploadingAvatar = false;
+
   Future<void> _pickAvatar() async {
     final picked = await _imagePicker.pickImage(
       source: ImageSource.gallery,
@@ -39,6 +49,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void initState() {
     super.initState();
     final user = context.read<UserProvider>().user;
+    _existingAvatarUrl = user?.avatarURL;
     _usernameController = TextEditingController(text: user?.username ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
     _bioController = TextEditingController(text: '这是一段默认的个性签名...');
@@ -142,16 +153,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
             CircleAvatar(
               radius: 50,
               backgroundColor: colorScheme.primaryContainer,
-              backgroundImage: _avatarImage != null
-                  ? FileImage(File(_avatarImage!.path))
-                  : null,
-              child: _avatarImage == null
-                  ? Icon(
-                      Icons.person,
-                      size: 50,
-                      color: colorScheme.onPrimaryContainer,
+              backgroundImage: _isUploadingAvatar
+                  ? null
+                  : _avatarImage != null
+                      ? FileImage(File(_avatarImage!.path))
+                      : _existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty
+                          ? NetworkImage(_existingAvatarUrl!)
+                          : null,
+              child: _isUploadingAvatar
+                  ? SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
                     )
-                  : null,
+                  : _avatarImage == null &&
+                          (_existingAvatarUrl == null || _existingAvatarUrl!.isEmpty)
+                      ? Icon(
+                          Icons.person,
+                          size: 50,
+                          color: colorScheme.onPrimaryContainer,
+                        )
+                      : null,
             ),
             Positioned(
               right: 0,
@@ -243,7 +268,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  // 增加一点触感反馈
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -251,18 +275,44 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final currentUser = userProvider.user;
     if (currentUser == null) return;
 
-    // 更新用户信息
-    final updatedUser = User(
-      username: _usernameController.text,
-      email: _emailController.text,
-      avatarURL: currentUser.avatarURL,
-      token: currentUser.token,
-    );
+    setState(() => _isUploadingAvatar = true);
+    try {
+      String avatarUrl = currentUser.avatarURL ?? '';
 
-    await userProvider.updateUserInfo(updatedUser);
+      // 如果有新选择的头像，先上传到 OSS
+      if (_avatarImage != null) {
+        final bytes = await File(_avatarImage!.path).readAsBytes();
+        final fileName = _avatarImage!.name;
+        try {
+          avatarUrl = await UserApi.uploadAvatar(
+            avatarBytes: bytes,
+            fileName: fileName,
+          );
+          // 上传成功后清除本地选择标记，改用服务器 URL
+          _existingAvatarUrl = avatarUrl;
+          _avatarImage = null;
+        } catch (e) {
+          if (!mounted) return;
+          AppToast.error(context, message: '头像上传失败: $e', title: '上传失败');
+          return;
+        }
+      }
 
-    if (mounted) {
-      AppToast.success(context, message: '个人资料已更新', title: '保存成功');
+      // 更新用户信息
+      final updatedUser = User(
+        username: _usernameController.text,
+        email: _emailController.text,
+        avatarURL: avatarUrl,
+        token: currentUser.token,
+      );
+
+      await userProvider.updateUserInfo(updatedUser);
+
+      if (mounted) {
+        AppToast.success(context, message: '个人资料已更新', title: '保存成功');
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
     }
   }
 }

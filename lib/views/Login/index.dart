@@ -1,11 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:myapp/api/Client/index.dart';
+import 'package:myapp/api/Model/User/index.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:myapp/utils/Http/index.dart';
 import 'package:provider/provider.dart';
@@ -46,6 +48,10 @@ class _LoginPageState extends State<LoginPage> {
   int _sendCooldown = 0;
   Timer? _cooldownTimer;
 
+  /// 注册时可选的本地头像
+  final _imagePicker = ImagePicker();
+  XFile? _avatarImage;
+
   @override
   void dispose() {
     _cooldownTimer?.cancel();
@@ -76,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // ─────────────────── 处理函数 ───────────────────
 
-  /// 邮箱+验证码登录：先校验邮箱再弹窗
+  /// 邮箱+验证码登录：立即弹窗，验证码在模态框内异步发送
   Future<void> _loginByCode() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
@@ -84,31 +90,18 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // 冷却中不允许重复发送
+    // 冷却中不允许重复打开（防刷）
     if (_sendCooldown > 0) {
       AppToast.neutral(context, message: '${_sendCooldown}秒后可重新发送验证码', title: '请稍候');
       return;
     }
+    _startCooldown();
 
-    // 先调用发送验证码接口做前置校验（邮箱是否已注册等）
-    try {
-      await UserApi.sendCode(email: email, purpose: 'login');
-      _startCooldown();
-    } on DioException catch (e) {
-      if (!mounted) return;
-      final msg = HttpUtils.extractErrorMessage(e);
-      AppToast.error(context, message: msg, title: '发送失败');
-      return;
-    }
-
-    if (!mounted) return;
-
-    // 发送成功后弹出验证码输入窗口
+    // 立即弹出模态框，sendCode 在模态框内部异步执行
     final result = await showEmailVerificationModal(
       context,
       email: email,
       purpose: 'login',
-      initialCountdown: 60,
     );
 
     if (result == null || !mounted) return;
@@ -178,37 +171,37 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// 注册：先校验邮箱再弹窗发送验证码
+  /// 选择注册头像
+  Future<void> _pickAvatar() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 500,
+      maxHeight: 500,
+      imageQuality: 80,
+    );
+    if (picked != null) {
+      setState(() => _avatarImage = picked);
+    }
+  }
+
+  /// 注册：立即弹窗，验证码在模态框内异步发送
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
 
-    // 冷却中不允许重复发送
+    // 冷却中不允许重复打开（防刷）
     if (_sendCooldown > 0) {
       AppToast.neutral(context, message: '${_sendCooldown}秒后可重新发送验证码', title: '请稍候');
       return;
     }
+    _startCooldown();
 
-    // 先调用发送验证码接口做前置校验（邮箱是否已注册等）
-    try {
-      await UserApi.sendCode(email: email, purpose: 'register');
-      _startCooldown();
-    } on DioException catch (e) {
-      if (!mounted) return;
-      final msg = HttpUtils.extractErrorMessage(e);
-      AppToast.error(context, message: msg, title: '发送失败');
-      return;
-    }
-
-    if (!mounted) return;
-
-    // 发送成功后弹出验证码输入窗口
+    // 立即弹出模态框，sendCode 在模态框内部异步执行
     final result = await showEmailVerificationModal(
       context,
       email: email,
       purpose: 'register',
-      initialCountdown: 60,
     );
 
     if (result == null || !mounted) return;
@@ -225,6 +218,29 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       await context.read<UserProvider>().updateUserInfo(user);
+
+      if (!mounted) return;
+
+      // 注册成功后，如果有选择本地头像，上传到 OSS
+      if (_avatarImage != null) {
+        try {
+          final bytes = await File(_avatarImage!.path).readAsBytes();
+          final avatarUrl = await UserApi.uploadAvatar(
+            avatarBytes: bytes,
+            fileName: _avatarImage!.name,
+          );
+          // 用新的头像 URL 创建 updatedUser 并持久化
+          final updatedUser = User(
+            username: user.username,
+            email: user.email,
+            avatarURL: avatarUrl,
+            token: user.token,
+          );
+          await context.read<UserProvider>().updateUserInfo(updatedUser);
+        } catch (_) {
+          // 头像上传失败不影响注册流程
+        }
+      }
 
       if (!mounted) return;
       AppToast.success(
@@ -268,12 +284,11 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // ── Logo ──
-                    Image.asset(
-                      MyAssets.app_icon,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
+                    // ── 用户图标 ──
+                    Icon(
+                      Icons.account_circle_rounded,
+                      size: 80,
+                      color: colorScheme.primary,
                     ),
                     const SizedBox(height: 24),
 
@@ -301,6 +316,57 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
                     const SizedBox(height: 16),
+
+                    // ── 注册模式：头像选择 ──
+                    if (_mode == 'register') ...[
+                      Center(
+                        child: GestureDetector(
+                          onTap: _pickAvatar,
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 36,
+                                backgroundColor: colorScheme.primaryContainer,
+                                backgroundImage: _avatarImage != null
+                                    ? FileImage(File(_avatarImage!.path))
+                                    : null,
+                                child: _avatarImage == null
+                                    ? Icon(
+                                        Icons.camera_alt_rounded,
+                                        size: 32,
+                                        color: colorScheme.onPrimaryContainer,
+                                      )
+                                    : null,
+                              ),
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.add,
+                                    size: 14,
+                                    color: colorScheme.onPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '设置头像（可选）',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // ── 注册模式：用户名输入 ──
                     if (_mode == 'register') ...[

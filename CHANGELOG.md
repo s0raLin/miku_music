@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.34.0](https://github.com/s0raLin/miku_music/compare/v1.33.0...v1.34.0) (2026-06-03)
+
+
+### Features
+
+* **api:** enable jwt authentication middleware and automate token injection ([e0edb01](https://github.com/s0raLin/miku_music/commit/e0edb012dc4c57d5c967834fd022f67994c79bd8))
+* **auth:** implement multi-mode authentication with email verification ([157b858](https://github.com/s0raLin/miku_music/commit/157b858c3cd0fa23bea4918ab2fca6092876b44f))
+* **auth:** implement password management and account deletion ([2e51048](https://github.com/s0raLin/miku_music/commit/2e510481eee8b8f11d39122d534d94e606674a73))
+* **music:** implement cover image blacklist to prevent redundant loading ([e6c2428](https://github.com/s0raLin/miku_music/commit/e6c24288ec1770c20663cdeb0cf4aa4069c5cba5))
+* **music:** implement sorting and safe state notification ([6b8f827](https://github.com/s0raLin/miku_music/commit/6b8f827895546a0bbdf12fa1543cf2c16c55e08d))
+* **router:** enhance navigation routing and refine UI layout ([2f08d19](https://github.com/s0raLin/miku_music/commit/2f08d19ddde1b74408b73d7d0d2c4c0105f2e621))
+* **ui:** add avatar upload support and optimize auth flow ([1b653c0](https://github.com/s0raLin/miku_music/commit/1b653c01ce4dcd0aa47acb55d810152b9467f497))
+* **ui:** enhance header functionality and clean up view imports ([eaf8a89](https://github.com/s0raLin/miku_music/commit/eaf8a89c4e343e504e8bde8e002f6415c453ef54))
+* **ui:** implement Material 3 design system and M3SongList component ([9b19a79](https://github.com/s0raLin/miku_music/commit/9b19a7948bc640574c5db8a204717c1e68e1eddd))
+* **ui:** support dynamic slider styles via theme provider ([725c32c](https://github.com/s0raLin/miku_music/commit/725c32cb5dbd37a2263cda886190120d2d1be322))
+* **ui:** support file-based cover images in M3SongList ([d1d73c3](https://github.com/s0raLin/miku_music/commit/d1d73c3020ad2708bb482040e460335a13fd3ca4))
+
+
+### Bug Fixes
+
+* **core:** resolve state management and configuration bugs ([69b7dd2](https://github.com/s0raLin/miku_music/commit/69b7dd246070c18b174d62d2d949c60407bc80ad))
+* **nowplaying:** add bottom padding to NowPlayingBar ([ce3babc](https://github.com/s0raLin/miku_music/commit/ce3babcfb0b5a5fb3fa5acbeeb5431c896ee3d8a))
+* **ui:** increase bottom navigation bar height ([7340e04](https://github.com/s0raLin/miku_music/commit/7340e04220ec35a683bf42bad264b759f2e660d5))
+
+
+### Performance Improvements
+
+* **music:** implement lazy loading for song covers in M3 lists ([58d15b8](https://github.com/s0raLin/miku_music/commit/58d15b897668a9e13e15c38525af9d85a4bce0b3))
+
 ## [1.33.0](https://github.com/s0raLin/miku_music/compare/v1.32.0...v1.33.0) (2026-05-31)
 
 

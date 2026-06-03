@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:myapp/api/Client/Auth/index.dart';
 import 'package:myapp/api/Model/User/index.dart';
@@ -156,10 +158,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               backgroundImage: _isUploadingAvatar
                   ? null
                   : _avatarImage != null
-                      ? FileImage(File(_avatarImage!.path))
-                      : _existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty
-                          ? NetworkImage(_existingAvatarUrl!)
-                          : null,
+                  ? FileImage(File(_avatarImage!.path))
+                  : _existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty
+                  ? NetworkImage(_existingAvatarUrl!)
+                  : null,
               child: _isUploadingAvatar
                   ? SizedBox(
                       width: 30,
@@ -170,13 +172,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     )
                   : _avatarImage == null &&
-                          (_existingAvatarUrl == null || _existingAvatarUrl!.isEmpty)
-                      ? Icon(
-                          Icons.person,
-                          size: 50,
-                          color: colorScheme.onPrimaryContainer,
-                        )
-                      : null,
+                        (_existingAvatarUrl == null ||
+                            _existingAvatarUrl!.isEmpty)
+                  ? Icon(
+                      Icons.person,
+                      size: 50,
+                      color: colorScheme.onPrimaryContainer,
+                    )
+                  : null,
             ),
             Positioned(
               right: 0,
@@ -240,7 +243,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             leading: const Icon(Icons.lock_reset_rounded),
             title: const Text('修改密码'),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => _showSimpleSnackBar('密码修改功能开发中'),
+            onTap: () => _showChangePasswordDialog(),
           ),
           const Divider(height: 1, indent: 56),
           ListTile(
@@ -252,7 +255,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               '注销账号',
               style: TextStyle(color: Colors.redAccent),
             ),
-            onTap: () => _showSimpleSnackBar('账户注销功能暂未开放。'),
+            onTap: () => _showDeleteAccountDialog(),
           ),
         ],
       ),
@@ -265,6 +268,116 @@ class _EditProfilePageState extends State<EditProfilePage> {
       message: msg,
       title: '功能提示',
       tone: AppToastTone.neutral,
+    );
+  }
+
+  // ──────────────────────── 修改密码弹窗 ────────────────────────
+
+  void _showChangePasswordDialog() {
+    final oldPwdController = TextEditingController();
+    final newPwdController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('修改密码'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: oldPwdController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '当前密码',
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newPwdController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '新密码（至少6位）',
+                prefixIcon: Icon(Icons.lock_reset),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final oldPwd = oldPwdController.text.trim();
+              final newPwd = newPwdController.text.trim();
+              if (oldPwd.isEmpty || newPwd.isEmpty) {
+                AppToast.error(ctx, message: '请填写完整', title: '提示');
+                return;
+              }
+              if (newPwd.length < 6) {
+                AppToast.error(ctx, message: '新密码至少6位', title: '提示');
+                return;
+              }
+              try {
+                await UserApi.changePassword(
+                  oldPassword: oldPwd,
+                  newPassword: newPwd,
+                );
+                if (!mounted) return;
+                Navigator.of(ctx).pop();
+                AppToast.success(
+                  mounted ? context : ctx,
+                  message: '密码修改成功',
+                  title: '完成',
+                );
+              } on DioException catch (e) {
+                final msg = e.message ?? '修改失败';
+                AppToast.error(ctx, message: msg, title: '修改失败');
+              }
+            },
+            child: const Text('确认修改'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────────────── 注销账号弹窗 ────────────────────────
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('注销账号'),
+        content: const Text('注销后您的账号数据将被永久删除，此操作不可撤销。确定要继续吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              try {
+                await UserApi.deleteAccount();
+                if (!mounted) return;
+                Navigator.of(ctx).pop();
+                // 清除本地状态并跳转到登录页
+                await context.read<UserProvider>().logout();
+                if (!mounted) return;
+                AppToast.success(context, message: '账号已注销', title: '再见');
+                context.go('/login');
+              } on DioException catch (e) {
+                final msg = e.message ?? '注销失败';
+                AppToast.error(ctx, message: msg, title: '注销失败');
+              }
+            },
+            child: const Text('确认注销'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -284,12 +284,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // ── 用户图标 ──
-                    Icon(
-                      Icons.account_circle_rounded,
-                      size: 80,
-                      color: colorScheme.primary,
-                    ),
+                    // ── 头像区（注册模式可点击更换） ──
+                    _buildAvatarPreview(colorScheme),
                     const SizedBox(height: 24),
 
                     // ── 模式切换按钮 ──
@@ -316,57 +312,6 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // ── 注册模式：头像选择 ──
-                    if (_mode == 'register') ...[
-                      Center(
-                        child: GestureDetector(
-                          onTap: _pickAvatar,
-                          child: Stack(
-                            children: [
-                              CircleAvatar(
-                                radius: 36,
-                                backgroundColor: colorScheme.primaryContainer,
-                                backgroundImage: _avatarImage != null
-                                    ? FileImage(File(_avatarImage!.path))
-                                    : null,
-                                child: _avatarImage == null
-                                    ? Icon(
-                                        Icons.camera_alt_rounded,
-                                        size: 32,
-                                        color: colorScheme.onPrimaryContainer,
-                                      )
-                                    : null,
-                              ),
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.add,
-                                    size: 14,
-                                    color: colorScheme.onPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '设置头像（可选）',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
 
                     // ── 注册模式：用户名输入 ──
                     if (_mode == 'register') ...[
@@ -556,6 +501,49 @@ class _LoginPageState extends State<LoginPage> {
       default:
         return '登录';
     }
+  }
+
+  /// 头像预览区：注册模式可点击换头像，登录模式显示占位图标
+  Widget _buildAvatarPreview(ColorScheme colorScheme) {
+    if (_mode == 'register') {
+      // 注册模式：点击选择/预览头像
+      return GestureDetector(
+        onTap: _pickAvatar,
+        child: CircleAvatar(
+          radius: 40,
+          backgroundColor: colorScheme.primaryContainer,
+          backgroundImage: _avatarImage != null
+              ? FileImage(File(_avatarImage!.path))
+              : null,
+          child: _avatarImage == null
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.camera_alt_rounded,
+                      size: 28,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '设置头像',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                )
+              : null,
+        ),
+      );
+    }
+    // 登录模式：占位图标
+    return Icon(
+      Icons.account_circle_rounded,
+      size: 80,
+      color: colorScheme.primary,
+    );
   }
 }
 

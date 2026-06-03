@@ -48,6 +48,12 @@ func Setup(r *gin.Engine, cfg *config.Config) *gin.Engine {
 		{
 			// 上传/更新头像（需要登录）
 			auth.POST("/avatar", authHandler.UploadAvatar)
+
+			// 修改密码（需要登录）
+			auth.POST("/change-password", authHandler.ChangePassword)
+
+			// 注销账号（需要登录）
+			auth.POST("/delete-account", authHandler.DeleteAccount)
 		}
 
 		music := sandBox.Group("/music")

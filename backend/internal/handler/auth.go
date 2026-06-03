@@ -374,3 +374,72 @@ func (h *AuthHandler) UploadAvatar(c *gin.Context) {
 		"data": gin.H{"avatar_url": avatarURL},
 	})
 }
+
+// ──────────────────────────── 修改密码 ────────────────────────────
+
+type ChangePasswordReq struct {
+	OldPassword string `json:"old_password" binding:"required"` // 旧密码
+	NewPassword string `json:"new_password" binding:"required,min=6"` // 新密码(至少6位)
+}
+
+// ChangePassword 修改密码
+// POST /api/auth/change-password
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "未登录"})
+		return
+	}
+
+	var req ChangePasswordReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误: " + err.Error()})
+		return
+	}
+
+	var user model.User
+	if err := repository.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "用户不存在"})
+		return
+	}
+
+	// 验证旧密码
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "旧密码错误"})
+		return
+	}
+
+	// 哈希新密码
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "密码加密失败"})
+		return
+	}
+
+	if err := repository.DB.Model(&user).Update("password", string(hashedPassword)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "密码更新失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "密码修改成功"})
+}
+
+// ──────────────────────────── 注销账号 ────────────────────────────
+
+// DeleteAccount 注销当前登录用户账号
+// POST /api/auth/delete-account
+func (h *AuthHandler) DeleteAccount(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "未登录"})
+		return
+	}
+
+	// 删除用户（软删除由 gorm.Model 的 DeletedAt 处理）
+	if err := repository.DB.Delete(&model.User{}, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "账号注销失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "账号已注销"})
+}

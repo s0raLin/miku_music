@@ -210,4 +210,43 @@ class UserApi {
   static Future<void> clearLocalAuth() async {
     await _localAuth.clearAll();
   }
+
+  // ─────────────────── 修改密码 ───────────────────
+
+  /// 修改密码（需要已登录）
+  static Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final response = await HttpUtils().post(
+      "$base/change-password",
+      data: {
+        "old_password": oldPassword,
+        "new_password": newPassword,
+      },
+    );
+
+    final result = ApiResponse.fromJson(response.data);
+    if (result.code != 0) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: result.msg,
+      );
+    }
+  }
+
+  // ─────────────────── 注销账号 ───────────────────
+
+  /// 注销当前登录用户账号（需要已登录）
+  static Future<void> deleteAccount() async {
+    final response = await HttpUtils().post("$base/delete-account");
+
+    final result = ApiResponse.fromJson(response.data);
+    if (result.code != 0) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: result.msg,
+      );
+    }
+  }
 }

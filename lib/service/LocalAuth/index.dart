@@ -24,7 +24,7 @@ class LocalAuth {
   // 这里使用固定值便于本地开发，上线前替换为 Keychain/Keystore 派生方案
   static final _encryptKey =
       encrypt.Key.fromUtf8('MikuMusic2024Key!32bytesLong____');
-  static final _iv = encrypt.IV.fromUtf8('MikuMusicIV__16__');
+  static final _iv = encrypt.IV.fromUtf8('MikuMusicIV_16__');
 
   /// 加密并保存 JWT token
   Future<void> saveToken(String token) async {

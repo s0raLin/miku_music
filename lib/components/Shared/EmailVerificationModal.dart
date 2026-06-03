@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/api/Client/Auth/index.dart';
+import 'package:myapp/utils/Http/index.dart';
 
 /// 邮箱验证码模态窗口
 ///
@@ -20,13 +21,17 @@ import 'package:myapp/api/Client/Auth/index.dart';
 ///
 /// 流程:
 /// 1. 显示已输入的邮箱
-/// 2. 自动发送验证码
+/// 2. 自动发送验证码（如果 initialCountdown 为 0 或未指定）
 /// 3. 用户输入 6 位验证码
 /// 4. 点击验证后关闭模态窗口并返回验证码
+///
+/// [initialCountdown] 默认 0，表示进入后立即自动发送。
+/// 如果调用方已提前发送了验证码，可传入 60 直接进入倒计时状态。
 Future<Map<String, String>?> showEmailVerificationModal(
   BuildContext context, {
   required String email,
   required String purpose, // "register" 或 "login"
+  int initialCountdown = 0,
 }) {
   return showDialog<Map<String, String>>(
     context: context,
@@ -34,6 +39,7 @@ Future<Map<String, String>?> showEmailVerificationModal(
     builder: (context) => _EmailVerificationDialog(
       email: email,
       purpose: purpose,
+      initialCountdown: initialCountdown,
     ),
   );
 }
@@ -41,10 +47,12 @@ Future<Map<String, String>?> showEmailVerificationModal(
 class _EmailVerificationDialog extends StatefulWidget {
   final String email;
   final String purpose;
+  final int initialCountdown;
 
   const _EmailVerificationDialog({
     required this.email,
     required this.purpose,
+    required this.initialCountdown,
   });
 
   @override
@@ -65,8 +73,16 @@ class _EmailVerificationDialogState extends State<_EmailVerificationDialog> {
   @override
   void initState() {
     super.initState();
-    // 自动发送验证码
-    _sendCode();
+    if (widget.initialCountdown > 0) {
+      // 调用方已经发送了验证码，直接进入已发送状态
+      _codeSent = true;
+      _countdown = widget.initialCountdown;
+      _startCountdown();
+      _codeFocusNode.requestFocus();
+    } else {
+      // 默认行为：自动发送验证码
+      _sendCode();
+    }
   }
 
   @override
@@ -79,6 +95,8 @@ class _EmailVerificationDialogState extends State<_EmailVerificationDialog> {
 
   /// 发送验证码
   Future<void> _sendCode() async {
+    if (_countdown > 0 || _isSending) return; // 倒计时中不允许重复发送
+
     setState(() {
       _isSending = true;
       _errorMsg = null;
@@ -103,7 +121,7 @@ class _EmailVerificationDialogState extends State<_EmailVerificationDialog> {
       _codeFocusNode.requestFocus();
     } on DioException catch (e) {
       if (!mounted) return;
-      final msg = e.message ?? '发送失败';
+      final msg = HttpUtils.extractErrorMessage(e);
       setState(() => _errorMsg = msg);
     } finally {
       if (mounted) {
@@ -194,7 +212,9 @@ class _EmailVerificationDialogState extends State<_EmailVerificationDialog> {
 
             // 说明文字
             Text(
-              '验证码已发送至上述邮箱，请在下方输入6位验证码',
+              _codeSent
+                  ? '验证码已发送至上述邮箱，请在下方输入6位验证码'
+                  : '正在发送验证码...',
               style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

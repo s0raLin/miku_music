@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:myapp/api/Client/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
+import 'package:myapp/utils/Http/index.dart';
 import 'package:provider/provider.dart';
 
 /// 登录/注册页面
@@ -39,17 +42,41 @@ class _LoginPageState extends State<LoginPage> {
   /// 当前模式: 'code' = 验证码登录, 'password' = 密码登录, 'register' = 注册
   String _mode = 'code';
 
+  /// 发送验证码的冷却倒计时（秒），>0 时不允许再次发送
+  int _sendCooldown = 0;
+  Timer? _cooldownTimer;
+
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _usernameController.dispose();
     super.dispose();
   }
 
+  /// 启动倒计时并更新 UI
+  void _startCooldown() {
+    _sendCooldown = 60;
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_sendCooldown > 0) {
+          _sendCooldown--;
+        } else {
+          timer.cancel();
+        }
+      });
+    });
+  }
+
   // ─────────────────── 处理函数 ───────────────────
 
-  /// 邮箱+验证码登录：弹出验证码模态窗口
+  /// 邮箱+验证码登录：先校验邮箱再弹窗
   Future<void> _loginByCode() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
@@ -57,11 +84,31 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // 弹出邮箱验证码模态窗口
+    // 冷却中不允许重复发送
+    if (_sendCooldown > 0) {
+      AppToast.neutral(context, message: '${_sendCooldown}秒后可重新发送验证码', title: '请稍候');
+      return;
+    }
+
+    // 先调用发送验证码接口做前置校验（邮箱是否已注册等）
+    try {
+      await UserApi.sendCode(email: email, purpose: 'login');
+      _startCooldown();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = HttpUtils.extractErrorMessage(e);
+      AppToast.error(context, message: msg, title: '发送失败');
+      return;
+    }
+
+    if (!mounted) return;
+
+    // 发送成功后弹出验证码输入窗口
     final result = await showEmailVerificationModal(
       context,
       email: email,
       purpose: 'login',
+      initialCountdown: 60,
     );
 
     if (result == null || !mounted) return;
@@ -87,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
       context.go('/home');
     } on DioException catch (e) {
       if (!mounted) return;
-      final msg = e.message ?? '登录失败';
+      final msg = HttpUtils.extractErrorMessage(e);
       AppToast.error(context, message: msg, title: '登录失败');
     } catch (e) {
       if (!mounted) return;
@@ -121,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
       context.go('/home');
     } on DioException catch (e) {
       if (!mounted) return;
-      final msg = e.message ?? '登录失败';
+      final msg = HttpUtils.extractErrorMessage(e);
       AppToast.error(context, message: msg, title: '登录失败');
     } catch (e) {
       if (!mounted) return;
@@ -131,17 +178,37 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// 注册：先弹出验证码模态窗口，验证通过后调用注册接口
+  /// 注册：先校验邮箱再弹窗发送验证码
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
 
-    // 弹出邮箱验证码模态窗口
+    // 冷却中不允许重复发送
+    if (_sendCooldown > 0) {
+      AppToast.neutral(context, message: '${_sendCooldown}秒后可重新发送验证码', title: '请稍候');
+      return;
+    }
+
+    // 先调用发送验证码接口做前置校验（邮箱是否已注册等）
+    try {
+      await UserApi.sendCode(email: email, purpose: 'register');
+      _startCooldown();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = HttpUtils.extractErrorMessage(e);
+      AppToast.error(context, message: msg, title: '发送失败');
+      return;
+    }
+
+    if (!mounted) return;
+
+    // 发送成功后弹出验证码输入窗口
     final result = await showEmailVerificationModal(
       context,
       email: email,
       purpose: 'register',
+      initialCountdown: 60,
     );
 
     if (result == null || !mounted) return;
@@ -168,7 +235,7 @@ class _LoginPageState extends State<LoginPage> {
       context.go('/home');
     } on DioException catch (e) {
       if (!mounted) return;
-      final msg = e.message ?? '注册失败';
+      final msg = HttpUtils.extractErrorMessage(e);
       AppToast.error(context, message: msg, title: '注册失败');
     } catch (e) {
       if (!mounted) return;

@@ -13,6 +13,8 @@ class User {
   final String username;
 
   /// 头像 OSS URL，可能为 null
+  /// 后端 JSON 字段名为 'avatar'
+  @JsonKey(name: 'avatar')
   final String? avatarURL;
 
   final String email;

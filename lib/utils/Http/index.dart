@@ -81,6 +81,18 @@ class HttpUtils {
     );
   }
 
+  /// 从 DioException 中提取后端返回的错误消息
+  /// 优先读取 response body 中的 msg 字段，fallback 到 e.message
+  static String extractErrorMessage(DioException e) {
+    if (e.response?.data is Map) {
+      final data = e.response!.data as Map;
+      if (data.containsKey('msg') && data['msg'] != null) {
+        return data['msg'].toString();
+      }
+    }
+    return e.message ?? '网络请求失败';
+  }
+
   // 错误处理逻辑
   void _handleError(DioException e) {
     switch (e.type) {

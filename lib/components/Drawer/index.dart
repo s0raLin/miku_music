@@ -137,8 +137,9 @@ class MainDrawer extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
+              // 使用 ctx（对话框自己的 context）读取 Provider，避免抽屉关闭后 context 失效
+              ctx.read<UserProvider>().logout();
               Navigator.of(ctx).pop();
-              context.read<UserProvider>().logout();
             },
             child: const Text('确定'),
           ),
@@ -182,6 +183,7 @@ class MainDrawer extends StatelessWidget {
             isLoggedIn: isLoggedIn,
             username: user?.username,
             email: user?.email,
+            avatarURL: user?.avatarURL,
           ),
 
           // ── 菜单列表 ──
@@ -231,11 +233,12 @@ class MainDrawer extends StatelessWidget {
 // ── 子组件 ──────────────────────────────────────────────────────────────────
 
 class _DrawerHeader extends StatelessWidget {
-  const _DrawerHeader({required this.isLoggedIn, this.username, this.email});
+  const _DrawerHeader({required this.isLoggedIn, this.username, this.email, this.avatarURL});
 
   final bool isLoggedIn;
   final String? username;
   final String? email;
+  final String? avatarURL;
 
   @override
   Widget build(BuildContext context) {
@@ -258,11 +261,16 @@ class _DrawerHeader extends StatelessWidget {
               CircleAvatar(
                 radius: 30,
                 backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
-                child: Icon(
-                  Icons.person_rounded,
-                  size: 30,
-                  color: colorScheme.primary,
-                ),
+                backgroundImage: avatarURL != null && avatarURL!.isNotEmpty
+                    ? NetworkImage(avatarURL!)
+                    : null,
+                child: avatarURL == null || avatarURL!.isEmpty
+                    ? Icon(
+                        Icons.person_rounded,
+                        size: 30,
+                        color: colorScheme.primary,
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Column(

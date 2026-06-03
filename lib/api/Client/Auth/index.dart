@@ -67,18 +67,7 @@ class UserApi {
         message: result.msg,
       );
     }
-
-    final user = User.fromJson(result.data?["user"]);
-    final token = result.data?["token"] as String?;
-    user.token = token;
-
-    // 加密保存到本地
-    if (token != null) {
-      await _localAuth.saveToken(token);
-    }
-    await _localAuth.saveUser(user.toJson());
-
-    return user;
+    return _handleAuthResponse(result);
   }
 
   // ─────────────────── 邮箱+验证码登录 ───────────────────
@@ -100,18 +89,7 @@ class UserApi {
         message: result.msg,
       );
     }
-
-    final user = User.fromJson(result.data?["user"]);
-    final token = result.data?["token"] as String?;
-    user.token = token;
-
-    // 加密保存到本地
-    if (token != null) {
-      await _localAuth.saveToken(token);
-    }
-    await _localAuth.saveUser(user.toJson());
-
-    return user;
+    return _handleAuthResponse(result);
   }
 
   // ─────────────────── 邮箱+密码登录 ───────────────────
@@ -133,7 +111,13 @@ class UserApi {
         message: result.msg,
       );
     }
+    return _handleAuthResponse(result);
+  }
 
+  // ─────────────────── 内部辅助：处理认证响应 ───────────────────
+
+  /// 从认证接口响应中提取 user + token 并持久化
+  static Future<User> _handleAuthResponse(ApiResponse result) async {
     final user = User.fromJson(result.data?["user"]);
     final token = result.data?["token"] as String?;
     user.token = token;

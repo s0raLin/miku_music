@@ -11,17 +11,6 @@ import (
 )
 
 // EmailService 邮件发送服务
-//
-// 使用 gomail 库构建 RFC 合规邮件，兼容 QQ邮箱/163/Gmail 等主流邮箱。
-//
-// 常用邮箱 SMTP 配置:
-//
-//	QQ邮箱:   Host=smtp.qq.com    Port=587  (需开启SMTP服务，使用授权码)
-//	126邮箱:  Host=smtp.126.com   Port=465  (需开启SMTP服务，使用授权码)
-//	163邮箱:  Host=smtp.163.com   Port=465  (需开启SMTP服务，使用授权码)
-//	Gmail:    Host=smtp.gmail.com Port=587  (需开启两步验证+应用专用密码)
-//
-// 开发模式: SMTP_HOST 留空时不真实发送，仅打印验证码到控制台
 type EmailService struct {
 	cfg config.SMTPConfig
 }
@@ -37,10 +26,7 @@ func (s *EmailService) GenerateCode() string {
 	return fmt.Sprintf("%06d", code)
 }
 
-// SendVerificationCode 发送验证码邮件
-//
-// 使用 gomail 自动处理 TLS/STARTTLS、MIME multipart/alternative、
-// Message-ID、Date 等标准头，避免 QQ邮箱 "缺少app字段" 的问题。
+// SendVerificationCode 发送验证码邮件（MD3 视觉风格）
 func (s *EmailService) SendVerificationCode(to, subject, body string) error {
 	// ── 开发模式：未配置SMTP时仅打印 ──
 	if s.cfg.Host == "" || s.cfg.User == "" {
@@ -53,28 +39,75 @@ func (s *EmailService) SendVerificationCode(to, subject, body string) error {
 		return nil
 	}
 
-	// HTML 邮件正文
+	// MD3 Light Theme 颜色变量定义
+	// Primary: #006A6A (Miku Teal) | On-Primary: #FFFFFF | Surface: #F4FBFA | Surface Variant: #DAE5E4
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; margin: 0; padding: 20px;">
-  <table width="100%%" cellpadding="0" cellspacing="0">
-    <tr><td align="center">
-      <table width="480" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
-        <tr><td style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 32px 24px; text-align: center;">
-          <h1 style="color: #fff; font-size: 24px; margin: 0;">Miku Music 🎵</h1>
-          <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">%s</p>
-        </td></tr>
-        <tr><td style="padding: 32px 24px;">
-          <p style="color: #374151; font-size: 15px; margin: 0 0 8px;">您的验证码是：</p>
-          <p style="background: #f3f4f6; border-radius: 10px; padding: 16px 24px; text-align: center; font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #6366f1; margin: 8px 0; font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;">%s</p>
-          <p style="color: #9ca3af; font-size: 13px; margin: 16px 0 0;">验证码 10 分钟内有效，请勿转发给他人。</p>
-        </td></tr>
-        <tr><td style="background: #f9fafb; padding: 16px 24px; text-align: center;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">此邮件由 Miku Music 自动发送，请勿回复。</p>
-        </td></tr>
-      </table>
-    </td></tr>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Roboto', system-ui, -apple-system, sans-serif; background-color: #F4FBFA; margin: 0; padding: 24px; color: #191C1C;">
+  <table width="100%%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td align="center">
+        <!-- MD3 Card Container -->
+        <table width="480" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #FFFFFF; border: 1px solid #C0C9C8; border-radius: 24px; overflow: hidden; padding: 32px 24px; box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05);">
+
+          <!-- Header / Brand -->
+          <tr>
+            <td style="padding-bottom: 24px; text-align: center;">
+              <div style="display: inline-block; font-size: 24px; font-weight: 700; color: #006A6A; letter-spacing: -0.5px;">
+                Miku Music <span style="font-size: 20px;">🎵</span>
+              </div>
+              <div style="font-size: 14px; color: #404948; margin-top: 4px; font-weight: 500;">%s</div>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="border-top: 1px solid #DAE5E4; padding-top: 24px;">
+              <p style="color: #191C1C; font-size: 16px; font-weight: 400; margin: 0 0 16px; line-height: 24px;">
+                您的验证码是：
+              </p>
+            </td>
+          </tr>
+
+          <!-- MD3 Code Badge (Filled Variant) -->
+          <tr>
+            <td>
+              <table width="100%%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #CCE8E7; border-radius: 12px; text-align: center;">
+                <tr>
+                  <td style="padding: 16px 24px; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #002020; font-family: 'Roboto Mono', 'SF Mono', monospace;">
+                    %s
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Notice -->
+          <tr>
+            <td style="padding-top: 16px;">
+              <p style="color: #404948; font-size: 14px; line-height: 20px; margin: 0;">
+                验证码 <strong>10 分钟</strong>内有效。为了您的账号安全，请勿将此验证码转发给他人。
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top: 32px; text-align: center;">
+              <p style="color: #707979; font-size: 12px; line-height: 16px; margin: 0; border-top: 1px solid #DAE5E4; padding-top: 16px;">
+                此邮件由 Miku Music 系统自动发出，请勿直接回复。<br>
+                &copy; 2026 Miku Music Project
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
   </table>
 </body>
 </html>`, subject, body)
@@ -85,27 +118,20 @@ func (s *EmailService) SendVerificationCode(to, subject, body string) error {
 	// ── 使用 gomail 构建邮件 ──
 	m := gomail.NewMessage()
 
-	// 设置标准邮件头（gomail 自动添加 Message-ID、Date、MIME-Version 等）
 	m.SetHeader("From", s.cfg.From)
 	m.SetHeader("To", to)
 	m.SetHeader("Subject", subject)
-	m.SetHeader("X-Mailer", "Miku Music Server") // 标识发件客户端
+	m.SetHeader("X-Mailer", "Miku Music Server")
 
-	// multipart/alternative: HTML + 纯文本
 	m.SetBody("text/plain", plainBody)
 	m.AddAlternative("text/html", htmlBody)
 
-	// 配置 SMTP dialer
 	port := 587
 	if s.cfg.Port != "" {
 		fmt.Sscanf(s.cfg.Port, "%d", &port)
 	}
 
 	d := gomail.NewDialer(s.cfg.Host, port, s.cfg.User, s.cfg.Password)
-
-	// gomail 自动处理 TLS（STARTTLS on 587, direct TLS on 465）
-	// 关闭证书验证仅用于开发环境，生产环境应移除
-	// d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	if err := d.DialAndSend(m); err != nil {
 		return fmt.Errorf("邮件发送失败: %w", err)

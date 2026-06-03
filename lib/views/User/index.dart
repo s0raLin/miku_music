@@ -6,6 +6,7 @@ import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
+import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
 
 class UserProfilePage extends StatefulWidget {
@@ -99,17 +100,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _UserProfileCard(
-                username: "匿名用户",
-                bio: "暂无描述",
-                followers: 0,
-                following: 0,
-                onTap: () {
-                  AppToast.show(
-                    context,
-                    message: '用户详情页开发中',
-                    title: '提示',
-                    tone: AppToastTone.neutral,
+              child: Consumer<UserProvider>(
+                builder: (context, userProvider, _) {
+                  final user = userProvider.user;
+                  return _UserProfileCard(
+                    username: user?.username ?? "请先登录",
+                    bio: user?.email ?? "暂无描述",
+                    avatarUrl: user?.avatarURL,
+                    followers: 0,
+                    following: 0,
+                    isLoggedIn: userProvider.isLoggedIn,
+                    onTap: () {
+                      if (userProvider.isLoggedIn) {
+                        context.push("/user/edit-profile");
+                      } else {
+                        context.push("/login");
+                      }
+                    },
                   );
                 },
               ),
@@ -237,15 +244,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
 class _UserProfileCard extends StatelessWidget {
   final String username;
   final String bio;
+  final String? avatarUrl;
   final int followers;
   final int following;
+  final bool isLoggedIn;
   final VoidCallback? onTap;
 
   const _UserProfileCard({
     required this.username,
     required this.bio,
+    this.avatarUrl,
     required this.followers,
     required this.following,
+    this.isLoggedIn = false,
     this.onTap,
   });
 
@@ -262,12 +273,17 @@ class _UserProfileCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
           child: Row(
             children: [
-              // 默认头像方案：采用 M3 容器色匹配的人像剪影图标
+              // 头像：优先显示网络头像，否则使用 M3 容器色人像图标
               CircleAvatar(
                 radius: 40,
                 backgroundColor: colorScheme.primaryContainer,
                 foregroundColor: colorScheme.onPrimaryContainer,
-                child: const Icon(Icons.person_rounded, size: 44),
+                backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                    ? NetworkImage(avatarUrl!)
+                    : null,
+                child: (avatarUrl == null || avatarUrl!.isEmpty)
+                    ? const Icon(Icons.person_rounded, size: 44)
+                    : null,
               ),
               const SizedBox(width: 16),
               // 中间信息

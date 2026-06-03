@@ -9,6 +9,7 @@ import 'package:myapp/service/AppIcon/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/StartupProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
+import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:myapp/router/Extensions/router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,6 +74,10 @@ class _SplashPageState extends State<SplashPage>
     final bool isFirstRun = pfs.getBool("is_first_run") ?? true;
 
     try {
+      // 尝试恢复登录状态（从本地加密存储）
+      final userProvider = context.read<UserProvider>();
+      await userProvider.tryAutoLogin();
+
       await startupProvider.run(
         themeProvider: themeProvider,
         musicProvider: musicProvider,

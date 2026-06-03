@@ -7,10 +7,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// SMTPConfig 邮件服务配置
+// 用于发送邮箱验证码
+type SMTPConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	From     string
+}
+
 type Config struct {
 	DBDriver string
 	DBSource string // MySql DSN
 	Port     string
+	SMTP     SMTPConfig
 }
 
 func Load() (*Config, error) {
@@ -21,6 +32,13 @@ func Load() (*Config, error) {
 		DBDriver: getEnv("DB_DRIVER", "mysql"),
 		DBSource: getEnv("DB_SOURCE", ""),
 		Port:     getEnv("PORT", "8080"),
+		SMTP: SMTPConfig{
+			Host:     getEnv("SMTP_HOST", ""),
+			Port:     getEnv("SMTP_PORT", "587"),
+			User:     getEnv("SMTP_USER", ""),
+			Password: getEnv("SMTP_PASSWORD", ""),
+			From:     getEnv("SMTP_FROM", ""),
+		},
 	}
 
 	if cfg.DBSource == "" {

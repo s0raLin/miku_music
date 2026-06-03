@@ -36,8 +36,8 @@ func main() {
 	// 全局 CORS（Flutter 调试时跨域用）
 	r.Use(globalCORE())
 
-	//把所有路由注册交给router包
-	router.Setup(r)
+	//把所有路由注册交给router包（传入配置）
+	router.Setup(r, cfg)
 
 	// 启动
 	log.Println("Server running on", cfg.Port)

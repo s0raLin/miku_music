@@ -1,48 +1,59 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:myapp/api/Model/User/index.dart';
+import 'package:myapp/service/LocalAuth/index.dart';
 
+/// 用户状态管理 Provider
+///
+/// 负责:
+/// - 从本地加密存储加载已登录用户
+/// - 登录/注册后更新用户状态
+/// - 登出时清除本地数据
 class UserProvider extends ChangeNotifier {
-  final jwtKey = "jwt_key";
+  final _localAuth = LocalAuth();
+
   User? _user;
+  String? _token;
 
-  String? _token = "";
+  User? get user => _user;
+  String? get token => _token;
+  bool get isLoggedIn => _user != null && _token != null;
 
-  final _storage = FlutterSecureStorage();
+  /// 尝试从本地加密存储恢复登录状态
+  /// 在应用启动时调用
+  Future<void> tryAutoLogin() async {
+    final savedToken = await _localAuth.readToken();
+    final savedUserJson = await _localAuth.readUser();
 
-  Future<void> loadToken() async {
-    final token = await _storage.read(key: jwtKey);
-
-    if (token != null) {
-      _token = token;
+    if (savedToken != null && savedUserJson != null) {
+      _token = savedToken;
+      _user = User.fromJson(savedUserJson);
+      _user!.token = savedToken;
+      debugPrint('[UserProvider] 已从本地恢复登录状态: ${_user!.username}');
       notifyListeners();
     }
   }
 
-  Future<void> saveToken(String newToken) async {
-    await _storage.write(key: jwtKey, value: newToken);
-  }
-
-  // String? get username => _user?.username;
-  String? get token => _token;
-  // String? get avatar => _user?.avatarURL;
-  User? get user => _user;
-
+  /// 登录/注册成功后更新用户信息
   Future<void> updateUserInfo(User newUser) async {
     _user = newUser;
-    try {
-      if (_user!.token != null && _user!.token!.isNotEmpty) {
-        await saveToken(_user!.token!);
-      }
-    } catch (e) {
-      print(e);
+    _token = newUser.token;
+
+    // 加密保存到本地
+    if (newUser.token != null && newUser.token!.isNotEmpty) {
+      await _localAuth.saveToken(newUser.token!);
     }
+    await _localAuth.saveUser(newUser.toJson());
+
+    debugPrint('[UserProvider] 用户信息已更新: ${newUser.username}');
     notifyListeners();
   }
 
-  void logout() {
+  /// 登出：清除内存状态和本地存储
+  Future<void> logout() async {
     _user = null;
     _token = null;
+    await _localAuth.clearAll();
+    debugPrint('[UserProvider] 已登出');
     notifyListeners();
   }
 }

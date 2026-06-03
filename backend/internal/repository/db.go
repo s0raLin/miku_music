@@ -39,11 +39,12 @@ func Init(cfg *config.Config) *gorm.DB {
 	sqlDB.SetMaxOpenConns(100)          // 最大打开连接数
 	sqlDB.SetConnMaxLifetime(time.Hour) // 连接最大存活时间
 
-	// 自动建表
+	// 自动建表（包含邮箱验证码表）
 	err = db.AutoMigrate(
 		&model.User{},
 		&model.MusicInfo{},
 		&model.PlayList{},
+		&model.EmailVerification{},
 	)
 
 	fmt.Printf("Mysql 连接成功")

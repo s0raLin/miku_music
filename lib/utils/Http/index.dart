@@ -7,6 +7,19 @@ class HttpUtils {
   static final HttpUtils _instance = HttpUtils._internal();
   late final Dio _dio;
 
+  /// 全局 JWT Token，登录后设置，登出时清除
+  static String? _authToken;
+
+  /// 设置认证 Token（登录/注册成功后调用）
+  static void setAuthToken(String token) {
+    _authToken = token;
+  }
+
+  /// 清除认证 Token（登出/注销时调用）
+  static void clearAuthToken() {
+    _authToken = null;
+  }
+
   void setBaseUrl(String url) {
     _baseUrl = url;
     _dio.options.baseUrl = url;
@@ -29,8 +42,10 @@ class HttpUtils {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // 在这里可以统一添加 Token 等
-          // options.headers['Authorization'] = 'Bearer your_token';
+          // 统一添加 JWT Token
+          if (_authToken != null && _authToken!.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $_authToken';
+          }
           return handler.next(options);
         },
         onResponse: (response, handler) {

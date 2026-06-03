@@ -3,6 +3,7 @@ package router
 import (
 	"miku_music/config"
 	"miku_music/internal/handler"
+	"miku_music/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,8 +42,7 @@ func Setup(r *gin.Engine, cfg *config.Config) *gin.Engine {
 
 	// ── 需要鉴权的路由 ──
 	sandBox := r.Group("/api")
-	// TODO: 添加 JWT 中间件
-	// sandBox.Use(middleware.JWTAuth())
+	sandBox.Use(middleware.JWTAuth())
 	{
 		auth := sandBox.Group("/auth")
 		{

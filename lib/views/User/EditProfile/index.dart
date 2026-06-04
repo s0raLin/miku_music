@@ -262,15 +262,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  void _showSimpleSnackBar(String msg) {
-    AppToast.show(
-      context,
-      message: msg,
-      title: '功能提示',
-      tone: AppToastTone.neutral,
-    );
-  }
-
   // ──────────────────────── 修改密码弹窗 ────────────────────────
 
   void _showChangePasswordDialog() {

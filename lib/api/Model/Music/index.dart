@@ -39,7 +39,6 @@ class Music {
 
   @override
   String toString() {
-    // TODO: implement toString
     return 'Music(title: $title, artist: $artist, album: $album, duration: $duration, ossKey: $ossKey, coverUrl: $coverUrl, lyricUrl: $lyricUrl)';
   }
 }

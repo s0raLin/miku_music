@@ -1,14 +1,15 @@
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/views/MusicDetail/widgets/cover_tab_content.dart';
+import 'package:myapp/views/MusicDetail/widgets/cover_content.dart';
 import 'package:myapp/views/MusicDetail/widgets/lyrics_section.dart';
 import 'package:myapp/views/MusicDetail/widgets/music_action_menu.dart';
 import 'package:myapp/views/MusicDetail/widgets/playback_queue_drawer.dart';
 
 class WideLayout extends StatelessWidget {
   final Music music;
-  
+
 
   const WideLayout({super.key, required this.music});
 
@@ -52,7 +53,7 @@ class WideLayout extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(flex: 5, child: CoverTabContent(music: music)),
+                  Expanded(flex: 5, child: CoverContent(music: music)),
                   const SizedBox(width: 24),
                   const Expanded(flex: 4, child: LyricsSection()),
                 ],

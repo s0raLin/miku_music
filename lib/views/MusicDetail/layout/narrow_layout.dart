@@ -9,7 +9,6 @@ import 'package:myapp/views/MusicDetail/widgets/playback_queue_drawer.dart';
 class NarrowLayout extends StatefulWidget {
   final Music music;
 
-
   const NarrowLayout({super.key, required this.music});
 
   @override
@@ -18,11 +17,22 @@ class NarrowLayout extends StatefulWidget {
 
 class _NarrowLayoutState extends State<NarrowLayout> {
   int _selectedSegment = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _selectedSegment);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -30,11 +40,25 @@ class _NarrowLayoutState extends State<NarrowLayout> {
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
           onPressed: () => context.pop(),
         ),
-        title: Text(
-          "正在播放",
-          style: tt.titleMedium,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        title: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _DotIndicator(isSelected: _selectedSegment == 0, onTap: () {
+                setState(() => _selectedSegment = 0);
+                _pageController.animateToPage(0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic);
+              }),
+              const SizedBox(width: 16),
+              _DotIndicator(isSelected: _selectedSegment == 1, onTap: () {
+                setState(() => _selectedSegment = 1);
+                _pageController.animateToPage(1,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic);
+              }),
+            ],
+          ),
         ),
         actions: [
           GestureDetector(
@@ -53,48 +77,47 @@ class _NarrowLayoutState extends State<NarrowLayout> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Column(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() => _selectedSegment = index);
+            },
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: SegmentedButton<int>(
-                  segments: const [
-                    ButtonSegment<int>(
-                      value: 0,
-                      icon: Icon(Icons.album_rounded),
-                      label: Text('播放'),
-                    ),
-                    ButtonSegment<int>(
-                      value: 1,
-                      icon: Icon(Icons.lyrics_rounded),
-                      label: Text('歌词'),
-                    ),
-                  ],
-                  selected: {_selectedSegment},
-                  onSelectionChanged: (selection) {
-                    setState(() => _selectedSegment = selection.first);
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeOutCubic,
-                  child: KeyedSubtree(
-                    key: ValueKey(_selectedSegment),
-                    child: _selectedSegment == 0
-                        ? CoverTabContent(music: widget.music)
-                        : const LyricsSection(),
-                  ),
-                ),
-              ),
+              CoverTabContent(music: widget.music),
+              const LyricsSection(),
             ],
           ),
         ),
       ),
       endDrawer: PlaybackQueueDrawer(),
+    );
+  }
+}
+
+class _DotIndicator extends StatelessWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DotIndicator({
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: isSelected ? 24 : 8,
+        height: 8,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          color: isSelected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.3),
+        ),
+      ),
     );
   }
 }

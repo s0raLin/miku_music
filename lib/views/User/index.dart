@@ -112,7 +112,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     isLoggedIn: userProvider.isLoggedIn,
                     onTap: () {
                       if (userProvider.isLoggedIn) {
-                        context.push("/user/edit-profile");
+                        context.push("/user/profile");
                       } else {
                         context.push("/login");
                       }

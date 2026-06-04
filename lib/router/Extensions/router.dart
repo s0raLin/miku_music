@@ -32,6 +32,4 @@ extension RouterCtx on BuildContext {
       go('/login');
     }
   }
-
-
 }

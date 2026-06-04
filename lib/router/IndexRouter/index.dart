@@ -7,6 +7,7 @@ import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/views/Search/index.dart';
 import 'package:myapp/views/SetupWizard/index.dart';
 import 'package:myapp/views/User/EditProfile/index.dart';
+import 'package:myapp/views/User/Profile/index.dart';
 import 'package:myapp/views/User/Files/index.dart';
 import 'package:myapp/views/Home/index.dart';
 import 'package:myapp/views/Login/index.dart';
@@ -123,6 +124,11 @@ final List<AppNavItem> navItems = [
         name: "edit-profile",
         path: "/edit-profile",
         builder: (context, state) => const EditProfilePage(),
+      ),
+      GoRoute(
+        name: "profile",
+        path: "/profile",
+        builder: (context, state) => const UserProfileViewPage(),
       ),
     ],
   ),

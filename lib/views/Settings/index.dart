@@ -24,8 +24,6 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   List<String> _scanPaths = [];
   bool _isPathsLoading = true;
-  bool _isScanning = false;
-  List<Music> _scannedSongs = [];
   StreamSubscription? _scanSubscription;
 
   @override
@@ -48,47 +46,6 @@ class _SettingsPageState extends State<SettingsPage> {
         _isPathsLoading = false;
       });
     }
-  }
-
-  void _startScan(List<String> paths) {
-    _scanSubscription?.cancel();
-    setState(() {
-      _isScanning = true;
-      _scannedSongs = [];
-    });
-
-    final musicProvider = context.read<MusicProvider>();
-
-    _scanSubscription = MusicService.scanDirectories(paths).listen(
-      (progress) {
-        if (!mounted) return;
-        if (progress.music != null) {
-          _scannedSongs.add(progress.music!);
-          if (_scannedSongs.length % 15 == 0) {
-            musicProvider.updateLibrary(List.from(_scannedSongs));
-          }
-        }
-      },
-      onDone: () {
-        if (!mounted) return;
-        musicProvider.updateLibrary(List.from(_scannedSongs));
-        setState(() => _isScanning = false);
-
-        if (_scannedSongs.isNotEmpty) {
-          AppToast.success(
-            context,
-            message: '扫描完成，共 ${_scannedSongs.length} 首歌曲',
-          );
-        } else {
-          AppToast.neutral(context, message: '未发现音频文件');
-        }
-      },
-      onError: (err) {
-        if (!mounted) return;
-        setState(() => _isScanning = false);
-        AppToast.error(context, message: '扫描出错: $err', title: '扫描失败');
-      },
-    );
   }
 
   Future<void> _showPickDialog() async {
@@ -142,8 +99,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Row(
                         children: [
-                          Icon(Icons.color_lens_outlined,
-                              size: 20, color: colorScheme.onSurfaceVariant),
+                          Icon(
+                            Icons.color_lens_outlined,
+                            size: 20,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 12),
                           Text("主题色", style: textTheme.bodyLarge),
                         ],
@@ -169,17 +129,21 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     // ── 主题模式 ──
                     SwitchListTile(
-                      secondary: Icon(Icons.dark_mode_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      secondary: Icon(
+                        Icons.dark_mode_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("深色模式"),
                       subtitle: Text(
                         themeProvider.themeMode == ThemeMode.system
                             ? "跟随系统"
                             : themeProvider.themeMode == ThemeMode.dark
-                                ? "已开启"
-                                : "已关闭",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                            ? "已开启"
+                            : "已关闭",
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       value: themeProvider.themeMode == ThemeMode.dark,
                       onChanged: (v) {
@@ -192,24 +156,22 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     // ── 列表密度 ──
                     ListTile(
-                      leading: Icon(Icons.density_medium_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      leading: Icon(
+                        Icons.density_medium_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("列表密度"),
                       subtitle: Text(
                         themeProvider.listDensity == "compact" ? "紧凑" : "舒适",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       trailing: SegmentedButton<String>(
                         segments: const [
-                          ButtonSegment(
-                            value: "compact",
-                            label: Text("紧凑"),
-                          ),
-                          ButtonSegment(
-                            value: "normal",
-                            label: Text("舒适"),
-                          ),
+                          ButtonSegment(value: "compact", label: Text("紧凑")),
+                          ButtonSegment(value: "normal", label: Text("舒适")),
                         ],
                         selected: {themeProvider.listDensity},
                         onSelectionChanged: (Set<String> v) {
@@ -225,15 +187,19 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     // ── 进度条样式 ──
                     ListTile(
-                      leading: Icon(Icons.show_chart_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      leading: Icon(
+                        Icons.show_chart_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("进度条样式"),
                       subtitle: Text(
                         themeProvider.sliderStyle == SliderStyle.wave
                             ? "波浪形"
                             : "直线形",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       trailing: SegmentedButton<SliderStyle>(
                         segments: const [
@@ -260,13 +226,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     // ── 应用图标 ──
                     ListTile(
-                      leading: Icon(Icons.apps_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      leading: Icon(
+                        Icons.apps_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("应用图标"),
                       subtitle: Text(
                         _getIconFileName(themeProvider.appIconPath),
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => _showAppIconPicker(context, themeProvider),
@@ -283,13 +253,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     // ── 启动自动播放 ──
                     SwitchListTile(
-                      secondary: Icon(Icons.play_circle_outline,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      secondary: Icon(
+                        Icons.play_circle_outline,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("启动时自动播放"),
                       subtitle: Text(
                         "应用启动后恢复上次播放",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       value: themeProvider.autoPlayOnStart,
                       onChanged: (v) => themeProvider.setAutoPlayOnStart(v),
@@ -298,13 +272,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     // ── 双击播放 ──
                     SwitchListTile(
-                      secondary: Icon(Icons.touch_app_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      secondary: Icon(
+                        Icons.touch_app_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("双击快速播放"),
                       subtitle: Text(
                         "双击列表中的歌曲立即播放",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       value: themeProvider.doubleTapToPlay,
                       onChanged: (v) => themeProvider.setDoubleTapToPlay(v),
@@ -321,13 +299,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     // ── 歌词封面 ──
                     SwitchListTile(
-                      secondary: Icon(Icons.album_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      secondary: Icon(
+                        Icons.album_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("显示专辑封面"),
                       subtitle: Text(
                         "播放页面展示专辑封面图",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       value: themeProvider.showLyricCover,
                       onChanged: (v) => themeProvider.setShowLyricCover(v),
@@ -336,13 +318,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     // ── 通知栏详情 ──
                     SwitchListTile(
-                      secondary: Icon(Icons.notifications_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      secondary: Icon(
+                        Icons.notifications_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("通知栏显示详情"),
                       subtitle: Text(
                         "通知栏展示歌曲名与封面",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       value: themeProvider.showNotificationDetail,
                       onChanged: (v) =>
@@ -364,13 +350,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     // ── 最大历史记录 ──
                     ListTile(
-                      leading: Icon(Icons.history_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      leading: Icon(
+                        Icons.history_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("历史记录上限"),
                       subtitle: Text(
                         "最多保留 ${themeProvider.maxHistoryCount} 条",
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       trailing: DropdownButton<int>(
                         value: themeProvider.maxHistoryCount,
@@ -397,20 +387,27 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: Icon(Icons.info_outline_rounded,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      leading: Icon(
+                        Icons.info_outline_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("软件版本"),
                       trailing: Text(
                         "$version ($buildNumber)",
-                        style: textTheme.bodyMedium
-                            ?.copyWith(color: colorScheme.outline),
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.outline,
+                        ),
                       ),
                       onTap: () => context.pushNamed('about'),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
                     ListTile(
-                      leading: Icon(Icons.description_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
+                      leading: Icon(
+                        Icons.description_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       title: const Text("开源许可"),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => showLicensePage(context: context),
@@ -434,17 +431,19 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       children: [
         ListTile(
-          leading: Icon(Icons.folder_open_rounded,
-              size: 20, color: colorScheme.onSurfaceVariant),
+          leading: Icon(
+            Icons.folder_open_rounded,
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
           title: const Text("音乐扫描目录"),
           subtitle: Text(
             _isPathsLoading
                 ? "加载中…"
                 : _scanPaths.isEmpty
-                    ? "未添加目录"
-                    : "${_scanPaths.length} 个目录",
-            style: textTheme.bodySmall
-                ?.copyWith(color: colorScheme.outline),
+                ? "未添加目录"
+                : "${_scanPaths.length} 个目录",
+            style: textTheme.bodySmall?.copyWith(color: colorScheme.outline),
           ),
           trailing: TextButton.icon(
             onPressed: _isPathsLoading ? null : _showPickDialog,
@@ -487,17 +486,19 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
 
   String _getIconFileName(String path) {
-    final name =
-        path.split('/').last.replaceAll(RegExp(r'\.(png|jpeg|jpg)$'), '');
+    final name = path
+        .split('/')
+        .last
+        .replaceAll(RegExp(r'\.(png|jpeg|jpg)$'), '');
     return name.replaceAll('app_icon', '风格 ').trim();
   }
 
@@ -657,8 +658,11 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
                 ),
               ..._tmpPaths.map(
                 (path) => ListTile(
-                  title: Text(path,
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  title: Text(
+                    path,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => setState(() => _tmpPaths.remove(path)),
@@ -670,10 +674,7 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
                 padding: EdgeInsets.only(bottom: 16),
                 child: LinearProgressIndicator(),
               ),
-              Text(
-                "正在扫描…",
-                style: TextStyle(color: colorScheme.primary),
-              ),
+              Text("正在扫描…", style: TextStyle(color: colorScheme.primary)),
               const SizedBox(height: 8),
               Text(
                 "已扫描 $_scannedCount 个文件，发现 $_foundCount 首歌曲",
@@ -691,10 +692,7 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.red),
-                ),
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
               ),
           ],
         ),
@@ -764,8 +762,9 @@ class _AppIconPickerSheetState extends State<_AppIconPickerSheet> {
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               "选择应用图标",
-              style:
-                  textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           SizedBox(
@@ -879,8 +878,9 @@ class _ThemeSeedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final checkIconColor =
-        color.computeLuminance() > 0.5 ? cs.inverseSurface : cs.onInverseSurface;
+    final checkIconColor = color.computeLuminance() > 0.5
+        ? cs.inverseSurface
+        : cs.onInverseSurface;
 
     return InkWell(
       onTap: onTap,

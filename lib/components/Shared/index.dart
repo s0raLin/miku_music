@@ -16,17 +16,24 @@ enum MediaGridCardTextLayout { below, overlay }
 enum AppToastTone { neutral, success, warning, error }
 
 // ---------------------------------------------------------------------------
-// 统一圆角常量 — M3 Shape Scale
+// 统一圆角常量 — M3 Shape Scale (重设计版: 更柔和、更大的圆角)
 // ---------------------------------------------------------------------------
 abstract final class AppRadius {
-  /// M3 Medium (Card 默认): 默认12 dp
-  static const double card = 16;
+  /// M3 Large (Card 默认): 24dp — 柔和大圆角
+  static const double card = 24;
 
-  /// M3 Small (内嵌图像/头像容器): 默认8 dp
+  /// M3 Medium (内嵌图像/头像/panel): 16dp
   static const double inner = 16;
+
+  /// M3 Small (label/chip): 8dp
+  static const double sm = 8;
+
+  /// Pill/Stadium: 全圆角
+  static const double full = 999;
 
   static BorderRadius get cardBR => BorderRadius.circular(card);
   static BorderRadius get innerBR => BorderRadius.circular(inner);
+  static BorderRadius get pillBR => BorderRadius.circular(full);
 }
 
 // ---------------------------------------------------------------------------
@@ -76,7 +83,7 @@ class AppToast {
         duration: duration,
         backgroundColor: bg,
         behavior: SnackBarBehavior.floating,
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         content: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -438,7 +445,7 @@ class MediaOverlayCard extends StatelessWidget {
         child: Container(
           clipBehavior: Clip.antiAlias, // 完美裁剪内部层级
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24), // 统一的现代大圆角
+            borderRadius: BorderRadius.circular(AppRadius.card), // 统一的现代大圆角
           ),
           child: Stack(
             fit: StackFit.expand,

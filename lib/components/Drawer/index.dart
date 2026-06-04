@@ -245,7 +245,7 @@ class _DrawerHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      color: colorScheme.primaryContainer,
+      color: colorScheme.surfaceContainerLow,
       padding: EdgeInsets.fromLTRB(
         20,
         MediaQuery.of(context).padding.top + 20, // 安全区适配

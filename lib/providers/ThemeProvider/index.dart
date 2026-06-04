@@ -8,6 +8,7 @@ import 'package:myapp/service/Settings/index.dart';
 
 class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
   const NoAnimationPageTransitionsBuilder();
+
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -20,17 +21,34 @@ class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
   }
 }
 
-/// 进度条样式
-enum SliderStyle {
-  straight, // 标准直线
-  wave, // 蛇形波浪
+enum SliderStyle { straight, wave }
+
+/// 颜色调整配置（便于未来扩展不同风格）
+class ColorAdjustments {
+  final double primaryDesat;
+  final double containerDesat;
+  final double neutralStrength;
+  final Color desatTargetLight;
+  final Color desatTargetDark;
+  final Color neutralBaseLight;
+  final Color neutralBaseDark;
+
+  const ColorAdjustments({
+    this.primaryDesat = 0.15,
+    this.containerDesat = 0.30,
+    this.neutralStrength = 0.15,
+    this.desatTargetLight = const Color(0xFFF0EAE4),
+    this.desatTargetDark = const Color(0xFF282423),
+    this.neutralBaseLight = const Color(0xFF4A4341),
+    this.neutralBaseDark = const Color(0xFFE5DDD9),
+  });
 }
 
 class ThemeProvider extends ChangeNotifier {
-  // 设置默认值，防止在数据加载完成前出现空引用
   ThemeMode _themeMode = ThemeMode.system;
-  Color _seedColor = const Color(0xFF6750A4);
+  Color _seedColor = const Color(0xFFC49B8A);
   SliderStyle _sliderStyle = SliderStyle.wave;
+
   String _listDensity = "normal";
   String _audioQuality = "normal";
   bool _showLyricCover = true;
@@ -41,8 +59,11 @@ class ThemeProvider extends ChangeNotifier {
   int _maxHistoryCount = 100;
   String _appIconPath = "assets/app_icon/app_icon1.png";
 
+  final ColorAdjustments _adjustments = const ColorAdjustments();
+
   ThemeProvider();
 
+  // ==================== Getters ====================
   ThemeMode get themeMode => _themeMode;
   Color get seedColor => _seedColor;
   SliderStyle get sliderStyle => _sliderStyle;
@@ -56,17 +77,13 @@ class ThemeProvider extends ChangeNotifier {
   int get maxHistoryCount => _maxHistoryCount;
   String get appIconPath => _appIconPath;
 
+  // ==================== 更新方法 ====================
   void updateFromMap(Map<String, dynamic> data) {
-    // 使用 ?? 语法确保如果 Map 里的值缺失，保留当前的默认值
     _seedColor = data['seedColor'] ?? _seedColor;
     _themeMode = data['themeMode'] ?? _themeMode;
-    // 3. 从本地恢复时，将字符串安全地解析回枚举
-    final savedStyleStr = data['sliderStyle'];
-    if (savedStyleStr == 'wave') {
-      _sliderStyle = SliderStyle.wave;
-    } else {
-      _sliderStyle = SliderStyle.straight;
-    }
+    final s = data['sliderStyle'];
+    _sliderStyle = s == 'wave' ? SliderStyle.wave : SliderStyle.straight;
+
     _listDensity = data['listDensity'] ?? _listDensity;
     _audioQuality = data['audioQuality'] ?? _audioQuality;
     _showLyricCover = data['showLyricCover'] ?? _showLyricCover;
@@ -78,12 +95,10 @@ class ThemeProvider extends ChangeNotifier {
     _maxHistoryCount = data['maxHistoryCount'] ?? _maxHistoryCount;
     _appIconPath = data['appIconPath'] ?? _appIconPath;
 
-    // 关键：通知 UI 刷新样式
     notifyListeners();
   }
 
-  // --- 逻辑方法 ---
-
+  // ==================== Setter ====================
   void setThemeMode(ThemeMode mode) {
     _themeMode = mode;
     notifyListeners();
@@ -96,84 +111,74 @@ class ThemeProvider extends ChangeNotifier {
     SettingService.setColor(color);
   }
 
-  void setSliderStyle(SliderStyle sliderStyle) {
-    _sliderStyle = sliderStyle;
+  void setSliderStyle(SliderStyle s) {
+    _sliderStyle = s;
     notifyListeners();
-    SettingService.setSliderStyle(sliderStyle.name);
+    SettingService.setSliderStyle(s.name);
   }
 
-  void setListDensity(String density) {
-    _listDensity = density;
+  void setListDensity(String v) {
+    _listDensity = v;
     notifyListeners();
-    SettingService.setListDensity(density);
+    SettingService.setListDensity(v);
   }
 
-  void setAudioQuality(String quality) {
-    _audioQuality = quality;
+  void setAudioQuality(String v) {
+    _audioQuality = v;
     notifyListeners();
-    SettingService.setAudioQuality(quality);
+    SettingService.setAudioQuality(v);
   }
 
-  void setShowLyricCover(bool show) {
-    _showLyricCover = show;
+  void setShowLyricCover(bool v) {
+    _showLyricCover = v;
     notifyListeners();
-    SettingService.setShowLyricCover(show);
+    SettingService.setShowLyricCover(v);
   }
 
-  void setAutoPlayOnStart(bool autoPlay) {
-    _autoPlayOnStart = autoPlay;
+  void setAutoPlayOnStart(bool v) {
+    _autoPlayOnStart = v;
     notifyListeners();
-    SettingService.setAutoPlayOnStart(autoPlay);
+    SettingService.setAutoPlayOnStart(v);
   }
 
-  void setShowNotificationDetail(bool show) {
-    _showNotificationDetail = show;
+  void setShowNotificationDetail(bool v) {
+    _showNotificationDetail = v;
     notifyListeners();
-    SettingService.setShowNotificationDetail(show);
+    SettingService.setShowNotificationDetail(v);
   }
 
-  void setDoubleTapToPlay(bool enable) {
-    _doubleTapToPlay = enable;
+  void setDoubleTapToPlay(bool v) {
+    _doubleTapToPlay = v;
     notifyListeners();
-    SettingService.setDoubleTapToPlay(enable);
+    SettingService.setDoubleTapToPlay(v);
   }
 
-  void setPlaylistSortBy(String sortBy) {
-    _playlistSortBy = sortBy;
+  void setPlaylistSortBy(String v) {
+    _playlistSortBy = v;
     notifyListeners();
-    SettingService.setPlaylistSortBy(sortBy);
+    SettingService.setPlaylistSortBy(v);
   }
 
-  void setMaxHistoryCount(int count) {
-    _maxHistoryCount = count;
+  void setMaxHistoryCount(int v) {
+    _maxHistoryCount = v;
     notifyListeners();
-    SettingService.setMaxHistoryCount(count);
+    SettingService.setMaxHistoryCount(v);
   }
 
-  void setAppIconPath(String iconPath) {
-    _appIconPath = iconPath;
+  void setAppIconPath(String v) {
+    _appIconPath = v;
     notifyListeners();
-    SettingService.setAppIcon(iconPath);
-    AppIconService.switchAppIcon(iconPath);
+    SettingService.setAppIcon(v);
+    AppIconService.switchAppIcon(v);
   }
 
-  // M3 颜色谐波化算法：让自定义颜色（如链接色）适配主题种子色
-  Color blend(Color targetColor) {
-    return Color(
-      Blend.harmonize(targetColor.toARGB32(), _seedColor.toARGB32()),
-    );
-  }
+  Color blend(Color c) =>
+      Color(Blend.harmonize(c.toARGB32(), _seedColor.toARGB32()));
 
-  // --- 主题构建 ---
-
-  // M3 圆角 Token 体系
-  static const _kShapeSmall = 8.0;
-  static const _kShapeMedium = 12.0;
-  static const _kShapeLarge = 16.0;
-  static const _kShapeExtraLarge = 28.0;
-
+  // ==================== 核心主题构建 ====================
   ThemeData _buildTheme(Brightness brightness) {
-    final baseTheme = ThemeData(
+    final isLight = brightness == Brightness.light;
+    final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
@@ -183,43 +188,48 @@ class ThemeProvider extends ChangeNotifier {
       ),
     );
 
-    final scheme = baseTheme.colorScheme;
+    final raw = base.colorScheme;
+    final adj = _adjustments;
 
-    // ── 通用 Button 样式基座 ──
-    final filledBtnStyle = FilledButton.styleFrom(
-      foregroundColor: scheme.onPrimary,
-      backgroundColor: scheme.primary,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(_kShapeLarge),
-      ),
-    );
-    final elevatedBtnStyle = ElevatedButton.styleFrom(
-      foregroundColor: scheme.onSurface,
-      backgroundColor: scheme.surfaceContainerLow,
-      elevation: 1,
-      shadowColor: Colors.transparent,
-      surfaceTintColor: scheme.surfaceTint,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(_kShapeLarge),
-      ),
-    );
-    final outlinedBtnStyle = OutlinedButton.styleFrom(
-      foregroundColor: scheme.primary,
-      side: BorderSide(color: scheme.outline, width: 1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(_kShapeLarge),
-      ),
-    );
-    final textBtnStyle = TextButton.styleFrom(
-      foregroundColor: scheme.primary,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(_kShapeLarge),
-      ),
+    final desatTarget = isLight ? adj.desatTargetLight : adj.desatTargetDark;
+    final neutralBase = isLight ? adj.neutralBaseLight : adj.neutralBaseDark;
+
+    // 柔化颜色
+    final soft = _createSoftColorScheme(raw, desatTarget, neutralBase, adj);
+
+    final finalSurface = isLight
+        ? const Color(0xFFFDFDFB)
+        : const Color(0xFF141211);
+
+    final surfaceColors = _createSurfaceColors(soft.surface, desatTarget);
+
+    final s = soft.copyWith(
+      surface: finalSurface,
+      surfaceContainerLowest: surfaceColors.lowest,
+      surfaceContainerLow: surfaceColors.low,
+      surfaceContainer: surfaceColors.medium,
+      surfaceContainerHigh: surfaceColors.high,
+      surfaceContainerHighest: surfaceColors.highest,
     );
 
-    return baseTheme.copyWith(
-      // ── 平台转场动画 ──
-      pageTransitionsTheme: PageTransitionsTheme(
+    final softOnSurface = _lerp(s.onSurface, neutralBase, 0.15);
+    final softOnSurfaceVariant = _lerp(s.onSurfaceVariant, neutralBase, 0.35);
+    final softOutline = _lerp(s.outline, desatTarget, 0.25);
+    // final softOutlineVariant = _lerp(s.outlineVariant, desatTarget, 0.40);
+
+    final pill = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(999),
+    );
+    final cardShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(28),
+    );
+
+    return base.copyWith(
+      colorScheme: s,
+      scaffoldBackgroundColor: finalSurface,
+
+      // Page Transitions
+      pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
@@ -229,270 +239,223 @@ class ThemeProvider extends ChangeNotifier {
         },
       ),
 
-      // ── Typography ──
-      textTheme: GoogleFonts.notoSansScTextTheme(baseTheme.textTheme),
+      // Typography
+      textTheme: GoogleFonts.notoSansScTextTheme(base.textTheme)
+          .copyWith(
+            headlineLarge: const TextStyle(
+              letterSpacing: -0.8,
+              fontWeight: FontWeight.w600,
+            ),
+            headlineMedium: const TextStyle(
+              letterSpacing: -0.5,
+              fontWeight: FontWeight.w600,
+            ),
+            titleLarge: const TextStyle(
+              letterSpacing: -0.3,
+              fontWeight: FontWeight.w600,
+            ),
+            titleMedium: const TextStyle(
+              letterSpacing: -0.2,
+              fontWeight: FontWeight.w500,
+            ),
+            bodyLarge: const TextStyle(letterSpacing: 0.1),
+            bodyMedium: const TextStyle(letterSpacing: 0.1),
+            labelLarge: const TextStyle(
+              letterSpacing: 0.6,
+              fontWeight: FontWeight.w600,
+            ),
+            labelMedium: const TextStyle(letterSpacing: 0.4),
+            labelSmall: const TextStyle(letterSpacing: 0.3),
+          )
+          .apply(bodyColor: softOnSurface, displayColor: softOnSurface),
 
-      // ── Scaffold Background（M3 分层） ──
-      scaffoldBackgroundColor: scheme.surface,
-
-      // ── AppBar ──
+      // AppBar
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
-        backgroundColor: scheme.surfaceContainerLow,
-        foregroundColor: scheme.onSurface,
+        backgroundColor: finalSurface,
+        foregroundColor: softOnSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        titleSpacing: 24,
+        titleTextStyle: GoogleFonts.notoSansSc(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.5,
+          color: softOnSurface,
+        ),
       ),
 
-      // ── Card ──
+      // Card
       cardTheme: CardThemeData(
         elevation: 0,
-        color: scheme.surfaceContainerLow,
+        color: surfaceColors.low,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_kShapeMedium),
-        ),
+        shape: cardShape,
         clipBehavior: Clip.antiAlias,
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
       ),
 
-      // ── NavigationBar (Bottom) ──
+      // NavigationBar
       navigationBarTheme: NavigationBarThemeData(
-        height: 68,
-        backgroundColor: scheme.surfaceContainerHigh,
-        indicatorColor: scheme.secondaryContainer,
+        height: 76,
+        backgroundColor: finalSurface,
+        indicatorColor: s.secondaryContainer,
+        indicatorShape: pill,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        surfaceTintColor: Colors.transparent,
-        elevation: 3,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.selected)
+              ? IconThemeData(color: s.onSecondaryContainer, size: 24)
+              : IconThemeData(color: softOnSurfaceVariant, size: 24);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.selected)
+              ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)
+              : const TextStyle(fontSize: 12);
+        }),
       ),
 
-      // ── NavigationRail (Sidebar) ──
-      navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
-        indicatorColor: scheme.secondaryContainer,
-        selectedIconTheme: IconThemeData(color: scheme.onSecondaryContainer),
-        unselectedIconTheme: IconThemeData(color: scheme.onSurfaceVariant),
-        selectedLabelTextStyle: TextStyle(color: scheme.onSecondaryContainer),
-        unselectedLabelTextStyle: TextStyle(color: scheme.onSurfaceVariant),
+      // Buttons
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          foregroundColor: s.onPrimary,
+          backgroundColor: s.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: pill,
+        ),
       ),
-
-      // ── Drawer ──
-      drawerTheme: DrawerThemeData(
-        backgroundColor: scheme.surface,
-        surfaceTintColor: Colors.transparent,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          foregroundColor: softOnSurface,
+          backgroundColor: surfaceColors.low,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: pill,
+        ),
       ),
-
-      // ── ListTile (M3 默认无 shape 约束，保留原生波纹) ──
-      listTileTheme: ListTileThemeData(
-        selectedColor: scheme.secondaryContainer,
-        selectedTileColor: scheme.secondaryContainer,
-        dense: _listDensity == "compact",
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: s.primary,
+          side: BorderSide(color: softOutline, width: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: pill,
+        ),
       ),
-
-      // ── TabBar ──
-      tabBarTheme: TabBarThemeData(
-        dividerColor: Colors.transparent,
-        labelColor: scheme.primary,
-        unselectedLabelColor: scheme.onSurfaceVariant,
-        indicatorColor: scheme.primary,
-        indicatorSize: TabBarIndicatorSize.tab,
-      ),
-
-      // ── Buttons (完整 M3 Extended) ──
-      filledButtonTheme: FilledButtonThemeData(style: filledBtnStyle),
-      elevatedButtonTheme: ElevatedButtonThemeData(style: elevatedBtnStyle),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: outlinedBtnStyle),
-      textButtonTheme: TextButtonThemeData(style: textBtnStyle),
-
-      // ── IconButton (M3 默认圆形 ink splash，不强制 shape) ──
-
-      // ── FloatingActionButton ──
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primaryContainer,
-        foregroundColor: scheme.onPrimaryContainer,
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_kShapeLarge),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: s.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: pill,
         ),
       ),
 
-      // ── InputDecoration ──
+      // Input
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHighest,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kShapeSmall),
-          borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.5)),
+        fillColor: s.surfaceContainerHighest,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 22,
+          vertical: 16,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kShapeSmall),
-          borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.5)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kShapeSmall),
-          borderSide: BorderSide(color: scheme.primary, width: 2),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: s.primary, width: 1.5),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kShapeSmall),
-          borderSide: BorderSide(color: scheme.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_kShapeSmall),
-          borderSide: BorderSide(color: scheme.error, width: 2),
-        ),
-        labelStyle: TextStyle(color: scheme.onSurfaceVariant),
-        hintStyle: TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.6)),
-      ),
-
-      // ── Chip ──
-      chipTheme: ChipThemeData(
-        backgroundColor: scheme.surfaceContainerHighest,
-        selectedColor: scheme.secondaryContainer,
-        labelStyle: TextStyle(color: scheme.onSurface, fontSize: 13),
-        secondaryLabelStyle: TextStyle(color: scheme.onSecondaryContainer),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_kShapeSmall),
-        ),
-        side: BorderSide.none,
-        elevation: 0,
-      ),
-
-      // ── Dialog (covers both Dialog and AlertDialog in M3) ──
-      dialogTheme: DialogThemeData(
-        backgroundColor: scheme.surfaceContainerHigh,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_kShapeExtraLarge),
-        ),
-        elevation: 6,
-      ),
-
-      // ── SnackBar ──
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: scheme.inverseSurface,
-        contentTextStyle: TextStyle(color: scheme.onInverseSurface),
-        actionTextColor: scheme.inversePrimary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_kShapeMedium),
+        labelStyle: TextStyle(color: softOnSurfaceVariant),
+        hintStyle: TextStyle(
+          color: softOnSurfaceVariant.withValues(alpha: 0.4),
         ),
       ),
 
-      // ── BottomSheet ──
-      bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: scheme.surfaceContainerHigh,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(_kShapeExtraLarge)),
-        ),
-        elevation: 6,
-      ),
-
-      // ── Divider ──
-      dividerTheme: DividerThemeData(
-        color: scheme.outlineVariant,
-        thickness: 1,
-        space: 1,
-      ),
-
-      // ── DropdownMenu ──
-      dropdownMenuTheme: DropdownMenuThemeData(
-        menuStyle: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerLow),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(_kShapeLarge),
-            ),
-          ),
-          elevation: const WidgetStatePropertyAll(6),
-          surfaceTintColor: WidgetStatePropertyAll(scheme.surfaceTint),
-        ),
-      ),
-
-      // ── Menu ──
-      menuTheme: MenuThemeData(
-        style: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainer),
-          surfaceTintColor: WidgetStatePropertyAll(scheme.surfaceTint),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(_kShapeLarge),
-            ),
-          ),
-          elevation: const WidgetStatePropertyAll(3),
-        ),
-      ),
-
-      // ── Progress Indicator ──
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: scheme.primary,
-        linearTrackColor: scheme.surfaceContainerHighest,
-        circularTrackColor: scheme.surfaceContainerHighest,
-      ),
-
-      // ── Slider ──
+      // Slider
       sliderTheme: SliderThemeData(
-        activeTrackColor: scheme.primary,
-        inactiveTrackColor: scheme.surfaceContainerHighest,
-        thumbColor: scheme.primary,
-        activeTickMarkColor: scheme.onPrimary,
-        inactiveTickMarkColor: scheme.surfaceContainerHighest,
-        overlayColor: scheme.primary.withValues(alpha: 0.12),
-        valueIndicatorColor: scheme.primary,
-        valueIndicatorTextStyle: TextStyle(
-          color: scheme.onPrimary,
-          fontSize: 12,
-        ),
+        activeTrackColor: s.primary,
+        inactiveTrackColor: s.surfaceContainerHighest,
+        thumbColor: s.primary,
+        overlayColor: s.primary.withValues(alpha: 0.1),
+        trackHeight: 3,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
       ),
 
-      // ── Switch ──
+      // Switch
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return scheme.primary;
-          return scheme.outline;
-        }),
-        trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return scheme.primary.withValues(alpha: 0.4);
-          }
-          return scheme.surfaceContainerHighest;
-        }),
-      ),
-
-      // ── Checkbox ──
-      checkboxTheme: CheckboxThemeData(
-        fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return scheme.primary;
-          return Colors.transparent;
-        }),
-        checkColor: WidgetStatePropertyAll(scheme.onPrimary),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      ),
-
-      // ── Tooltip ──
-      tooltipTheme: TooltipThemeData(
-        decoration: BoxDecoration(
-          color: scheme.inverseSurface,
-          borderRadius: BorderRadius.circular(_kShapeSmall),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? s.primary : softOutline,
         ),
-        textStyle: TextStyle(color: scheme.onInverseSurface, fontSize: 12),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? s.primary.withValues(alpha: 0.25)
+              : s.surfaceContainerHighest,
+        ),
       ),
 
-      // ── PopupMenu ──
-      popupMenuTheme: PopupMenuThemeData(
-        color: scheme.surfaceContainer,
-        surfaceTintColor: scheme.surfaceTint,
+      // Other common themes (ListTile, Dialog, BottomSheet, etc.)
+      listTileTheme: ListTileThemeData(
+        dense: _listDensity == "compact",
+        contentPadding: _listDensity == "compact"
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 0)
+            : const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        visualDensity: _listDensity == "compact"
+            ? const VisualDensity(horizontal: -2, vertical: -2)
+            : VisualDensity.standard,
+        titleTextStyle: TextStyle(color: softOnSurface),
+        subtitleTextStyle: TextStyle(color: softOnSurfaceVariant),
+        iconColor: softOnSurfaceVariant,
+      ),
+
+      dialogTheme: DialogThemeData(
+        backgroundColor: s.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        elevation: isLight ? 4 : 0,
+      ),
+
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: s.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_kShapeLarge),
+          borderRadius: BorderRadius.vertical(top: const Radius.circular(28)),
         ),
-        elevation: 3,
       ),
     );
   }
+
+  ColorScheme _createSoftColorScheme(
+    ColorScheme raw,
+    Color desatTarget,
+    Color neutralBase,
+    ColorAdjustments adj,
+  ) {
+    return raw.copyWith(
+      primary: _lerp(raw.primary, desatTarget, adj.primaryDesat),
+      primaryContainer: _lerp(
+        raw.primaryContainer,
+        desatTarget,
+        adj.containerDesat,
+      ),
+      onPrimaryContainer: _lerp(raw.onPrimaryContainer, neutralBase, 0.10),
+      secondary: _lerp(raw.secondary, desatTarget, 0.18),
+      secondaryContainer: _lerp(raw.secondaryContainer, desatTarget, 0.35),
+      tertiary: _lerp(raw.tertiary, desatTarget, 0.20),
+      tertiaryContainer: _lerp(raw.tertiaryContainer, desatTarget, 0.35),
+    );
+  }
+
+  ({Color lowest, Color low, Color medium, Color high, Color highest})
+  _createSurfaceColors(Color baseSurface, Color desatTarget) {
+    return (
+      lowest: _lerp(baseSurface, desatTarget, 0.20),
+      low: _lerp(baseSurface, desatTarget, 0.30),
+      medium: _lerp(baseSurface, desatTarget, 0.45),
+      high: _lerp(baseSurface, desatTarget, 0.60),
+      highest: _lerp(baseSurface, desatTarget, 0.75),
+    );
+  }
+
+  Color _lerp(Color a, Color b, double t) => Color.lerp(a, b, t)!;
 
   ThemeData get lightTheme => _buildTheme(Brightness.light);
   ThemeData get darkTheme => _buildTheme(Brightness.dark);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -77,7 +78,7 @@ class _TrackInfoTile extends StatelessWidget {
         Hero(
           tag: 'music_cover_${music.id}',
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.inner),
             child: music.coverBytes != null && music.coverBytes!.isNotEmpty
                 ? Image.memory(
                     music.coverBytes!,

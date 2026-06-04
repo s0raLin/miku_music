@@ -32,7 +32,7 @@ class _SideBarState extends State<SideBar> {
             context.push("/search");
           },
           tooltip: '搜索',
-          child: const Icon(Icons.search),
+          child: const Icon(Icons.search_rounded),
         ),
       ),
 

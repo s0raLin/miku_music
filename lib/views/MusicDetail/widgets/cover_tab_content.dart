@@ -53,35 +53,67 @@ class _CoverTabContentState extends State<CoverTabContent> {
                 constraints.maxWidth,
               );
               return Center(
-                child: Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: cs.shadow.withValues(alpha: 0.08),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
-                    child: Container(
-                      color: cs.surfaceContainerHighest,
-                      child: widget.music.coverBytes?.isNotEmpty == true
-                          ? Image.memory(
-                              widget.music.coverBytes!,
-                              fit: BoxFit.cover,
-                            )
-                          : Icon(
-                              Icons.music_note_rounded,
-                              size: size * 0.3,
-                              color: cs.primary.withValues(alpha: 0.5),
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    // ── Ambient blurred color-melt glow ──
+                    Positioned(
+                      child: Container(
+                        width: size * 0.9,
+                        height: size * 0.9,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  cs.primaryContainer.withValues(alpha: 0.35),
+                              blurRadius: size * 0.55,
+                              spreadRadius: size * 0.15,
                             ),
+                            BoxShadow(
+                              color: cs.secondaryContainer
+                                  .withValues(alpha: 0.25),
+                              blurRadius: size * 0.4,
+                              spreadRadius: size * 0.1,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    // ── Album art cover ──
+                    Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: cs.shadow.withValues(alpha: 0.08),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: Container(
+                          color: cs.surfaceContainerHighest,
+                          child: widget.music.coverBytes?.isNotEmpty == true
+                              ? Image.memory(
+                                  widget.music.coverBytes!,
+                                  fit: BoxFit.cover,
+                                )
+                              : Icon(
+                                  Icons.music_note_rounded,
+                                  size: size * 0.3,
+                                  color:
+                                      cs.primary.withValues(alpha: 0.5),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -90,7 +122,6 @@ class _CoverTabContentState extends State<CoverTabContent> {
         const SizedBox(height: 28),
 
         // 歌曲元信息区域
-        // 歌曲元信息区域 (增加了左右 4 像素的 Padding，与下方进度条轨道完美对齐)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
@@ -140,7 +171,6 @@ class _CoverTabContentState extends State<CoverTabContent> {
                     message: wasLiked ? '已取消收藏' : '已添加到喜欢',
                   );
                 },
-                // 稍微扣除一点 IconButton 自带的内部 padding 影响，让心形边缘对齐更极致
                 visualDensity: VisualDensity.compact,
                 icon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
@@ -161,7 +191,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
         ),
         const SizedBox(height: 24),
 
-        // 仅用于包裹进度条与时间文本的 StreamBuilder
+        // 进度条 + 时间
         StreamBuilder<PositionData>(
           stream: musicProvider.positionDataStream,
           builder: (context, snapshot) {
@@ -169,14 +199,11 @@ class _CoverTabContentState extends State<CoverTabContent> {
                 snapshot.data ??
                 PositionData(Duration.zero, Duration.zero, Duration.zero);
             final totalMs = data.duration.inMilliseconds.toDouble();
-            final currentPosMs = data.position.inMilliseconds.toDouble().clamp(
-              0.0,
-              totalMs,
-            );
+            final currentPosMs =
+                data.position.inMilliseconds.toDouble().clamp(0.0, totalMs);
             final safeTotal = totalMs > 0 ? totalMs : 1.0;
 
             final sliderValue = _draggingValue ?? currentPosMs;
-            // 只有当音乐正在播放，且用户不在拖拽进度条时，波浪才会起伏
             final isWaving =
                 musicProvider.player.playing && _draggingValue == null;
 
@@ -218,7 +245,8 @@ class _CoverTabContentState extends State<CoverTabContent> {
                       Text(
                         _draggingValue != null
                             ? _formatDuration(
-                                Duration(milliseconds: _draggingValue!.toInt()),
+                                Duration(
+                                    milliseconds: _draggingValue!.toInt()),
                               )
                             : _formatDuration(data.position),
                         style: TextStyle(
@@ -259,30 +287,23 @@ class _PlaybackControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pageContext = context;
-    // final mp = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
     IconData modeIcon(PlayMode mode) => switch (mode) {
-      PlayMode.sequence => Icons.repeat_rounded,
-      PlayMode.shuffle => Icons.shuffle_rounded,
-      PlayMode.repeat => Icons.repeat_one_rounded,
-    };
+          PlayMode.sequence => Icons.repeat_rounded,
+          PlayMode.shuffle => Icons.shuffle_rounded,
+          PlayMode.repeat => Icons.repeat_one_rounded,
+        };
 
     String modeTooltip(PlayMode mode) => switch (mode) {
-      PlayMode.sequence => "顺序播放",
-      PlayMode.shuffle => "随机播放",
-      PlayMode.repeat => "单曲循环",
-    };
+          PlayMode.sequence => "顺序播放",
+          PlayMode.shuffle => "随机播放",
+          PlayMode.repeat => "单曲循环",
+        };
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
-
-        // 可用宽度分五个按钮：模式 + 上一首 + 播放 + 下一首 + 音量
-        // 播放按钮比其他按钮大 1.5 倍，其余四个等宽
-        // 总宽 = 4 * btnSize + 1.5 * btnSize + 4 * gap
-        // 解方程：btnSize = w / (5.5 + 4 * gapRatio)
-        // 这里固定 gapRatio = 0.4（gap = 0.4 * btnSize），上限 btnSize 48
         const double gapRatio = 0.4;
         final double btnSize = (w / (5.5 + 4 * gapRatio)).clamp(28.0, 48.0);
         final double gap = btnSize * gapRatio;
@@ -295,48 +316,35 @@ class _PlaybackControls extends StatelessWidget {
           builder: (context, snapshot) {
             final state = snapshot.data ?? ProcessingState.idle;
             final playing = mp.player.playing;
-            final isLoading =
-                state == ProcessingState.loading ||
+            final isLoading = state == ProcessingState.loading ||
                 state == ProcessingState.buffering;
 
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 播放模式
                 _CtrlButton(
                   size: btnSize,
                   onPressed: mp.togglePlayMode,
                   tooltip: modeTooltip(mp.playMode),
-                  child: Icon(
-                    modeIcon(mp.playMode),
-                    size: iconSize,
-                    color: cs.onSurfaceVariant,
-                  ),
+                  child: Icon(modeIcon(mp.playMode),
+                      size: iconSize, color: cs.onSurfaceVariant),
                 ),
                 SizedBox(width: gap),
-
-                // 上一首
                 _CtrlButton(
                   size: btnSize,
                   onPressed: mp.playPrev,
                   tooltip: '上一首',
-                  child: Icon(
-                    Icons.skip_previous_rounded,
-                    size: iconSize * 1.1,
-                    color: cs.onSurface,
-                  ),
+                  child: Icon(Icons.skip_previous_rounded,
+                      size: iconSize * 1.1, color: cs.onSurface),
                 ),
                 SizedBox(width: gap),
-
-                // 播放 / 暂停
                 SizedBox(
                   width: playSize,
                   height: playSize,
                   child: Stack(
                     alignment: Alignment.center,
-                    clipBehavior: Clip.none, // 允许微调的外圈指示器稍微溢出一点
+                    clipBehavior: Clip.none,
                     children: [
-                      // 1. 底层放实心按钮
                       FilledButton(
                         onPressed: mp.togglePlay,
                         style: FilledButton.styleFrom(
@@ -346,9 +354,8 @@ class _PlaybackControls extends StatelessWidget {
                           maximumSize: Size(playSize, playSize),
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              playSize * 0.28,
-                            ),
+                            borderRadius:
+                                BorderRadius.circular(playSize * 0.28),
                           ),
                           elevation: 0,
                         ),
@@ -363,8 +370,6 @@ class _PlaybackControls extends StatelessWidget {
                           ),
                         ),
                       ),
-
-                      // 2. 顶层放加载圈，并往外扩张 4 像素，形成优雅的“外环包裹”效果
                       if (isLoading)
                         Positioned.fill(
                           top: -2,
@@ -372,11 +377,9 @@ class _PlaybackControls extends StatelessWidget {
                           left: -2,
                           right: -2,
                           child: IgnorePointer(
-                            // 防止阻挡按钮的点击事件
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               color: cs.primary,
-                              // 稍微带有一点平滑边缘
                               strokeCap: StrokeCap.round,
                             ),
                           ),
@@ -385,31 +388,20 @@ class _PlaybackControls extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: gap),
-
-                // 下一首
                 _CtrlButton(
                   size: btnSize,
                   onPressed: mp.playNext,
                   tooltip: '下一首',
-                  child: Icon(
-                    Icons.skip_next_rounded,
-                    size: iconSize * 1.1,
-                    color: cs.onSurface,
-                  ),
+                  child: Icon(Icons.skip_next_rounded,
+                      size: iconSize * 1.1, color: cs.onSurface),
                 ),
                 SizedBox(width: gap),
-
                 _CtrlButton(
                   size: btnSize,
                   tooltip: '当前播放队列',
-                  onPressed: () {
-                    Scaffold.of(pageContext).openEndDrawer();
-                  },
-                  child: Icon(
-                    Icons.queue_music_rounded,
-                    size: iconSize,
-                    color: cs.onSurfaceVariant,
-                  ),
+                  onPressed: () => Scaffold.of(pageContext).openEndDrawer(),
+                  child: Icon(Icons.queue_music_rounded,
+                      size: iconSize, color: cs.onSurfaceVariant),
                 ),
               ],
             );
@@ -420,7 +412,6 @@ class _PlaybackControls extends StatelessWidget {
   }
 }
 
-// ── 统一尺寸的控制按钮 ────────────────────────────────────────────────────────
 class _CtrlButton extends StatelessWidget {
   final double size;
   final VoidCallback onPressed;
@@ -441,11 +432,7 @@ class _CtrlButton extends StatelessWidget {
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(size / 2),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(child: child),
-        ),
+        child: SizedBox(width: size, height: size, child: Center(child: child)),
       ),
     );
   }

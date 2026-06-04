@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -22,10 +21,13 @@ class FilesPage extends StatefulWidget {
 class _FilesPageState extends State<FilesPage>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   List<String> _paths = [];
-  bool _isPathsLoading = true; // 解决首次进入页面闪烁空状态的问题
+  bool _isPathsLoading = true;
   bool _isScanning = false;
   List<Music> _scannedSongs = [];
   StreamSubscription? _scanSubscription;
+
+  // 本地状态，不持久化
+  bool _isCompact = false;
 
   // 缓存分组数据，避免每次 build 都重新执行 for 循环
   Map<String, List<Music>> _folderGroups = {};
@@ -75,7 +77,6 @@ class _FilesPageState extends State<FilesPage>
         if (!mounted) return;
         if (progress.music != null) {
           _scannedSongs.add(progress.music!);
-          // 每积累15首增量刷新一次全局 Library
           if (_scannedSongs.length % 15 == 0) {
             musicProvider.updateLibrary(List.from(_scannedSongs));
           }
@@ -101,27 +102,6 @@ class _FilesPageState extends State<FilesPage>
         AppToast.error(context, message: '扫描出错: $err', title: '扫描失败');
       },
     );
-  }
-
-  Future<void> _showPickDialog() async {
-    final result = await showDialog<List<String>>(
-      context: context,
-      builder: (ctx) => _FolderPickDialog(initialPaths: _paths),
-    );
-
-    if (result == null || !mounted) return;
-
-    if (Platform.isAndroid &&
-        !(await MusicService.ensureAndroidAudioPermission())) {
-      if (mounted) {
-        AppToast.error(context, message: '请授予存储和音频权限以扫描音乐', title: '权限不足');
-      }
-      return;
-    }
-
-    await FileService.savePaths(result);
-    setState(() => _paths = result);
-    _startScan(result);
   }
 
   // ==========================================
@@ -158,11 +138,12 @@ class _FilesPageState extends State<FilesPage>
   Widget build(BuildContext context) {
     super.build(context);
 
-    // 粒度化监听库文件
     final songs = context.select<MusicProvider, List<Music>>((p) => p.library);
 
-    // 在 build 触发时安全地按需更新分组
     _updateGroupsIfNeeded(songs);
+
+    final isDesktop =
+        Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
     if (_isPathsLoading) {
       return const Scaffold(
@@ -178,6 +159,33 @@ class _FilesPageState extends State<FilesPage>
             SliverAppBar(
               pinned: true,
               title: const Text("文件"),
+              actions: [
+                if (isDesktop)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment<bool>(
+                          value: false,
+                          icon: Icon(Icons.grid_view_rounded),
+                        ),
+                        ButtonSegment<bool>(
+                          value: true,
+                          icon: Icon(Icons.view_compact_rounded),
+                        ),
+                      ],
+                      selected: {_isCompact},
+                      onSelectionChanged: (Set<bool> v) {
+                        setState(() => _isCompact = v.first);
+                      },
+                      showSelectedIcon: false,
+                      style: const ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+              ],
               bottom: const TabBar(
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
@@ -187,16 +195,6 @@ class _FilesPageState extends State<FilesPage>
                   Tab(text: "艺术家"),
                 ],
               ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: IconButton(
-                    tooltip: "选择目录",
-                    onPressed: _showPickDialog,
-                    icon: const Icon(Icons.folder_open_rounded),
-                  ),
-                ),
-              ],
             ),
           ],
           body: TabBarView(
@@ -206,18 +204,21 @@ class _FilesPageState extends State<FilesPage>
                 emptyIcon: Icons.folder_open_rounded,
                 emptySubtitle: "添加目录后，这里会展示扫描到的内容",
                 titleBuilder: (entry) => p.basename(entry.key),
+                isCompact: _isCompact,
               ),
               _buildTabContent(
                 groups: _albumGroups,
                 emptyIcon: Icons.album_rounded,
                 emptySubtitle: "添加目录后，这里会自动整理出专辑内容",
                 titleBuilder: (entry) => entry.key,
+                isCompact: _isCompact,
               ),
               _buildTabContent(
                 groups: _artistGroups,
                 emptyIcon: Icons.person_rounded,
                 emptySubtitle: "添加目录后，这里会自动整理出艺术家内容",
                 titleBuilder: (entry) => entry.key,
+                isCompact: _isCompact,
               ),
             ],
           ),
@@ -231,6 +232,7 @@ class _FilesPageState extends State<FilesPage>
     required IconData emptyIcon,
     required String emptySubtitle,
     required String Function(MapEntry<String, List<Music>> entry) titleBuilder,
+    required bool isCompact,
   }) {
     if (_isScanning && _scannedSongs.isEmpty && _paths.isNotEmpty) {
       return const Center(child: CircularProgressIndicator.adaptive());
@@ -244,9 +246,13 @@ class _FilesPageState extends State<FilesPage>
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
-        final double maxExtent = width > 1200
-            ? 180.0
-            : (width > 800 ? 190.0 : 210.0);
+
+        // 紧凑模式用更小的 item 尺寸，宽松用更大的
+        final double maxExtent = isCompact
+            ? (width > 1200 ? 140.0 : (width > 800 ? 150.0 : 160.0))
+            : (width > 1200 ? 180.0 : (width > 800 ? 190.0 : 210.0));
+
+        final double spacing = isCompact ? 10.0 : 16.0;
 
         return RefreshIndicator(
           onRefresh: () async => _startScan(_paths),
@@ -274,12 +280,17 @@ class _FilesPageState extends State<FilesPage>
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                  padding: EdgeInsets.fromLTRB(
+                    spacing,
+                    spacing / 2,
+                    spacing,
+                    80,
+                  ),
                   sliver: SliverGrid.builder(
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: maxExtent,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
+                      mainAxisSpacing: spacing,
+                      crossAxisSpacing: spacing,
                       childAspectRatio: 1.0,
                     ),
                     itemCount: entries.length,
@@ -318,16 +329,13 @@ class _MediaGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 挑出一首带有封面的歌作为代表
     final coverSong = entry.value.firstWhere(
       (song) => song.coverBytes != null && song.coverBytes!.isNotEmpty,
       orElse: () => entry.value.first,
     );
 
-    // 2. 将后台懒加载行为挪到帧渲染后的安全期触发，杜绝 Build 期间的 setState 竞争
     if (coverSong.coverBytes == null || coverSong.coverBytes!.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // 增加 context.mounted 树生命周期校验
         if (context.mounted) {
           final provider = context.read<MusicProvider>();
           if (!provider.isCoverLoading(coverSong.id)) {
@@ -337,7 +345,6 @@ class _MediaGridItem extends StatelessWidget {
       });
     }
 
-    // 3. 用 Selector 代替 context.select，绑定局部的 BuildContext，实现网格卡片的点对点局部刷新
     return Selector<MusicProvider, bool>(
       selector: (_, provider) => provider.isCoverLoading(coverSong.id),
       builder: (context, isLoading, _) {
@@ -355,79 +362,6 @@ class _MediaGridItem extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-// ==========================================
-// 目录选择弹窗
-// ==========================================
-class _FolderPickDialog extends StatefulWidget {
-  final List<String> initialPaths;
-  const _FolderPickDialog({required this.initialPaths});
-
-  @override
-  State<_FolderPickDialog> createState() => _FolderPickDialogState();
-}
-
-class _FolderPickDialogState extends State<_FolderPickDialog> {
-  late List<String> _tmpPaths;
-
-  @override
-  void initState() {
-    super.initState();
-    _tmpPaths = [...widget.initialPaths];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("扫描目录"),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FilledButton.icon(
-              onPressed: () async {
-                final selectedPath = await FilePicker.getDirectoryPath();
-                if (selectedPath != null && mounted) {
-                  setState(() => _tmpPaths.add(selectedPath));
-                }
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("添加目录"),
-            ),
-            const Divider(),
-            if (_tmpPaths.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  "暂无目录，请点击上方添加",
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ..._tmpPaths.map(
-              (path) => ListTile(
-                title: Text(path, maxLines: 1, overflow: TextOverflow.ellipsis),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => setState(() => _tmpPaths.remove(path)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("取消"),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, _tmpPaths),
-          child: const Text("确认"),
-        ),
-      ],
     );
   }
 }

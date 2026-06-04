@@ -1,16 +1,15 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
-
-// ── 菜单项数据模型 ──────────────────────────────────────────────────────────
 
 sealed class DrawerItem {
   final String group;
   final String label;
   final IconData icon;
-
   const DrawerItem({
     required this.group,
     required this.label,
@@ -18,12 +17,10 @@ sealed class DrawerItem {
   });
 }
 
-/// 普通导航跳转项
 class NavItem extends DrawerItem {
   final String path;
   final IconData selectedIcon;
   final bool isDestructive;
-
   const NavItem({
     required super.group,
     required super.label,
@@ -34,7 +31,6 @@ class NavItem extends DrawerItem {
   });
 }
 
-/// 开关类型的设置项
 class SwitchItem extends DrawerItem {
   const SwitchItem({
     required super.group,
@@ -43,38 +39,28 @@ class SwitchItem extends DrawerItem {
   });
 }
 
-// ── MainDrawer ──────────────────────────────────────────────────────────────
+// ==================== MainDrawer ====================
 
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
 
-  /// 根据当前路由路径计算高亮 index（仅对 NavItem 有效）
-  static int _resolveSelectedIndex(
-    String currentLocation,
-    List<NavItem> navItems,
-  ) {
-    final idx = navItems.indexWhere((e) => e.path == currentLocation);
-    return idx < 0 ? 0 : idx;
-  }
-
-  /// 构建菜单配置（依赖登录状态）
   List<DrawerItem> _buildMenuConfig(bool isLoggedIn) => [
-    // ── 音乐 ──
-    const NavItem(
+    // 音乐
+    NavItem(
       group: '音乐',
       path: '/user/playlist/favorites',
       label: '我的收藏',
       icon: Icons.favorite_border_rounded,
       selectedIcon: Icons.favorite_rounded,
     ),
-    const NavItem(
+    NavItem(
       group: '音乐',
       path: '/user/recent',
       label: '最近播放',
       icon: Icons.history_rounded,
       selectedIcon: Icons.history_rounded,
     ),
-    const NavItem(
+    NavItem(
       group: '音乐',
       path: '/search',
       label: '查找歌曲',
@@ -82,22 +68,18 @@ class MainDrawer extends StatelessWidget {
       selectedIcon: Icons.search_rounded,
     ),
 
-    // ── 偏好 ──
-    const SwitchItem(
-      group: '偏好',
-      label: '夜间模式',
-      icon: Icons.dark_mode_outlined,
-    ),
+    // 偏好
+    SwitchItem(group: '偏好', label: '夜间模式', icon: Icons.dark_mode_outlined),
 
-    // ── 其他 ──
-    const NavItem(
+    // 其他
+    NavItem(
       group: '其他',
       path: '/settings',
       label: '设置',
       icon: Icons.settings_outlined,
       selectedIcon: Icons.settings_rounded,
     ),
-    const NavItem(
+    NavItem(
       group: '其他',
       path: '/about',
       label: '关于',
@@ -105,7 +87,7 @@ class MainDrawer extends StatelessWidget {
       selectedIcon: Icons.info_rounded,
     ),
     if (isLoggedIn)
-      const NavItem(
+      NavItem(
         group: '其他',
         path: 'logout',
         label: '退出登录',
@@ -115,17 +97,102 @@ class MainDrawer extends StatelessWidget {
       ),
   ];
 
-  void _handleNavItem(BuildContext context, NavItem item) {
-    Navigator.of(context).pop(); // 关闭抽屉
-    if (item.path == 'logout') {
-      _confirmLogout(context);
-    } else {
-      context.push(item.path);
+  @override
+  Widget build(BuildContext context) {
+    final userProvider = context.watch<UserProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
+    final isLoggedIn = userProvider.user != null;
+    final isDark = themeProvider.themeMode == ThemeMode.dark;
+
+    final menuConfig = _buildMenuConfig(isLoggedIn);
+    final navItems = menuConfig.whereType<NavItem>().toList();
+
+    final currentLocation = GoRouterState.of(context).uri.path;
+    final selectedIndex = navItems.indexWhere((e) => e.path == currentLocation);
+
+    return NavigationDrawer(
+      selectedIndex: selectedIndex >= 0 ? selectedIndex : 0,
+      onDestinationSelected: (index) {
+        final item = navItems[index];
+        Navigator.of(context).pop();
+        if (item.path == 'logout') {
+          _confirmLogout(context);
+        } else {
+          context.push(item.path);
+        }
+      },
+      children: [
+        // Header
+        _DrawerHeader(
+          isLoggedIn: isLoggedIn,
+          username: userProvider.user?.username,
+          email: userProvider.user?.email,
+          avatarURL: userProvider.user?.avatarURL,
+        ),
+
+        // 分组菜单
+        ..._buildGroupedDestinations(
+          context,
+          menuConfig,
+          navItems,
+          themeProvider,
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildGroupedDestinations(
+    BuildContext context,
+    List<DrawerItem> items,
+    List<NavItem> navItems,
+    ThemeProvider themeProvider,
+  ) {
+    final grouped = <String, List<DrawerItem>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(item.group, () => []).add(item);
     }
+
+    return grouped.entries.expand((entry) {
+      final isLastGroup = entry.key == grouped.keys.last;
+
+      return [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 16, 28, 8),
+          child: Text(
+            entry.key,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        ...entry.value.map((item) {
+          if (item is SwitchItem) {
+            return _SwitchTile(
+              item: item,
+              value: themeProvider.themeMode == ThemeMode.dark,
+              onChanged: (_) => themeProvider.setThemeMode(
+                themeProvider.themeMode == ThemeMode.dark
+                    ? ThemeMode.light
+                    : ThemeMode.dark,
+              ),
+            );
+          }
+
+          final nav = item as NavItem;
+          return NavigationDrawerDestination(
+            icon: Icon(nav.icon),
+            selectedIcon: Icon(nav.selectedIcon),
+            label: Text(nav.label),
+          );
+        }),
+        if (!isLastGroup) const Divider(indent: 28, endIndent: 28),
+      ];
+    }).toList();
   }
 
   void _confirmLogout(BuildContext context) {
-    showDialog<bool>(
+    showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('退出登录'),
@@ -137,7 +204,6 @@ class MainDrawer extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
-              // 使用 ctx（对话框自己的 context）读取 Provider，避免抽屉关闭后 context 失效
               ctx.read<UserProvider>().logout();
               Navigator.of(ctx).pop();
             },
@@ -147,93 +213,17 @@ class MainDrawer extends StatelessWidget {
       ),
     );
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final userProvider = context.watch<UserProvider>();
-    final user = userProvider.user;
-    final isLoggedIn = user != null;
-
-    final themeProvider = context.watch<ThemeProvider>();
-    final isDark = themeProvider.themeMode == ThemeMode.dark;
-
-    final menuConfig = _buildMenuConfig(isLoggedIn);
-
-    // 只有 NavItem 才注册为 NavigationDrawerDestination，用于 selectedIndex 计算
-    final navItems = menuConfig.whereType<NavItem>().toList();
-    final currentLocation = GoRouterState.of(context).uri.path;
-    final selectedIndex = _resolveSelectedIndex(currentLocation, navItems);
-
-    // 按 group 分组，保持插入顺序
-    final Map<String, List<DrawerItem>> groupedMenus = {};
-    for (final item in menuConfig) {
-      groupedMenus.putIfAbsent(item.group, () => []).add(item);
-    }
-
-    // NavigationDrawer 要求 children 中的 NavigationDrawerDestination
-    // 必须连续排列才能正确映射 selectedIndex；
-    // 将所有 NavItem 平铺到 destinations，非 NavItem 用自定义 widget 替代。
-    // 因此这里放弃使用 NavigationDrawer 的内置 selectedIndex，
-    // 改为手动给每个 NavigationDrawerDestination 包一层带点击的 InkWell。
-    return Drawer(
-      child: Column(
-        children: [
-          // ── Header ──
-          _DrawerHeader(
-            isLoggedIn: isLoggedIn,
-            username: user?.username,
-            email: user?.email,
-            avatarURL: user?.avatarURL,
-          ),
-
-          // ── 菜单列表 ──
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 8),
-              children: [
-                ...groupedMenus.entries.expand((entry) {
-                  final groupName = entry.key;
-                  final items = entry.value;
-                  final isLastGroup = groupName == groupedMenus.keys.last;
-
-                  return [
-                    _SectionLabel(groupName),
-                    ...items.map((item) {
-                      if (item is SwitchItem) {
-                        return _SwitchTile(
-                          item: item,
-                          value: isDark,
-                          onChanged: (_) => themeProvider.setThemeMode(
-                            isDark ? ThemeMode.light : ThemeMode.dark,
-                          ),
-                        );
-                      }
-
-                      // NavItem
-                      final nav = item as NavItem;
-                      final isSelected = navItems.indexOf(nav) == selectedIndex;
-                      return _NavTile(
-                        item: nav,
-                        isSelected: isSelected,
-                        onTap: () => _handleNavItem(context, nav),
-                      );
-                    }),
-                    if (!isLastGroup) const Divider(indent: 28, endIndent: 28),
-                  ];
-                }),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-// ── 子组件 ──────────────────────────────────────────────────────────────────
+// ====================== Header ======================
 
 class _DrawerHeader extends StatelessWidget {
-  const _DrawerHeader({required this.isLoggedIn, this.username, this.email, this.avatarURL});
+  const _DrawerHeader({
+    required this.isLoggedIn,
+    this.username,
+    this.email,
+    this.avatarURL,
+  });
 
   final bool isLoggedIn;
   final String? username;
@@ -242,135 +232,77 @@ class _DrawerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-    return Container(
-      color: colorScheme.surfaceContainerLow,
-      padding: EdgeInsets.fromLTRB(
-        20,
-        MediaQuery.of(context).padding.top + 20, // 安全区适配
-        20,
-        20,
-      ),
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
-                backgroundImage: avatarURL != null && avatarURL!.isNotEmpty
-                    ? NetworkImage(avatarURL!)
-                    : null,
-                child: avatarURL == null || avatarURL!.isEmpty
-                    ? Icon(
-                        Icons.person_rounded,
-                        size: 30,
-                        color: colorScheme.primary,
-                      )
-                    : null,
+    final ImageProvider<Object> avatarImage =
+        (avatarURL != null && avatarURL!.isNotEmpty)
+        ? NetworkImage(avatarURL!)
+        : const AssetImage(MyAssets.background);
+
+    return InkWell(
+      onTap: !isLoggedIn ? () => context.push('/login') : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
+        child: Row(
+          children: [
+            // 左侧头像
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: cs.outline.withValues(alpha: 0.15),
+                  width: 1.5,
+                ),
               ),
-              const SizedBox(width: 12),
-              Column(
+            child: CircleAvatar(
+              radius: 30,
+              backgroundColor: cs.primaryContainer,
+              foregroundColor: cs.onPrimaryContainer,
+              backgroundImage: (avatarURL != null && avatarURL!.isNotEmpty)
+                  ? NetworkImage(avatarURL!)
+                  : null,
+              child: (avatarURL == null || avatarURL!.isEmpty)
+                  ? Icon(Icons.person_rounded, size: 32)
+                  : null,
+            ),
+            ),
+            const SizedBox(width: 16),
+            // 右侧文字信息（竖直居中，左对齐）
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    isLoggedIn ? username! : '游客',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                    isLoggedIn ? (username ?? '用户') : '游客',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
-                    isLoggedIn ? email! : '还未登录',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    isLoggedIn ? (email ?? '未设置邮箱') : '还未登录',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-            ],
-          ),
-          if (!isLoggedIn) ...[
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => context.push('/login'),
-              icon: const Icon(Icons.login, size: 16),
-              label: const Text('登录 / 注册'),
-              style: FilledButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-/// 普通导航条目（自绘高亮，避免 NavigationDrawer selectedIndex 混乱）
-class _NavTile extends StatelessWidget {
-  const _NavTile({
-    required this.item,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final NavItem item;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = item.isDestructive ? colorScheme.error : null;
-    final selectedColor = item.isDestructive
-        ? colorScheme.error
-        : colorScheme.onSecondaryContainer;
-    final bgColor = isSelected && !item.isDestructive
-        ? colorScheme.secondaryContainer
-        : Colors.transparent;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(28),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(28),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(
-                isSelected ? item.selectedIcon : item.icon,
-                color: isSelected ? selectedColor : color,
-                size: 22,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                item.label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? selectedColor : color,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
   }
 }
 
-/// 开关条目
+// ====================== Switch Tile ======================
+
 class _SwitchTile extends StatelessWidget {
   const _SwitchTile({
     required this.item,
@@ -385,44 +317,25 @@ class _SwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
         onTap: () => onChanged(!value),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(item.icon, size: 22),
-              const SizedBox(width: 12),
+              Icon(item.icon, size: 24),
+              const SizedBox(width: 16),
               Expanded(
-                child: Text(item.label, style: const TextStyle(fontSize: 14)),
+                child: Text(
+                  item.label,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ),
               Switch(value: value, onChanged: onChanged),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 分类标题
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 12, 28, 4),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          letterSpacing: 0.6,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );

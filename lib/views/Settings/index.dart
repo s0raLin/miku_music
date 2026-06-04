@@ -1,13 +1,108 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/constants/Theme/index.dart';
+import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
+import 'package:myapp/service/Files/index.dart';
+import 'package:myapp/service/Music/index.dart';
 import 'package:provider/provider.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  List<String> _scanPaths = [];
+  bool _isPathsLoading = true;
+  bool _isScanning = false;
+  List<Music> _scannedSongs = [];
+  StreamSubscription? _scanSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPaths();
+  }
+
+  @override
+  void dispose() {
+    _scanSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initPaths() async {
+    final loadedPaths = await FileService.loadPaths();
+    if (mounted) {
+      setState(() {
+        _scanPaths = loadedPaths;
+        _isPathsLoading = false;
+      });
+    }
+  }
+
+  void _startScan(List<String> paths) {
+    _scanSubscription?.cancel();
+    setState(() {
+      _isScanning = true;
+      _scannedSongs = [];
+    });
+
+    final musicProvider = context.read<MusicProvider>();
+
+    _scanSubscription = MusicService.scanDirectories(paths).listen(
+      (progress) {
+        if (!mounted) return;
+        if (progress.music != null) {
+          _scannedSongs.add(progress.music!);
+          if (_scannedSongs.length % 15 == 0) {
+            musicProvider.updateLibrary(List.from(_scannedSongs));
+          }
+        }
+      },
+      onDone: () {
+        if (!mounted) return;
+        musicProvider.updateLibrary(List.from(_scannedSongs));
+        setState(() => _isScanning = false);
+
+        if (_scannedSongs.isNotEmpty) {
+          AppToast.success(
+            context,
+            message: '扫描完成，共 ${_scannedSongs.length} 首歌曲',
+          );
+        } else {
+          AppToast.neutral(context, message: '未发现音频文件');
+        }
+      },
+      onError: (err) {
+        if (!mounted) return;
+        setState(() => _isScanning = false);
+        AppToast.error(context, message: '扫描出错: $err', title: '扫描失败');
+      },
+    );
+  }
+
+  Future<void> _showPickDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _FolderPickDialog(
+        initialPaths: _scanPaths,
+        onPathsChanged: (newPaths) {
+          setState(() => _scanPaths = newPaths);
+        },
+      ),
+    );
+  }
 
   static final List<Color> _themeColors = [
     MyTheme.kAppDefaultSeedColor,
@@ -263,6 +358,10 @@ class SettingsPage extends StatelessWidget {
               Card.filled(
                 child: Column(
                   children: [
+                    // ── 扫描目录 ──
+                    _buildScanDirectoriesTile(context),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+
                     // ── 最大历史记录 ──
                     ListTile(
                       leading: Icon(Icons.history_outlined,
@@ -328,6 +427,59 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  Widget _buildScanDirectoriesTile(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(Icons.folder_open_rounded,
+              size: 20, color: colorScheme.onSurfaceVariant),
+          title: const Text("音乐扫描目录"),
+          subtitle: Text(
+            _isPathsLoading
+                ? "加载中…"
+                : _scanPaths.isEmpty
+                    ? "未添加目录"
+                    : "${_scanPaths.length} 个目录",
+            style: textTheme.bodySmall
+                ?.copyWith(color: colorScheme.outline),
+          ),
+          trailing: TextButton.icon(
+            onPressed: _isPathsLoading ? null : _showPickDialog,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text("管理"),
+          ),
+        ),
+        if (!_isPathsLoading && _scanPaths.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              children: _scanPaths.map((path) {
+                return Row(
+                  children: [
+                    const Icon(Icons.folder, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        path,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildSectionHeader(BuildContext context, String title) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
@@ -344,7 +496,8 @@ class SettingsPage extends StatelessWidget {
   }
 
   String _getIconFileName(String path) {
-    final name = path.split('/').last.replaceAll(RegExp(r'\.(png|jpeg|jpg)$'), '');
+    final name =
+        path.split('/').last.replaceAll(RegExp(r'\.(png|jpeg|jpg)$'), '');
     return name.replaceAll('app_icon', '风格 ').trim();
   }
 
@@ -377,6 +530,191 @@ class SettingsPage extends StatelessWidget {
           onCancel: () => Navigator.of(sheetContext).pop(),
         );
       },
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 目录选择弹窗
+// ────────────────────────────────────────────────────────────────────────────
+
+class _FolderPickDialog extends StatefulWidget {
+  final List<String> initialPaths;
+  final ValueChanged<List<String>> onPathsChanged;
+  const _FolderPickDialog({
+    required this.initialPaths,
+    required this.onPathsChanged,
+  });
+
+  @override
+  State<_FolderPickDialog> createState() => _FolderPickDialogState();
+}
+
+class _FolderPickDialogState extends State<_FolderPickDialog> {
+  late List<String> _tmpPaths;
+  bool _isScanning = false;
+  int _scannedCount = 0;
+  int _foundCount = 0;
+  String? _error;
+  StreamSubscription? _scanSub;
+  final List<Music> _scannedSongs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _tmpPaths = [...widget.initialPaths];
+  }
+
+  @override
+  void dispose() {
+    _scanSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _startScan() async {
+    if (_tmpPaths.isEmpty) return;
+
+    if (Platform.isAndroid &&
+        !(await MusicService.ensureAndroidAudioPermission())) {
+      if (mounted) {
+        setState(() => _error = '请授予存储和音频权限以扫描音乐');
+      }
+      return;
+    }
+
+    await FileService.savePaths(_tmpPaths);
+    widget.onPathsChanged(_tmpPaths);
+
+    final musicProvider = context.read<MusicProvider>();
+
+    setState(() {
+      _isScanning = true;
+      _scannedCount = 0;
+      _foundCount = 0;
+      _scannedSongs.clear();
+      _error = null;
+    });
+
+    _scanSub?.cancel();
+    _scanSub = MusicService.scanDirectories(_tmpPaths).listen(
+      (progress) {
+        if (!mounted) return;
+        if (progress.music != null) {
+          _scannedSongs.add(progress.music!);
+        }
+        setState(() {
+          _scannedCount++;
+          _foundCount = _scannedSongs.length;
+        });
+        if (_scannedCount % 15 == 0) {
+          musicProvider.updateLibrary(List.from(_scannedSongs));
+        }
+      },
+      onDone: () {
+        if (!mounted) return;
+        musicProvider.updateLibrary(List.from(_scannedSongs));
+        setState(() => _isScanning = false);
+      },
+      onError: (err) {
+        if (!mounted) return;
+        setState(() {
+          _isScanning = false;
+          _error = '扫描出错: $err';
+        });
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AlertDialog(
+      title: const Text("扫描目录"),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!_isScanning) ...[
+              FilledButton.icon(
+                onPressed: () async {
+                  final selectedPath = await FilePicker.getDirectoryPath();
+                  if (selectedPath != null && mounted) {
+                    setState(() => _tmpPaths.add(selectedPath));
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text("添加目录"),
+              ),
+              const Divider(),
+              if (_tmpPaths.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    "暂无目录，请点击上方添加",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ..._tmpPaths.map(
+                (path) => ListTile(
+                  title: Text(path,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _tmpPaths.remove(path)),
+                  ),
+                ),
+              ),
+            ] else ...[
+              const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: LinearProgressIndicator(),
+              ),
+              Text(
+                "正在扫描…",
+                style: TextStyle(color: colorScheme.primary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "已扫描 $_scannedCount 个文件，发现 $_foundCount 首歌曲",
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+            ],
+            if (!_isScanning && _foundCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  "扫描完成，共 $_foundCount 首歌曲",
+                  style: TextStyle(color: colorScheme.primary),
+                ),
+              ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isScanning ? null : () => Navigator.pop(context),
+          child: Text(_isScanning ? "扫描中…" : "取消"),
+        ),
+        if (!_isScanning && _foundCount == 0)
+          FilledButton(
+            onPressed: _tmpPaths.isEmpty ? null : _startScan,
+            child: const Text("开始扫描"),
+          ),
+        if (!_isScanning && _foundCount > 0)
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("完成"),
+          ),
+      ],
     );
   }
 }
@@ -426,7 +764,8 @@ class _AppIconPickerSheetState extends State<_AppIconPickerSheet> {
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               "选择应用图标",
-              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style:
+                  textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           SizedBox(
@@ -482,8 +821,9 @@ class _AppIconPickerSheetState extends State<_AppIconPickerSheet> {
                             color: isSelected
                                 ? colorScheme.primary
                                 : colorScheme.onSurfaceVariant,
-                            fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             fontSize: 10,
                           ),
                           maxLines: 1,
@@ -570,8 +910,9 @@ class _ThemeSeedButton extends StatelessWidget {
                 ]
               : [],
         ),
-        child:
-            isSelected ? Icon(Icons.check_rounded, color: checkIconColor) : null,
+        child: isSelected
+            ? Icon(Icons.check_rounded, color: checkIconColor)
+            : null,
       ),
     );
   }

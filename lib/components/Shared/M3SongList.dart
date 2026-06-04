@@ -15,6 +15,7 @@ class M3SongEntry {
   final String subtitle;
   final Uint8List? coverBytes;
   final String? coverPath;
+  final String? coverUrl;
   final IconData fallbackIcon;
   final bool isHighlighted;
   final Widget? trailing;
@@ -27,6 +28,7 @@ class M3SongEntry {
     required this.subtitle,
     this.coverBytes,
     this.coverPath,
+    this.coverUrl,
     this.fallbackIcon = Icons.music_note_rounded,
     this.isHighlighted = false,
     this.trailing,
@@ -202,7 +204,19 @@ class _M3SongRow extends StatelessWidget {
         return Image.file(file, fit: BoxFit.cover);
       }
     }
+    // 再次使用网络 URL
+    if (entry.coverUrl != null && entry.coverUrl!.isNotEmpty) {
+      return Image.network(
+        entry.coverUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildFallbackIcon(colorScheme),
+      );
+    }
     // 兜底图标
+    return _buildFallbackIcon(colorScheme);
+  }
+
+  Widget _buildFallbackIcon(ColorScheme colorScheme) {
     return ColoredBox(
       color: colorScheme.surfaceContainerHighest,
       child: Icon(
@@ -223,6 +237,7 @@ class _M3SongRow extends StatelessWidget {
 
     // 封面懒加载：当 coverBytes 为空且提供了 coverLoader 时，触发异步加载
     if ((entry.coverBytes == null || entry.coverBytes!.isEmpty) &&
+        entry.coverUrl == null &&
         coverLoader != null) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (!coverLoader!.isCoverLoading(entry.id) &&

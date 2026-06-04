@@ -93,7 +93,7 @@ final List<AppNavItem> navItems = [
       GoRoute(
         name: "network",
         path: "/network",
-        builder: (context, state) => NetWorkPage(),
+        builder: (context, state) => const NetWorkPage(),
       ),
       GoRoute(
         name: "recent",

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.35.0](https://github.com/s0raLin/miku_music/compare/v1.34.0...v1.35.0) (2026-06-05)
+
+
+### Features
+
+* **ui:** enhance music list and album detail views ([6dc9902](https://github.com/s0raLin/miku_music/commit/6dc9902765a511768afede60610cda1f56573804))
+* **ui:** implement page-based navigation for music detail views ([5e019ca](https://github.com/s0raLin/miku_music/commit/5e019caf6799a656a5f87e89a7e58524282007f9))
+* **user:** add user profile view and update routing ([b3510fc](https://github.com/s0raLin/miku_music/commit/b3510fc47fc9e142caf63cf27860822a8e01cc2c))
+
+
+### Bug Fixes
+
+* **ui:** improve stability in settings and clean up profile view ([0843980](https://github.com/s0raLin/miku_music/commit/0843980f39e8a79d63c8e9710c78645542ac79e4))
+
 ## [1.34.0](https://github.com/s0raLin/miku_music/compare/v1.33.0...v1.34.0) (2026-06-03)
 
 

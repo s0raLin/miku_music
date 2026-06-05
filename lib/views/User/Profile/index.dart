@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -40,6 +41,33 @@ class UserProfileViewPage extends StatelessWidget {
           icon: const Icon(Icons.keyboard_arrow_down_rounded),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (details) {
+              AdaptiveMenu.show(
+                context,
+                items: [
+                  AdaptiveMenuItem(
+                    icon: Icons.edit_note_rounded,
+                    title: "编辑",
+                    onTap: () {
+                      context.push("/user/edit-profile");
+                    },
+                  ),
+                  AdaptiveMenuItem(
+                    icon: Icons.share_outlined,
+                    title: "分享",
+                    onTap: () {},
+                  ),
+                ],
+                details: details,
+              );
+            },
+            child: Icon(Icons.more_vert_rounded),
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(

@@ -423,53 +423,105 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  /// 扫描目录设置项 — 内联于父级 Card，与其它设置项风格统一
   Widget _buildScanDirectoriesTile(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ListTile(
-          leading: Icon(
-            Icons.folder_open_rounded,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          title: const Text("音乐扫描目录"),
-          subtitle: Text(
-            _isPathsLoading
-                ? "加载中…"
-                : _scanPaths.isEmpty
-                ? "未添加目录"
-                : "${_scanPaths.length} 个目录",
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.outline),
-          ),
-          trailing: TextButton.icon(
-            onPressed: _isPathsLoading ? null : _showPickDialog,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text("管理"),
-          ),
-        ),
-        if (!_isPathsLoading && _scanPaths.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Column(
-              children: _scanPaths.map((path) {
-                return Row(
+        // ── 扫描目录标题行（仿 ListTile 但适配宽屏和窄屏） ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.folder_copy_rounded,
+                  size: 22,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.folder, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Expanded(
+                    Text(
+                      "音乐扫描目录",
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
                       child: Text(
-                        path,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        _isPathsLoading
+                            ? "加载中…"
+                            : _scanPaths.isEmpty
+                            ? "未添加任何目录"
+                            : "${_scanPaths.length} 个目录",
+                        key: ValueKey("${_isPathsLoading}_${_scanPaths.length}"),
                         style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: colorScheme.outline,
                         ),
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                onPressed: _isPathsLoading ? null : _showPickDialog,
+                icon: const Icon(Icons.edit, size: 16),
+                label: const Text("管理"),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // ── 已添加目录 chips ──
+        if (!_isPathsLoading && _scanPaths.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(68, 2, 16, 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: _scanPaths.map((path) {
+                final folderName = path
+                    .split(Platform.pathSeparator)
+                    .lastWhere((e) => e.isNotEmpty, orElse: () => path);
+                return InputChip(
+                  avatar: Icon(Icons.folder_rounded, size: 16, color: colorScheme.onSurfaceVariant),
+                  label: Text(folderName, style: textTheme.bodySmall),
+                  deleteIcon: Icon(Icons.close, size: 16, color: colorScheme.onSurfaceVariant),
+                  onDeleted: () {
+                    setState(() => _scanPaths.remove(path));
+                    FileService.savePaths(_scanPaths);
+                  },
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  tooltip: path,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 );
               }).toList(),
             ),
@@ -535,12 +587,12 @@ class _SettingsPageState extends State<SettingsPage> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 目录选择弹窗
+// 目录选择弹窗（已统一风格）
 // ────────────────────────────────────────────────────────────────────────────
-
 class _FolderPickDialog extends StatefulWidget {
   final List<String> initialPaths;
   final ValueChanged<List<String>> onPathsChanged;
+
   const _FolderPickDialog({
     required this.initialPaths,
     required this.onPathsChanged,
@@ -558,6 +610,7 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
   String? _error;
   StreamSubscription? _scanSub;
   final List<Music> _scannedSongs = [];
+  bool _hasScanned = false;
 
   @override
   void initState() {
@@ -571,9 +624,12 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
     super.dispose();
   }
 
+  void _deletePath(int index) {
+    setState(() => _tmpPaths.removeAt(index));
+  }
+
   Future<void> _startScan() async {
     if (_tmpPaths.isEmpty) return;
-
     if (Platform.isAndroid &&
         !(await MusicService.ensureAndroidAudioPermission())) {
       if (mounted) {
@@ -581,12 +637,7 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
       }
       return;
     }
-
-    await FileService.savePaths(_tmpPaths);
-    widget.onPathsChanged(_tmpPaths);
-
     if (!mounted) return;
-    final musicProvider = context.read<MusicProvider>();
 
     setState(() {
       _isScanning = true;
@@ -594,6 +645,7 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
       _foundCount = 0;
       _scannedSongs.clear();
       _error = null;
+      _hasScanned = false;
     });
 
     _scanSub?.cancel();
@@ -607,14 +659,13 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
           _scannedCount++;
           _foundCount = _scannedSongs.length;
         });
-        if (_scannedCount % 15 == 0) {
-          musicProvider.updateLibrary(List.from(_scannedSongs));
-        }
       },
       onDone: () {
         if (!mounted) return;
-        musicProvider.updateLibrary(List.from(_scannedSongs));
-        setState(() => _isScanning = false);
+        setState(() {
+          _isScanning = false;
+          _hasScanned = true;
+        });
       },
       onError: (err) {
         if (!mounted) return;
@@ -626,93 +677,289 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
     );
   }
 
+  void _handleConfirm() {
+    FileService.savePaths(_tmpPaths);
+    widget.onPathsChanged(_tmpPaths);
+    if (_scannedSongs.isNotEmpty) {
+      context.read<MusicProvider>().updateLibrary(List.from(_scannedSongs));
+    }
+    Navigator.pop(context);
+  }
+
+  void _handleCancel() {
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return AlertDialog(
-      title: const Text("扫描目录"),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!_isScanning) ...[
-              FilledButton.icon(
-                onPressed: () async {
-                  final selectedPath = await FilePicker.getDirectoryPath();
-                  if (selectedPath != null && mounted) {
-                    setState(() => _tmpPaths.add(selectedPath));
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text("添加目录"),
-              ),
-              const Divider(),
-              if (_tmpPaths.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    "暂无目录，请点击上方添加",
-                    style: TextStyle(color: Colors.grey),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+      title: Row(
+        children: [
+          Icon(Icons.folder_special_rounded, color: colorScheme.primary),
+          const SizedBox(width: 10),
+          const Text("管理扫描目录"),
+        ],
+      ),
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.88,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 添加目录按钮
+              FilledButton.tonalIcon(
+                onPressed: _isScanning
+                    ? null
+                    : () async {
+                        final selectedPath =
+                            await FilePicker.getDirectoryPath();
+                        if (selectedPath != null && mounted) {
+                          setState(() {
+                            _tmpPaths.add(selectedPath);
+                            _hasScanned = false;
+                          });
+                        }
+                      },
+                icon: const Icon(Icons.add_rounded),
+                label: const Text("添加新扫描目录"),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-              ..._tmpPaths.map(
-                (path) => ListTile(
-                  title: Text(
-                    path,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 20),
+
+              // 目录列表
+              Container(
+                constraints: const BoxConstraints(maxHeight: 260),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => setState(() => _tmpPaths.remove(path)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                 ),
+                child: _tmpPaths.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 48),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.folder_off_rounded,
+                              size: 48,
+                              color: colorScheme.outline,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "暂无扫描目录\n点击上方按钮添加",
+                              textAlign: TextAlign.center,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const ClampingScrollPhysics(),
+                        itemCount: _tmpPaths.length,
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.5,
+                          ),
+                          indent: 16,
+                          endIndent: 16,
+                        ),
+                        itemBuilder: (context, index) {
+                          final path = _tmpPaths[index];
+                          final folderName = path
+                              .split(Platform.pathSeparator)
+                              .last;
+                          return ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            leading: Icon(
+                              Icons.folder_rounded,
+                              color: colorScheme.primary,
+                            ),
+                            title: Text(
+                              folderName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              path,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                            trailing: _isScanning
+                                ? null
+                                : IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: colorScheme.error,
+                                    ),
+                                    onPressed: () => _deletePath(index),
+                                  ),
+                          );
+                        },
+                      ),
               ),
-            ] else ...[
-              const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: LinearProgressIndicator(),
-              ),
-              Text("正在扫描…", style: TextStyle(color: colorScheme.primary)),
-              const SizedBox(height: 8),
-              Text(
-                "已扫描 $_scannedCount 个文件，发现 $_foundCount 首歌曲",
-                style: TextStyle(color: colorScheme.onSurfaceVariant),
+
+              const SizedBox(height: 20),
+
+              // 扫描状态区域
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                child: Column(
+                  children: [
+                    if (_isScanning) ...[
+                      _buildScanningStatus(colorScheme, textTheme),
+                    ] else if (_tmpPaths.isNotEmpty && !_hasScanned) ...[
+                      FilledButton.icon(
+                        onPressed: _startScan,
+                        icon: const Icon(Icons.youtube_searched_for_rounded),
+                        label: const Text("开始扫描歌曲"),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (!_isScanning && _hasScanned)
+                      _buildScanSuccess(colorScheme, textTheme),
+                    if (_error != null)
+                      _buildErrorMessage(colorScheme, textTheme),
+                  ],
+                ),
               ),
             ],
-            if (!_isScanning && _foundCount > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  "扫描完成，共 $_foundCount 首歌曲",
-                  style: TextStyle(color: colorScheme.primary),
-                ),
-              ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              ),
-          ],
+          ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: _isScanning ? null : () => Navigator.pop(context),
-          child: Text(_isScanning ? "扫描中…" : "取消"),
+          onPressed: _isScanning ? null : _handleCancel,
+          child: const Text("取消"),
         ),
-        if (!_isScanning && _foundCount == 0)
-          FilledButton(
-            onPressed: _tmpPaths.isEmpty ? null : _startScan,
-            child: const Text("开始扫描"),
-          ),
-        if (!_isScanning && _foundCount > 0)
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("完成"),
-          ),
+        FilledButton(
+          onPressed: _isScanning ? null : _handleConfirm,
+          child: Text(_hasScanned ? "完成" : "确定"),
+        ),
       ],
+    );
+  }
+
+  Widget _buildScanningStatus(ColorScheme cs, TextTheme tt) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          const LinearProgressIndicator(
+            borderRadius: BorderRadius.all(Radius.circular(4)),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(width: 12),
+              Text("正在扫描…", style: tt.titleSmall?.copyWith(color: cs.primary)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "已检查 $_scannedCount 个文件 · 找到 $_foundCount 首音乐",
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanSuccess(ColorScheme cs, TextTheme tt) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle_rounded, color: cs.primary, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "扫描完成",
+                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  "成功导入 $_foundCount 首歌曲",
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorMessage(ColorScheme cs, TextTheme tt) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.errorContainer.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: cs.error),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _error!,
+              style: tt.bodyMedium?.copyWith(color: cs.onErrorContainer),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

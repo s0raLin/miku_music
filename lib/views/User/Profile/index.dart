@@ -96,7 +96,7 @@ class UserProfileViewPage extends StatelessWidget {
 }
 
 class _ListeningHeatmap extends StatelessWidget {
-  const _ListeningHeatmap({super.key});
+  const _ListeningHeatmap();
 
   @override
   Widget build(BuildContext context) {

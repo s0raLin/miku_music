@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/constants/Theme/index.dart';
 import 'package:myapp/model/Music/index.dart';
@@ -586,6 +585,7 @@ class _FolderPickDialogState extends State<_FolderPickDialog> {
     await FileService.savePaths(_tmpPaths);
     widget.onPathsChanged(_tmpPaths);
 
+    if (!mounted) return;
     final musicProvider = context.read<MusicProvider>();
 
     setState(() {

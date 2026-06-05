@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
@@ -45,6 +46,7 @@ class StartupProvider extends ChangeNotifier {
       final settings = await InitializationService.loadInitialSettings();
       themeProvider.updateFromMap(settings);
       await AppIconService.switchAppIcon(themeProvider.appIconPath);
+
       _finishStep('加载界面设置', '主题设置已应用');
 
       _setStage('扫描本地音乐', '正在读取已保存目录');

@@ -5,6 +5,7 @@
 
 import 'api/audio_db.dart';
 import 'api/audio_info.dart';
+import 'api/hotkey.dart';
 import 'api/scanner.dart';
 import 'api/simple.dart';
 import 'dart:async';
@@ -69,7 +70,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 791080442;
+  int get rustContentHash => -219895613;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -184,6 +185,8 @@ abstract class RustLibApi extends BaseApi {
   Future<String> crateApiSimpleGreet({required String name});
 
   Future<void> crateApiSimpleInitApp();
+
+  Stream<String> crateApiHotkeyInitNativeHotkeys();
 
   Stream<AudioMetadata> crateApiScannerScanDirectoryParallel({
     required String dirPath,
@@ -1042,6 +1045,38 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
+  Stream<String> crateApiHotkeyInitNativeHotkeys() {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 24,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_String,
+          ),
+          constMeta: kCrateApiHotkeyInitNativeHotkeysConstMeta,
+          argValues: [sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiHotkeyInitNativeHotkeysConstMeta =>
+      const TaskConstMeta(debugName: "init_native_hotkeys", argNames: ["sink"]);
+
+  @override
   Stream<AudioMetadata> crateApiScannerScanDirectoryParallel({
     required String dirPath,
   }) {
@@ -1056,7 +1091,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 24,
+              funcId: 25,
               port: port_,
             );
           },
@@ -1118,6 +1153,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return DbManagerImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RustStreamSink<String> dco_decode_StreamSink_String_Sse(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
   }
 
   @protected
@@ -1349,6 +1390,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
+  }
+
+  @protected
+  RustStreamSink<String> sse_decode_StreamSink_String_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
   }
 
   @protected
@@ -1637,6 +1686,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as DbManagerImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_String_Sse(
+    RustStreamSink<String> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
       serializer,
     );
   }
@@ -1932,7 +1998,7 @@ class DbManagerImpl extends RustOpaque implements DbManager {
       RustLib.instance.api.crateApiAudioDbDbManagerGetAllPlaylists(that: this);
 
   /// 3. 获取所有收藏的歌曲列表
-  /// ✨ 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
+  /// 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
   Future<List<MusicInfo>> getFavoriteSongs() =>
       RustLib.instance.api.crateApiAudioDbDbManagerGetFavoriteSongs(that: this);
 

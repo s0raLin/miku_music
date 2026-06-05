@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -102,7 +101,6 @@ class MainDrawer extends StatelessWidget {
     final userProvider = context.watch<UserProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final isLoggedIn = userProvider.user != null;
-    final isDark = themeProvider.themeMode == ThemeMode.dark;
 
     final menuConfig = _buildMenuConfig(isLoggedIn);
     final navItems = menuConfig.whereType<NavItem>().toList();
@@ -235,11 +233,6 @@ class _DrawerHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final ImageProvider<Object> avatarImage =
-        (avatarURL != null && avatarURL!.isNotEmpty)
-        ? NetworkImage(avatarURL!)
-        : const AssetImage(MyAssets.background);
-
     return InkWell(
       onTap: !isLoggedIn ? () => context.push('/login') : null,
       borderRadius: BorderRadius.circular(12),
@@ -256,17 +249,17 @@ class _DrawerHeader extends StatelessWidget {
                   width: 1.5,
                 ),
               ),
-            child: CircleAvatar(
-              radius: 30,
-              backgroundColor: cs.primaryContainer,
-              foregroundColor: cs.onPrimaryContainer,
-              backgroundImage: (avatarURL != null && avatarURL!.isNotEmpty)
-                  ? NetworkImage(avatarURL!)
-                  : null,
-              child: (avatarURL == null || avatarURL!.isEmpty)
-                  ? Icon(Icons.person_rounded, size: 32)
-                  : null,
-            ),
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: cs.primaryContainer,
+                foregroundColor: cs.onPrimaryContainer,
+                backgroundImage: (avatarURL != null && avatarURL!.isNotEmpty)
+                    ? NetworkImage(avatarURL!)
+                    : null,
+                child: (avatarURL == null || avatarURL!.isEmpty)
+                    ? Icon(Icons.person_rounded, size: 32)
+                    : null,
+              ),
             ),
             const SizedBox(width: 16),
             // 右侧文字信息（竖直居中，左对齐）

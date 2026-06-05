@@ -8,6 +8,7 @@
 
 import 'api/audio_db.dart';
 import 'api/audio_info.dart';
+import 'api/hotkey.dart';
 import 'api/scanner.dart';
 import 'api/simple.dart';
 import 'dart:async';
@@ -47,6 +48,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
     dynamic raw,
   );
+
+  @protected
+  RustStreamSink<String> dco_decode_StreamSink_String_Sse(dynamic raw);
 
   @protected
   RustStreamSink<AudioMetadata> dco_decode_StreamSink_audio_metadata_Sse(
@@ -137,6 +141,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   DbManager
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<String> sse_decode_StreamSink_String_Sse(
     SseDeserializer deserializer,
   );
 
@@ -239,6 +248,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
     DbManager self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_String_Sse(
+    RustStreamSink<String> self,
     SseSerializer serializer,
   );
 

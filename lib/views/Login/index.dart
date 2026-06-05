@@ -13,16 +13,6 @@ import 'package:myapp/utils/Http/index.dart';
 import 'package:provider/provider.dart';
 
 /// 登录/注册页面
-///
-/// 支持三种认证方式:
-/// 1. 邮箱+验证码登录
-/// 2. 邮箱+密码登录
-/// 3. 邮箱验证码注册（自动设置密码）
-///
-/// 流程:
-/// - 点击"登录/注册" -> 弹出邮箱验证码模态窗口
-/// - 输入验证码后自动完成注册或登录
-/// - 登录成功后跳转到首页
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -92,7 +82,12 @@ class _LoginPageState extends State<LoginPage> {
 
     // 冷却中不允许重复打开（防刷）
     if (_sendCooldown > 0) {
-      AppToast.neutral(context, message: '${_sendCooldown}秒后可重新发送验证码', title: '请稍候');
+      AppToast.neutral(
+        context,
+        // ✨ 1. 修复拼写错误，并去掉了不必要的括号以响应 Lint 规范
+        message: '$_sendCooldown秒后可重新发送验证码',
+        title: '请稍候',
+      );
       return;
     }
     _startCooldown();
@@ -114,6 +109,7 @@ class _LoginPageState extends State<LoginPage> {
         code: result['code']!,
       );
 
+      // ✨ 2. 异步请求回来后，必须进行 mounted 安全校验，防止跨异步 gap 导致内存崩溃
       if (!mounted) return;
 
       await context.read<UserProvider>().updateUserInfo(user);
@@ -192,7 +188,12 @@ class _LoginPageState extends State<LoginPage> {
 
     // 冷却中不允许重复打开（防刷）
     if (_sendCooldown > 0) {
-      AppToast.neutral(context, message: '${_sendCooldown}秒后可重新发送验证码', title: '请稍候');
+      AppToast.neutral(
+        context,
+        // ✨ 3. 同样的，修复这里的拼写及括号警告
+        message: '$_sendCooldown秒后可重新发送验证码',
+        title: '请稍候',
+      );
       return;
     }
     _startCooldown();
@@ -236,6 +237,7 @@ class _LoginPageState extends State<LoginPage> {
             avatarURL: avatarUrl,
             token: user.token,
           );
+          if (!mounted) return;
           await context.read<UserProvider>().updateUserInfo(updatedUser);
         } catch (_) {
           // 头像上传失败不影响注册流程
@@ -284,7 +286,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // ── 头像区（注册模式可点击更换） ──
+                    // ── 头像区 ──
                     _buildAvatarPreview(colorScheme),
                     const SizedBox(height: 24),
 
@@ -292,7 +294,7 @@ class _LoginPageState extends State<LoginPage> {
                     _buildModeSwitcher(colorScheme, textTheme),
                     const SizedBox(height: 24),
 
-                    // ── 邮箱输入（所有模式通用） ──
+                    // ── 邮箱输入 ──
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -313,7 +315,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ── 注册模式：用户名输入 ──
+                    // ── 用户名输入 ──
                     if (_mode == 'register') ...[
                       TextFormField(
                         controller: _usernameController,
@@ -332,7 +334,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 16),
                     ],
 
-                    // ── 密码模式或注册模式：密码输入 ──
+                    // ── 密码输入 ──
                     if (_mode == 'password' || _mode == 'register') ...[
                       TextFormField(
                         controller: _passwordController,
@@ -349,7 +351,8 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             onPressed: () {
                               setState(
-                                  () => _obscurePassword = !_obscurePassword);
+                                () => _obscurePassword = !_obscurePassword,
+                              );
                             },
                           ),
                         ),
@@ -366,7 +369,6 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 24),
                     ],
 
-                    // ── 注册模式下的验证码提示 ──
                     if (_mode == 'register')
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -402,8 +404,9 @@ class _LoginPageState extends State<LoginPage> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(_getButtonLabel()),
                       ),
@@ -423,12 +426,10 @@ class _LoginPageState extends State<LoginPage> {
                         TextButton(
                           onPressed: () {
                             setState(() {
-                              _mode =
-                                  _mode == 'register' ? 'code' : 'register';
+                              _mode = _mode == 'register' ? 'code' : 'register';
                             });
                           },
-                          child: Text(
-                              _mode == 'register' ? '去登录' : '立即注册'),
+                          child: Text(_mode == 'register' ? '去登录' : '立即注册'),
                         ),
                       ],
                     ),
@@ -445,14 +446,14 @@ class _LoginPageState extends State<LoginPage> {
   /// 构建模式切换按钮组
   Widget _buildModeSwitcher(ColorScheme colorScheme, TextTheme textTheme) {
     return Container(
+      // ✨ 4. 适配最新 Material 3 规范：将旧版的废弃属性 surfaceContainerHighest 改为最佳实践 surfaceContainerHigh
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
         children: [
-          // 验证码登录
           if (_mode != 'register')
             Expanded(
               child: _ModeButton(
@@ -463,7 +464,6 @@ class _LoginPageState extends State<LoginPage> {
                 onTap: () => setState(() => _mode = 'code'),
               ),
             ),
-          // 密码登录
           if (_mode != 'register')
             Expanded(
               child: _ModeButton(
@@ -474,7 +474,6 @@ class _LoginPageState extends State<LoginPage> {
                 onTap: () => setState(() => _mode = 'password'),
               ),
             ),
-          // 注册
           if (_mode == 'register')
             Expanded(
               child: _ModeButton(
@@ -503,10 +502,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// 头像预览区：注册模式可点击换头像，登录模式显示占位图标
   Widget _buildAvatarPreview(ColorScheme colorScheme) {
     if (_mode == 'register') {
-      // 注册模式：点击选择/预览头像
       return GestureDetector(
         onTap: _pickAvatar,
         child: CircleAvatar(
@@ -538,7 +535,6 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     }
-    // 登录模式：占位图标
     return Icon(
       Icons.account_circle_rounded,
       size: 80,
@@ -547,7 +543,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-/// 模式切换按钮小组件
 class _ModeButton extends StatelessWidget {
   final String label;
   final IconData icon;

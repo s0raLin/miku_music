@@ -134,35 +134,35 @@ class UserApi {
   // ─────────────────── 兼容旧版登录 ───────────────────
 
   /// 用户名+密码登录（兼容旧版）
-  static Future<User?> login({
-    required String username,
-    required String password,
-  }) async {
-    final response = await HttpUtils().post(
-      "$base/login",
-      data: {"username": username, "password": password},
-    );
+  // static Future<User?> login({
+  //   required String username,
+  //   required String password,
+  // }) async {
+  //   final response = await HttpUtils().post(
+  //     "$base/login",
+  //     data: {"username": username, "password": password},
+  //   );
 
-    final result = ApiResponse.fromJson(response.data);
-    if (result.code == 0) {
-      String? token = result.data?['token'];
-      final user = User.fromJson(result.data?["user"]);
-      user.token = token;
+  //   final result = ApiResponse.fromJson(response.data);
+  //   if (result.code == 0) {
+  //     String? token = result.data?['token'];
+  //     final user = User.fromJson(result.data?["user"]);
+  //     user.token = token;
 
-      // 加密保存到本地
-      if (token != null) {
-        await _localAuth.saveToken(token);
-      }
-      await _localAuth.saveUser(user.toJson());
+  //     // 加密保存到本地
+  //     if (token != null) {
+  //       await _localAuth.saveToken(token);
+  //     }
+  //     await _localAuth.saveUser(user.toJson());
 
-      return user;
-    } else {
-      throw DioException(
-        requestOptions: response.requestOptions,
-        message: result.msg,
-      );
-    }
-  }
+  //     return user;
+  //   } else {
+  //     throw DioException(
+  //       requestOptions: response.requestOptions,
+  //       message: result.msg,
+  //     );
+  //   }
+  // }
 
   // ─────────────────── 头像上传 ───────────────────
 

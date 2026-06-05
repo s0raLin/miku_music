@@ -43,7 +43,7 @@ abstract class DbManager implements RustOpaqueInterface {
   Future<List<PlaylistInfo>> getAllPlaylists();
 
   /// 3. 获取所有收藏的歌曲列表
-  /// ✨ 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
+  /// 同样利用 INNER JOIN 自动屏蔽掉无外键可能带来的脏数据
   Future<List<MusicInfo>> getFavoriteSongs();
 
   /// 获取最近播放的歌曲 ID 列表（按播放时间倒序）

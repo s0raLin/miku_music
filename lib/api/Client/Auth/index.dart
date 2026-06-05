@@ -1,8 +1,15 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:myapp/api/Model/ApiResponse/index.dart';
 import 'package:myapp/api/Model/User/index.dart';
 import 'package:myapp/service/LocalAuth/index.dart';
 import 'package:myapp/utils/Http/index.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'package:path/path.dart' as path;
+import 'package:http/http.dart' as http;
 
 /// 认证 API 客户端
 ///
@@ -126,6 +133,7 @@ class UserApi {
     if (token != null) {
       await _localAuth.saveToken(token);
     }
+    debugPrint("[用户头像]: ${user.avatarURL}");
     await _localAuth.saveUser(user.toJson());
 
     return user;
@@ -139,10 +147,7 @@ class UserApi {
     required String fileName,
   }) async {
     final formData = FormData.fromMap({
-      "avatar": MultipartFile.fromBytes(
-        avatarBytes,
-        filename: fileName,
-      ),
+      "avatar": MultipartFile.fromBytes(avatarBytes, filename: fileName),
     });
 
     final response = await HttpUtils().postForm(
@@ -159,6 +164,32 @@ class UserApi {
     }
 
     return result.data?["avatar_url"] as String;
+  }
+
+  /// 用户头像保存到本地
+  Future<String?> downloadAndSaveAvatar(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      final directory = await getApplicationDocumentsDirectory();
+
+      String fileName = path.basename(Uri.parse(url).path);
+      if (fileName.isEmpty) {
+        fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.png';
+      }
+
+      //拼接本地路径
+      final localPath = path.join(directory.path, fileName);
+      final file = File(localPath);
+
+      //将下载的字节数据写入文件
+      await file.writeAsBytes(response.bodyBytes);
+
+      debugPrint("头像保存成功,路径为: $localPath");
+      return localPath;
+    } catch (e) {
+      debugPrint("头像保存出错: $e");
+      return null;
+    }
   }
 
   // ─────────────────── 本地持久化读取 ───────────────────
@@ -187,10 +218,7 @@ class UserApi {
   }) async {
     final response = await HttpUtils().post(
       "$base/change-password",
-      data: {
-        "old_password": oldPassword,
-        "new_password": newPassword,
-      },
+      data: {"old_password": oldPassword, "new_password": newPassword},
     );
 
     final result = ApiResponse.fromJson(response.data);

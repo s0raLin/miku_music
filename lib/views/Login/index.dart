@@ -190,7 +190,6 @@ class _LoginPageState extends State<LoginPage> {
     if (_sendCooldown > 0) {
       AppToast.neutral(
         context,
-        // ✨ 3. 同样的，修复这里的拼写及括号警告
         message: '$_sendCooldown秒后可重新发送验证码',
         title: '请稍候',
       );

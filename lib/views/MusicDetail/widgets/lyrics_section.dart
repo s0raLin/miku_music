@@ -224,7 +224,6 @@ class _LyricsSectionState extends State<LyricsSection>
           itemScrollController: _scrollController,
           itemPositionsListener: _positionsListener,
           padding: const EdgeInsets.symmetric(vertical: 180), // 适当减小
-          physics: const BouncingScrollPhysics(), // 增加弹性手感
           itemCount: lyrics.length,
           itemBuilder: (context, index) =>
               _buildLyricItem(lyrics[index], index, currentIndex, cs),

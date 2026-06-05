@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.36.0](https://github.com/s0raLin/miku_music/compare/v1.35.0...v1.36.0) (2026-06-05)
+
+
+### Features
+
+* **core:** implement global hotkey support and refactor auth logic ([69086f2](https://github.com/s0raLin/miku_music/commit/69086f2c59fcd62bf54ee1e04a36cb494cf4c355))
+* **playlist:** implement add to playlist functionality and enhance provider validation ([4f15c68](https://github.com/s0raLin/miku_music/commit/4f15c68fb48b5949c8ecb8ac66f5203d6daf23c3))
+* **ui:** redesign artwork fallback and update app assets ([2cd8c3f](https://github.com/s0raLin/miku_music/commit/2cd8c3fdca4112b168e3b1025b09e692224a0ad6))
+* **ui:** replace PopupMenuButton with AdaptiveMenu in user views ([31cb064](https://github.com/s0raLin/miku_music/commit/31cb0644fddb9bba6d6e0d45a06b09ce7ec6fdb9))
+
+
+### Performance Improvements
+
+* **ui:** optimize song list rendering with lazy loading ([76eafe6](https://github.com/s0raLin/miku_music/commit/76eafe669327a21465ccf298d66ea9cfffa50062))
+
 ## [1.35.0](https://github.com/s0raLin/miku_music/compare/v1.34.0...v1.35.0) (2026-06-05)
 
 

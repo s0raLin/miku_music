@@ -6,6 +6,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
+import 'package:myapp/views/MusicDetail/widgets/music_action_menu.dart';
 import 'package:provider/provider.dart';
 
 class CoverContent extends StatefulWidget {
@@ -153,6 +154,19 @@ class _CoverContentState extends State<CoverContent> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                ),
+              ),
+              // 📎 添加到歌单按钮
+              IconButton(
+                onPressed: () {
+                  MusicActionMenu.showAddToPlaylistSheet(context, widget.music);
+                },
+                tooltip: "添加到歌单",
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  Icons.add_rounded,
+                  size: 28,
+                  color: cs.onSurfaceVariant,
                 ),
               ),
               IconButton(

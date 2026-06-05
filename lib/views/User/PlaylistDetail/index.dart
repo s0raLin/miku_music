@@ -8,6 +8,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
+import 'package:myapp/views/MusicDetail/widgets/music_action_menu.dart';
 import 'package:provider/provider.dart';
 
 enum PlaylistSongSortType {
@@ -162,37 +163,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     }
   }
 
-  Future<void> _showAddToPlaylistSheet(BuildContext context, Music song) async {
-    final playlistProvider = context.read<PlaylistProvider>();
-    if (playlistProvider.userPlaylists.isEmpty) return;
-    showModalBottomSheet(
-      context: context,
-      useSafeArea: true,
-      builder: (ctx) => SafeArea(
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: playlistProvider.userPlaylists.length,
-          itemBuilder: (ctx, index) {
-            final p = playlistProvider.userPlaylists[index];
-            final alreadyIn = p.songIds.contains(song.id);
-            return ListTile(
-              enabled: !alreadyIn,
-              leading: const Icon(Icons.playlist_add_rounded),
-              title: Text(p.name),
-              trailing: alreadyIn ? Icon(Icons.check_circle, color: Theme.of(ctx).colorScheme.secondary) : null,
-              onTap: () async {
-                await playlistProvider.addToPlaylist(p.id, song);
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  AppToast.success(ctx, message: '已添加到「${p.name}」');
-                }
-              },
-            );
-          },
-        ),
-      ),
-    );
-  }
 
   void _showConfirmSyncDialog(BuildContext context) {
     showDialog(
@@ -239,7 +209,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               context,
               icon: Icons.more_vert_rounded,
               items: [
-                AdaptiveMenuItem(title: "添加到歌单", onTap: () => _showAddToPlaylistSheet(context, song)),
+                AdaptiveMenuItem(title: "添加到歌单", onTap: () => MusicActionMenu.showAddToPlaylistSheet(context, song)),
                 if (!isSystem)
                   AdaptiveMenuItem(title: "从歌单移除", onTap: () => _confirmRemoveSong(context, song.id)),
               ],

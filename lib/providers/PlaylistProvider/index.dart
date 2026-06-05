@@ -90,22 +90,32 @@ class PlaylistProvider extends ChangeNotifier {
   // 歌单核心 CRUD 方法
   // ─────────────────────────────────────────────
 
+  /// 创建新歌单（名称必填，封面/描述可选）
   Future<void> createPlaylist(
     String name, {
     String? coverPath,
     String? description,
   }) async {
+    if (name.trim().isEmpty) {
+      debugPrint("警告: 歌单名称不能为空");
+      return;
+    }
     await _dbService.createPlaylist(
-      name,
+      name.trim(),
       coverPath: coverPath,
       description: description,
     );
     await refreshFromDb();
   }
 
+  /// 删除歌单（系统歌单禁止删除）
   Future<void> deletePlaylist(String id) async {
     final playlist = getPlaylistById(id);
-    if (playlist != null && playlist.isSystem) {
+    if (playlist == null) {
+      debugPrint("警告: 歌单不存在, id=$id");
+      return;
+    }
+    if (playlist.isSystem) {
       debugPrint("警告: 系统歌单不可删除");
       return;
     }
@@ -113,27 +123,65 @@ class PlaylistProvider extends ChangeNotifier {
     await refreshFromDb();
   }
 
+  /// 更新歌单信息（名称/描述/封面），传入 null 的参数保持不变
   Future<void> updatePlaylist(
     String playlistId,
     String name, {
     String? description,
     String? coverPath,
   }) async {
+    if (name.trim().isEmpty) {
+      debugPrint("警告: 歌单名称不能为空");
+      return;
+    }
+    final playlist = getPlaylistById(playlistId);
+    if (playlist == null) {
+      debugPrint("警告: 歌单不存在, id=$playlistId");
+      return;
+    }
+    if (playlist.isSystem) {
+      debugPrint("警告: 系统歌单不可修改");
+      return;
+    }
     await _dbService.updatePlaylist(
       playlistId,
-      name,
+      name.trim(),
       desc: description,
       coverPath: coverPath,
     );
     await refreshFromDb();
   }
 
+  /// 重命名歌单（便捷方法，内部复用 updatePlaylist）
   Future<void> renamePlaylist(String playlistId, String newName) async {
-    await _dbService.renamePlaylist(playlistId, newName);
+    if (newName.trim().isEmpty) {
+      debugPrint("警告: 歌单名称不能为空");
+      return;
+    }
+    final playlist = getPlaylistById(playlistId);
+    if (playlist == null) {
+      debugPrint("警告: 歌单不存在, id=$playlistId");
+      return;
+    }
+    if (playlist.isSystem) {
+      debugPrint("警告: 系统歌单不可重命名");
+      return;
+    }
+    await _dbService.renamePlaylist(playlistId, newName.trim());
     await refreshFromDb();
   }
 
+  /// 将歌曲添加到歌单（自动去重）
   Future<void> addToPlaylist(String playlistId, Music music) async {
+    final playlist = getPlaylistById(playlistId);
+    if (playlist == null) {
+      debugPrint("警告: 歌单不存在, id=$playlistId");
+      return;
+    }
+    if (playlist.songIds.contains(music.id)) {
+      debugPrint("提示: 歌曲已在歌单「${playlist.name}」中，跳过重复添加");
+      return;
+    }
     await _dbService.addMusicToPlaylist(playlistId, music.id);
     await refreshFromDb();
   }

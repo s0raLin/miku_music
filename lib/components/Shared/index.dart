@@ -284,7 +284,7 @@ class ArtworkCover extends StatelessWidget {
     this.borderRadius = AppRadius.inner,
     this.size,
     this.aspectRatio = 1,
-    this.iconSize = 24,
+    this.iconSize = 48, // 稍微调大一点
     this.overlay,
   });
 
@@ -293,6 +293,7 @@ class ArtworkCover extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     Widget content;
+
     if (bytes != null && bytes!.isNotEmpty) {
       content = Image.memory(
         bytes!,
@@ -301,14 +302,38 @@ class ArtworkCover extends StatelessWidget {
         height: double.infinity,
       );
     } else {
-      // surfaceContainerHighest 在浅色/深色主题下均提供足够对比
-      content = ColoredBox(
-        color: colorScheme.surfaceContainerHighest,
+      // === 重构后的无封面样式 ===
+      content = Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.surfaceContainerHighest,
+              colorScheme.surfaceContainerHigh,
+            ],
+          ),
+        ),
         child: Center(
-          child: Icon(
-            fallbackIcon,
-            size: iconSize,
-            color: colorScheme.onSurfaceVariant,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.7),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              fallbackIcon,
+              size: iconSize,
+              color: colorScheme.primary,
+            ),
           ),
         ),
       );
@@ -438,39 +463,44 @@ class MediaOverlayCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
+    final bool hasCover =
+        (coverBytes != null && coverBytes!.isNotEmpty) ||
+        (coverPath != null && coverPath!.isNotEmpty);
+
     return GestureDetector(
       onTap: onTap,
       child: AspectRatio(
-        aspectRatio: 1.0, // 强制限制为完美的圆角正方形，不随外部拉伸变形
+        aspectRatio: 1.0,
         child: Container(
-          clipBehavior: Clip.antiAlias, // 完美裁剪内部层级
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.card), // 统一的现代大圆角
+            borderRadius: BorderRadius.circular(AppRadius.card),
           ),
           child: Stack(
             fit: StackFit.expand,
             children: [
               _buildCoverImage(cs),
 
-              // 2. 半透明黑色安全渐变层（防止复杂/亮色封面导致白色文字隐形）
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.05),
-                        Colors.black.withValues(alpha: 0.65),
-                      ],
-                      stops: const [0.6, 0.8, 1.0],
+              // === 只在有真实封面时才显示强渐变 ===
+              if (hasCover)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.06),
+                          Colors.black.withValues(alpha: 0.75),
+                        ],
+                        stops: const [0.5, 0.75, 1.0],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // 3. 底部文字信息层
+              // 文字层
               Positioned(
                 left: 14,
                 right: 14,
@@ -483,8 +513,8 @@ class MediaOverlayCard extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: hasCover ? Colors.white : cs.onSurface,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -496,7 +526,9 @@ class MediaOverlayCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: hasCover
+                            ? Colors.white.withValues(alpha: 0.85)
+                            : cs.onSurfaceVariant,
                         fontSize: 11,
                       ),
                     ),
@@ -504,7 +536,6 @@ class MediaOverlayCard extends StatelessWidget {
                 ),
               ),
 
-              // 4. 右上角可选的 Badge 挂件
               if (badge != null) Positioned(top: 10, right: 10, child: badge!),
             ],
           ),

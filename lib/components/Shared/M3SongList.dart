@@ -145,23 +145,30 @@ class SliverM3SongList extends StatelessWidget {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
-    return SliverToBoxAdapter(
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: padding,
-        itemCount: songs.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final isFirst = index == 0;
-          final isLast = index == songs.length - 1;
-          return _M3SongRow(
-            entry: songs[index],
-            isFirst: isFirst,
-            isLast: isLast,
-            coverLoader: coverLoader,
-          );
-        },
+    // 修复：使用 SliverList.builder 替代 shrinkWrap:true 的 ListView
+    // shrinkWrap 会强制一次性构建所有子元素来测量高度，阻塞 UI 线程，
+    // 导致底部导航栏图标/文字延迟渲染（与歌曲数量成正比）。
+    // SliverList 在 CustomScrollView 内按需懒加载构建，不阻塞帧。
+    return SliverPadding(
+      padding: padding,
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index.isOdd) {
+              return const Divider(height: 1);
+            }
+            final songIndex = index ~/ 2;
+            final isFirst = songIndex == 0;
+            final isLast = songIndex == songs.length - 1;
+            return _M3SongRow(
+              entry: songs[songIndex],
+              isFirst: isFirst,
+              isLast: isLast,
+              coverLoader: coverLoader,
+            );
+          },
+          childCount: songs.length * 2 - 1,
+        ),
       ),
     );
   }

@@ -15,6 +15,7 @@ import 'package:myapp/views/User/Files/AlumDetail/index.dart';
 import 'package:myapp/views/Music/index.dart';
 import 'package:myapp/views/MusicDetail/index.dart';
 import 'package:myapp/views/User/Network/index.dart';
+import 'package:myapp/views/Network/index.dart';
 import 'package:myapp/views/NotFound/index.dart';
 import 'package:myapp/views/Settings/index.dart';
 import 'package:myapp/views/Splash/index.dart';
@@ -47,6 +48,7 @@ class AppNavItem {
     this.routes = const [],
   });
 }
+
 final List<String> rootRoutes = navItems.map((item) => item.path).toList();
 final List<AppNavItem> navItems = [
   AppNavItem(
@@ -64,6 +66,14 @@ final List<AppNavItem> navItems = [
     i: ImageIcon(AssetImage(MyAssets.music)),
     icon: Icons.music_note,
     label: "音乐",
+  ),
+  AppNavItem(
+    name: "network",
+    path: "/network-songs",
+    page: NetworkSongPage(),
+    i: ImageIcon(AssetImage(MyAssets.dashboard)),
+    icon: Icons.cloud_queue,
+    label: "网络歌曲",
   ),
   AppNavItem(
     name: "user",
@@ -92,7 +102,7 @@ final List<AppNavItem> navItems = [
         ],
       ),
       GoRoute(
-        name: "network",
+        name: "cloud",
         path: "/network",
         builder: (context, state) => const NetWorkPage(),
       ),

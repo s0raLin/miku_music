@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
@@ -67,11 +68,52 @@ class _TrackInfoTile extends StatelessWidget {
   final Music music;
   const _TrackInfoTile({required this.music});
 
+  Widget _buildAlbumArt(ColorScheme cs, MusicProvider mp, double size) {
+    // 1. 优先使用内存中的 coverBytes
+    if (music.coverBytes?.isNotEmpty == true) {
+      return Image.memory(music.coverBytes!, fit: BoxFit.cover);
+    }
+
+    // 2. 网络歌曲：通过 MusicProvider 获取 coverUrl
+    final coverUrl = mp.getCoverUrl(music.id);
+
+    if (coverUrl != null && coverUrl.isNotEmpty) {
+
+      return CachedNetworkImage(
+        imageUrl: coverUrl,
+        fit: BoxFit.cover,
+        httpHeaders: coverUrl.contains('music.126.net')
+            ? {'Referer': 'https://music.163.com/'}
+            : {},
+        placeholder: (_, __) => Container(color: cs.surfaceContainerHighest),
+        errorWidget: (_, __, ___) => Container(
+          color: cs.surfaceContainerHighest,
+          child: Icon(
+            Icons.music_note_rounded,
+            size: size * 0.3,
+            color: cs.primary.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+    }
+
+    // 3. 兜底图标
+    return Container(
+      color: cs.surfaceContainerHighest,
+      child: Icon(
+        Icons.music_note_rounded,
+        size: size * 0.3,
+        color: cs.primary.withValues(alpha: 0.5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
+    final mp = context.read<MusicProvider>();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -79,23 +121,11 @@ class _TrackInfoTile extends StatelessWidget {
           tag: 'music_cover_${music.id}',
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.inner),
-            child: music.coverBytes != null && music.coverBytes!.isNotEmpty
-                ? Image.memory(
-                    music.coverBytes!,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                  )
-                : Container(
-                    width: 48,
-                    height: 48,
-                    color: cs.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      size: 28,
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: _buildAlbumArt(cs, mp, 48),
+            ),
           ),
         ),
         const SizedBox(width: 12),

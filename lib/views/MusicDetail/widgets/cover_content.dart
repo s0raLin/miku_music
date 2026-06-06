@@ -1,4 +1,5 @@
 // ─── 封面 + 元信息 + 控制台 ───────────────────────────────────────────────────
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -25,6 +26,46 @@ class _CoverContentState extends State<CoverContent> {
     final minutes = d.inMinutes.toString();
     final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
+  }
+
+  Widget _buildAlbumArt(ColorScheme cs, MusicProvider mp, double size) {
+    // 1. 优先使用内存中的 coverBytes
+    if (widget.music.coverBytes?.isNotEmpty == true) {
+      return Image.memory(widget.music.coverBytes!, fit: BoxFit.cover);
+    }
+
+    // 2. 网络歌曲：通过 MusicProvider 获取 coverUrl
+    final coverUrl = mp.getCoverUrl(widget.music.id);
+    if (coverUrl != null && coverUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: coverUrl,
+        fit: BoxFit.cover,
+        httpHeaders: coverUrl.contains('music.126.net')
+            ? {'Referer': 'https://music.163.com/'}
+            : {},
+        placeholder: (_, __) => Container(
+          color: cs.surfaceContainerHighest,
+        ),
+        errorWidget: (_, __, ___) => Container(
+          color: cs.surfaceContainerHighest,
+          child: Icon(
+            Icons.music_note_rounded,
+            size: size * 0.3,
+            color: cs.primary.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+    }
+
+    // 3. 兜底图标
+    return Container(
+      color: cs.surfaceContainerHighest,
+      child: Icon(
+        Icons.music_note_rounded,
+        size: size * 0.3,
+        color: cs.primary.withValues(alpha: 0.5),
+      ),
+    );
   }
 
   @override
@@ -98,20 +139,7 @@ class _CoverContentState extends State<CoverContent> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(28),
-                        child: Container(
-                          color: cs.surfaceContainerHighest,
-                          child: widget.music.coverBytes?.isNotEmpty == true
-                              ? Image.memory(
-                                  widget.music.coverBytes!,
-                                  fit: BoxFit.cover,
-                                )
-                              : Icon(
-                                  Icons.music_note_rounded,
-                                  size: size * 0.3,
-                                  color:
-                                      cs.primary.withValues(alpha: 0.5),
-                                ),
-                        ),
+                        child: _buildAlbumArt(cs, musicProvider, size),
                       ),
                     ),
                   ],

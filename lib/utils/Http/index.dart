@@ -3,7 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class HttpUtils {
-  static String _baseUrl = dotenv.get("API_URL", fallback: "");
+  static String _baseUrl = dotenv.get(
+    "GO_BACKEND_URL",
+    fallback: "http://localhost:8000",
+  );
 
   static final HttpUtils _instance = HttpUtils._internal();
   late final Dio _dio;

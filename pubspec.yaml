@@ -61,6 +61,7 @@ dependencies:
   flutter_dynamic_icon_plus: ^1.4.0
   bee_dynamic_launcher: ^1.1.0
   tray_manager: ^0.5.2
+  cached_network_image: ^3.4.1
 dependency_overrides:
   # 强制锁定版本，消除 2.11.1 与 2.12.0 的冲突
   # flutter_rust_bridge: 2.11.1
@@ -79,6 +80,8 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - .env.development
+    - .env.production
     - assets/app_icon/
     - assets/
     - assets/icons/

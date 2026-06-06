@@ -92,7 +92,7 @@
 
 - 登录/注册页位于 [lib/views/Login/index.dart](lib/views/Login/index.dart)。
 - 认证接口封装位于 [lib/api/Client/Auth/index.dart](lib/api/Client/Auth/index.dart)。
-- 接口基地址来自 `.env` 中的 `API_URL`，读取逻辑位于 [lib/config/index.dart](lib/config/index.dart)。
+- 接口基地址来自 `.env` 中的 `GO_BACKEND_URL`，读取逻辑位于 [lib/config/index.dart](lib/config/index.dart)。
 - 仓库中包含 `backend/` 目录和独立说明 [backend/README.md](backend/README.md)，说明该项目支持前后端联调；但本地音乐扫描与本地播放能力本身不依赖后端。
 
 ## 预览图占位
@@ -149,7 +149,7 @@ flutter pub get
 在项目根目录创建 `.env`，至少包含：
 
 ```env
-API_URL=http://127.0.0.1:8080
+GO_BACKEND_URL=http://127.0.0.1:8080
 ```
 
 如果你暂时不联调后端，也可以保留空值，启动初始化阶段会继续执行。

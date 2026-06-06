@@ -1,488 +1,932 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>M3Music — 项目介绍</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-      background: #0f0f1a;
-      color: #e0e0e0;
-      overflow: hidden;
-      height: 100vh;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>M3Music — 项目介绍</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+        background: #0f0f1a;
+        color: #e0e0e0;
+        overflow: hidden;
+        height: 100vh;
+      }
 
-    .slides {
-      display: flex;
-      transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      height: 100vh;
-    }
-    .slide {
-      min-width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 40px 60px;
-      position: relative;
-      overflow-y: auto;
-    }
+      .slides {
+        display: flex;
+        transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        height: 100vh;
+      }
+      .slide {
+        min-width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 60px;
+        position: relative;
+        overflow-y: auto;
+      }
 
-    h1 {
-      font-size: clamp(40px, 6vw, 72px);
-      font-weight: 800;
-      background: linear-gradient(135deg, #7c4dff, #448aff, #00bcd4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 12px;
-      text-align: center;
-    }
-    h2 {
-      font-size: clamp(28px, 4vw, 44px);
-      font-weight: 700;
-      color: #fff;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    h3 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #b388ff;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      font-size: clamp(14px, 1.8vw, 22px);
-      color: rgba(255,255,255,0.55);
-      text-align: center;
-      max-width: 700px;
-      margin-bottom: 4px;
-    }
-    .tagline {
-      font-size: 16px;
-      color: rgba(255,255,255,0.35);
-      letter-spacing: 2px;
-      margin-top: 20px;
-    }
+      h1 {
+        font-size: clamp(40px, 6vw, 72px);
+        font-weight: 800;
+        background: linear-gradient(135deg, #7c4dff, #448aff, #00bcd4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 12px;
+        text-align: center;
+      }
+      h2 {
+        font-size: clamp(28px, 4vw, 44px);
+        font-weight: 700;
+        color: #fff;
+        text-align: center;
+        margin-bottom: 16px;
+      }
+      h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #b388ff;
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        font-size: clamp(14px, 1.8vw, 22px);
+        color: rgba(255, 255, 255, 0.55);
+        text-align: center;
+        max-width: 700px;
+        margin-bottom: 4px;
+      }
+      .tagline {
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.35);
+        letter-spacing: 2px;
+        margin-top: 20px;
+      }
 
-    /* ── 导航 ── */
-    .nav {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      z-index: 100;
-      background: rgba(15, 15, 26, 0.85);
-      padding: 10px 22px;
-      border-radius: 40px;
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .nav button {
-      background: rgba(255,255,255,0.06);
-      border: none;
-      color: #e0e0e0;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.2s;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .nav button:hover { background: rgba(124, 77, 255, 0.35); }
-    .nav .dots { display: flex; gap: 6px; }
-    .nav .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.15);
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    .nav .dot.active { background: #7c4dff; width: 22px; border-radius: 4px; }
-    .hint {
-      position: fixed; bottom: 78px; left: 50%;
-      transform: translateX(-50%);
-      color: rgba(255,255,255,0.15);
-      font-size: 12px;
-      z-index: 99;
-    }
+      /* ── 导航 ── */
+      .nav {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        z-index: 100;
+        background: rgba(15, 15, 26, 0.85);
+        padding: 10px 22px;
+        border-radius: 40px;
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .nav button {
+        background: rgba(255, 255, 255, 0.06);
+        border: none;
+        color: #e0e0e0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav button:hover {
+        background: rgba(124, 77, 255, 0.35);
+      }
+      .nav .dots {
+        display: flex;
+        gap: 6px;
+      }
+      .nav .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      .nav .dot.active {
+        background: #7c4dff;
+        width: 22px;
+        border-radius: 4px;
+      }
+      .hint {
+        position: fixed;
+        bottom: 78px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 12px;
+        z-index: 99;
+      }
 
-    /* ── 布局工具 ── */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1000px; width: 100%; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1000px; width: 100%; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 1000px; width: 100%; }
-    @media (max-width: 768px) {
-      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-      .slide { padding: 24px 16px; }
-    }
+      /* ── 布局工具 ── */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        max-width: 1000px;
+        width: 100%;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 1000px;
+        width: 100%;
+      }
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        max-width: 1000px;
+        width: 100%;
+      }
+      @media (max-width: 768px) {
+        .grid-2,
+        .grid-3,
+        .grid-4 {
+          grid-template-columns: 1fr;
+        }
+        .slide {
+          padding: 24px 16px;
+        }
+      }
 
-    /* ── 卡片 ── */
-    .card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 14px;
-      padding: 20px 16px;
-      text-align: center;
-      transition: 0.25s;
-    }
-    .card:hover { background: rgba(255,255,255,0.06); transform: translateY(-3px); }
-    .card .icon { font-size: 32px; margin-bottom: 8px; }
-    .card h4 { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; }
-    .card p { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.5; }
+      /* ── 卡片 ── */
+      .card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 20px 16px;
+        text-align: center;
+        transition: 0.25s;
+      }
+      .card:hover {
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateY(-3px);
+      }
+      .card .icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+      }
+      .card h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 4px;
+      }
+      .card p {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.45);
+        line-height: 1.5;
+      }
 
-    /* ── 截图卡片 ── */
-    .screenshot {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      overflow: hidden;
-      text-align: center;
-      transition: 0.3s;
-    }
-    .screenshot:hover { transform: scale(1.02); border-color: rgba(124,77,255,0.3); }
-    .screenshot img { width: 100%; display: block; border-radius: 16px 16px 0 0; }
-    .screenshot .cap {
-      padding: 10px 12px 14px;
-      font-size: 13px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.6);
-      background: rgba(255,255,255,0.02);
-    }
+      /* ── 截图卡片 ── */
+      .screenshot {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        overflow: hidden;
+        text-align: center;
+        transition: 0.3s;
+      }
+      .screenshot:hover {
+        transform: scale(1.02);
+        border-color: rgba(124, 77, 255, 0.3);
+      }
+      .screenshot img {
+        width: 100%;
+        display: block;
+        border-radius: 16px 16px 0 0;
+      }
+      .screenshot .cap {
+        padding: 10px 12px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.02);
+      }
 
-    /* ── 列表 ── */
-    .list { list-style: none; padding: 0; }
-    .list li {
-      padding: 6px 0 6px 22px;
-      position: relative;
-      color: rgba(255,255,255,0.7);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .list li::before {
-      content: '›';
-      position: absolute; left: 0;
-      color: #7c4dff; font-weight: 700; font-size: 18px;
-    }
-    .list strong { color: #b388ff; }
+      /* ── 列表 ── */
+      .list {
+        list-style: none;
+        padding: 0;
+      }
+      .list li {
+        padding: 6px 0 6px 22px;
+        position: relative;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .list li::before {
+        content: "›";
+        position: absolute;
+        left: 0;
+        color: #7c4dff;
+        font-weight: 700;
+        font-size: 18px;
+      }
+      .list strong {
+        color: #b388ff;
+      }
 
-    /* ── 架构 ── */
-    .arch-row {
-      display: flex; align-items: center; justify-content: center;
-      gap: 12px; flex-wrap: wrap;
-      max-width: 800px; width: 100%;
-    }
-    .arch-box {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
-      padding: 14px 24px;
-      text-align: center;
-      min-width: 120px;
-      flex: 1;
-    }
-    .arch-box .lbl { font-size: 12px; color: rgba(255,255,255,0.4); }
-    .arch-box .val { font-size: 17px; font-weight: 700; color: #fff; margin-top: 2px; }
-    .arch-box .sub { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 4px; }
-    .arch-arrow { color: rgba(255,255,255,0.15); font-size: 18px; }
+      /* ── 架构 ── */
+      .arch-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        max-width: 800px;
+        width: 100%;
+      }
+      .arch-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 14px 24px;
+        text-align: center;
+        min-width: 120px;
+        flex: 1;
+      }
+      .arch-box .lbl {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .arch-box .val {
+        font-size: 17px;
+        font-weight: 700;
+        color: #fff;
+        margin-top: 2px;
+      }
+      .arch-box .sub {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.3);
+        margin-top: 4px;
+      }
+      .arch-arrow {
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 18px;
+      }
 
-    /* ── Feature ── */
-    .feat {
-      background: rgba(255,255,255,0.02);
-      border-left: 3px solid #7c4dff;
-      border-radius: 0 10px 10px 0;
-      padding: 12px 16px;
-    }
-    .feat h4 { color: #fff; font-size: 14px; margin-bottom: 2px; }
-    .feat p { color: rgba(255,255,255,0.45); font-size: 12px; line-height: 1.5; }
+      /* ── Feature ── */
+      .feat {
+        background: rgba(255, 255, 255, 0.02);
+        border-left: 3px solid #7c4dff;
+        border-radius: 0 10px 10px 0;
+        padding: 12px 16px;
+      }
+      .feat h4 {
+        color: #fff;
+        font-size: 14px;
+        margin-bottom: 2px;
+      }
+      .feat p {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 12px;
+        line-height: 1.5;
+      }
 
-    .stat-row { display: flex; gap: 32px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
-    .stat { text-align: center; }
-    .stat .num { font-size: 28px; font-weight: 700; }
-    .stat .lbl { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+      .stat-row {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+      .stat {
+        text-align: center;
+      }
+      .stat .num {
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .stat .lbl {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.35);
+        margin-top: 2px;
+      }
 
-    .tag {
-      display: inline-block;
-      padding: 4px 14px; border-radius: 20px;
-      font-size: 13px; margin: 3px;
-    }
-  </style>
-</head>
-<body>
-  <div class="slides" id="slides">
-
-    <!-- 1. 封面 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 30% 20%, rgba(124,77,255,0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(0,188,212,0.06) 0%, transparent 50%);">
-      <div style="text-align:center;">
-        <div style="font-size:72px; margin-bottom: 8px;">🎵</div>
-        <h1>M3Music</h1>
-        <div class="subtitle" style="font-size:clamp(18px,2.5vw,28px); color:rgba(255,255,255,0.7);">跨平台本地音乐播放器</div>
-        <div style="margin-top:16px;">
-          <span class="tag" style="background:rgba(124,77,255,0.15); color:#b388ff;">Flutter</span>
-          <span class="tag" style="background:rgba(68,138,255,0.15); color:#82b1ff;">Rust</span>
-          <span class="tag" style="background:rgba(0,200,83,0.15); color:#69f0ae;">Material 3</span>
-          <span class="tag" style="background:rgba(255,171,0,0.15); color:#ffd740;">Cross-platform</span>
-          <span class="tag" style="background:rgba(255,64,129,0.15); color:#ff80ab;">just_audio</span>
-        </div>
-        <div class="tagline">v1.30 · 本地音乐优先 · 250+ Dart 文件 · 15+ Rust 模块</div>
-      </div>
-    </section>
-
-    <!-- 2. 项目概览 + 截图 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 70% 20%, rgba(0,188,212,0.06) 0%, transparent 60%);">
-      <h2>项目概览</h2>
-      <div class="subtitle" style="margin-bottom:16px;">Flutter + Rust 构建的本地音乐播放器，支持全平台运行</div>
-      <div class="grid-4">
-        <div class="card"><div class="icon">📱</div><h4>全平台</h4><p>Android · iOS · Windows · macOS · Linux</p></div>
-        <div class="card"><div class="icon">⚡</div><h4>Rust 高性能</h4><p>并行目录扫描 · 元数据解析 · 零成本抽象</p></div>
-        <div class="card"><div class="icon">🎨</div><h4>Material 3</h4><p>动态主题色 · 深色/浅色 · 8 种种子色</p></div>
-        <div class="card"><div class="icon">🔌</div><h4>可选后端</h4><p>Go 后端 · 用户认证 · 登录/注册 API</p></div>
-      </div>
-      <div class="grid-2" style="margin-top:20px; max-width:900px;">
-        <div class="screenshot">
-          <img src="previews/splash.png" alt="启动页" />
-          <div class="cap">🚀 启动页 — 初始化进度与权限引导</div>
-        </div>
-        <div class="screenshot">
-          <img src="previews/library.png" alt="音乐库" />
-          <div class="cap">📚 音乐库 — 专辑横向浏览与歌曲列表</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. 技术架构 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 50% 30%, rgba(124,77,255,0.05) 0%, transparent 60%);">
-      <h2>技术架构</h2>
-      <div class="subtitle">Flutter UI · Rust 核心 · flutter_rust_bridge 连接</div>
-      <div class="arch-row" style="margin-top:20px;">
-        <div class="arch-box" style="border-color:rgba(124,77,255,0.3);">
-          <div class="lbl">UI 层</div>
-          <div class="val" style="color:#b388ff;">Flutter</div>
-          <div class="sub">go_router · provider · just_audio</div>
-        </div>
-        <div class="arch-arrow">↓</div>
-        <div class="arch-box" style="border-color:rgba(0,188,212,0.3);">
-          <div class="lbl">Bridge</div>
-          <div class="val" style="color:#4dd0e1;">flutter_rust_bridge</div>
-          <div class="sub">自动生成 Dart ↔ Rust 绑定</div>
-        </div>
-        <div class="arch-arrow">↓</div>
-        <div class="arch-box" style="border-color:rgba(0,200,83,0.3);">
-          <div class="lbl">核心引擎</div>
-          <div class="val" style="color:#69f0ae;">Rust</div>
-          <div class="sub">jwalk 并行扫描 · lofty 元数据</div>
-        </div>
-        <div class="arch-arrow">↓</div>
-        <div class="arch-box" style="border-color:rgba(255,171,0,0.3);">
-          <div class="lbl">存储</div>
-          <div class="val" style="color:#ffd740;">本地文件</div>
-          <div class="sub">MP3 / FLAC / M4A / OGG / WAV</div>
-        </div>
-      </div>
-      <div class="stat-row">
-        <div class="stat"><div class="num" style="color:#b388ff;">250+</div><div class="lbl">Dart 文件</div></div>
-        <div class="stat"><div class="num" style="color:#4dd0e1;">15+</div><div class="lbl">Rust 模块</div></div>
-        <div class="stat"><div class="num" style="color:#69f0ae;">50+</div><div class="lbl">依赖包</div></div>
-        <div class="stat"><div class="num" style="color:#ffd740;">9</div><div class="lbl">App Icon 变体</div></div>
-      </div>
-    </section>
-
-    <!-- 4. 核心功能 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 30% 80%, rgba(255,64,129,0.04) 0%, transparent 60%);">
-      <h2>核心功能</h2>
-      <div class="subtitle">8 大功能模块，覆盖完整播放体验</div>
-      <div class="grid-4" style="margin-top:16px; max-width:1000px;">
-        <div class="feat"><h4>🎶 本地音乐扫描</h4><p>Rust 并行递归扫描，自动提取标题/歌手/专辑/封面/时长</p></div>
-        <div class="feat"><h4>📋 播放队列</h4><p>顺序 / 随机 / 单曲循环 · 队列增删改 · 替换与清空</p></div>
-        <div class="feat"><h4>📝 歌词引擎</h4><p>本地 .lrc 自动读取 · lrclib.net 在线搜索 · 实时高亮 · 编辑保存</p></div>
-        <div class="feat"><h4>📁 歌单管理</h4><p>自建歌单 CRUD · 收藏/最近播放 · 网易云歌单导入</p></div>
-        <div class="feat"><h4>🎨 Material 3</h4><p>浅色/深色/跟随系统 · 8 种种子色 · 动态调和</p></div>
-        <div class="feat"><h4>⚙️ 丰富设置</h4><p>列表密度 · 音质 · 启动行为 · 通知栏 · 排序 · 历史数量</p></div>
-        <div class="feat"><h4>📱 桌面适配</h4><p>窗口拖拽/最大化 · 自适应 450px 阈值 · 侧边栏/底部导航</p></div>
-        <div class="feat"><h4>🔗 后端集成</h4><p>Go 后端 · 用户注册登录 · JWT 认证 · 接口就绪</p></div>
-      </div>
-    </section>
-
-    <!-- 5. 播放详情 + 设置 截图 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 50% 50%, rgba(0,188,212,0.04) 0%, transparent 60%);">
-      <h2>界面展示</h2>
-      <div class="subtitle">播放详情页与设置页</div>
-      <div class="grid-2" style="margin-top:16px; max-width:900px;">
-        <div class="screenshot">
-          <img src="previews/player.png" alt="播放详情" />
-          <div class="cap">🎵 播放详情 — 封面 · 歌词实时高亮 · 播放队列</div>
-        </div>
-        <div class="screenshot">
-          <img src="previews/settings.png" alt="设置页" />
-          <div class="cap">⚙️ 设置页 — 主题 · 播放 · 歌词 · 存储管理</div>
-        </div>
-      </div>
-      <div class="grid-2" style="margin-top:16px; max-width:900px;">
-        <div style="background:rgba(255,255,255,0.02); border-radius:12px; padding:16px 20px; border:1px solid rgba(255,255,255,0.05);">
-          <h3 style="margin:0 0 6px 0;">📱 移动端</h3>
-          <ul class="list">
-            <li>底部导航栏（&lt; 450px）· 手势滑动翻页</li>
-            <li>权限引导向导页 · 悬浮播放按钮</li>
-          </ul>
-        </div>
-        <div style="background:rgba(255,255,255,0.02); border-radius:12px; padding:16px 20px; border:1px solid rgba(255,255,255,0.05);">
-          <h3 style="margin:0 0 6px 0;">🖥️ 桌面端</h3>
-          <ul class="list">
-            <li>侧边栏导航（≥ 450px）· 窗口拖拽移动</li>
-            <li>双击最大化 · 窗口控制按钮 · 大屏自适应</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- 6. 页面路由 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 30% 20%, rgba(213,0,249,0.04) 0%, transparent 60%);">
-      <h2>页面与路由</h2>
-      <div class="subtitle">go_router 驱动 · 4 个一级页面 + 8 个二级页面</div>
-      <div class="grid-2" style="margin-top:16px; max-width:900px;">
-        <div style="background:rgba(255,255,255,0.02); border-radius:14px; padding:20px;">
-          <h3>📌 一级导航</h3>
-          <ul class="list">
-            <li><strong>/home</strong> — 首页 · 轮播图 · 最近播放 · 排行榜</li>
-            <li><strong>/music</strong> — 音乐库 · 专辑浏览 · 所有单曲 · 歌单 tab</li>
-            <li><strong>/user</strong> — 我的 · 用户卡片 · 快捷入口 · 歌单管理</li>
-            <li><strong>/dashboard</strong> — 仪表盘</li>
-          </ul>
-        </div>
-        <div style="background:rgba(255,255,255,0.02); border-radius:14px; padding:20px;">
-          <h3>📌 二级页面</h3>
-          <ul class="list">
-            <li><strong>/music-detail</strong> — 播放详情 · /settings — 设置</li>
-            <li><strong>/login</strong> — 登录/注册 · /search — 全局搜索</li>
-            <li><strong>/user/files</strong> — 本地文件 · /user/playlist/:id — 歌单详情</li>
-            <li><strong>/user/recent</strong> — 最近播放 · /about — 关于</li>
-          </ul>
-        </div>
-      </div>
-      <div style="margin-top:16px; background:rgba(124,77,255,0.08); border-radius:10px; padding:10px 20px; text-align:center; border:1px solid rgba(124,77,255,0.15);">
-        <span style="color:rgba(255,255,255,0.5);">自适应布局：</span>
-        <span style="color:#b388ff; font-weight:600;">≥ 450px → 侧边栏</span>
-        <span style="color:rgba(255,255,255,0.15);"> | </span>
-        <span style="color:#4dd0e1; font-weight:600;">&lt; 450px → 底部导航</span>
-      </div>
-    </section>
-
-    <!-- 7. 状态管理 & 项目结构 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 70% 80%, rgba(0,200,83,0.04) 0%, transparent 60%);">
-      <h2>状态管理与项目结构</h2>
-      <div class="subtitle">Provider 驱动 · 清晰模块划分</div>
-      <div class="grid-3" style="margin-top:12px; max-width:1000px;">
-        <div class="card"><div class="icon">🎵</div><h4>MusicProvider</h4><p>播放控制 · 队列 · 歌词 · 收藏/历史 · 音量</p></div>
-        <div class="card"><div class="icon">📋</div><h4>PlaylistProvider</h4><p>歌单 CRUD · 系统歌单 · 本地持久化</p></div>
-        <div class="card"><div class="icon">🎨</div><h4>ThemeProvider</h4><p>主题模式 · 种子色 · Material 3 动态调色</p></div>
-        <div class="card"><div class="icon">👤</div><h4>UserProvider</h4><p>用户信息 · 登录状态 · Token 管理</p></div>
-        <div class="card"><div class="icon">🧭</div><h4>NavProvider</h4><p>导航状态 · Shell 管理</p></div>
-        <div class="card"><div class="icon">🚀</div><h4>StartupProvider</h4><p>启动流程 · 权限引导 · 数据恢复</p></div>
-      </div>
-      <div class="grid-3" style="margin-top:12px; max-width:1000px;">
-        <div style="background:rgba(255,255,255,0.02); border-radius:12px; padding:14px 16px; border:1px solid rgba(255,255,255,0.05);">
-          <div style="color:#b388ff; font-weight:600; margin-bottom:6px;">📁 lib/</div>
-          <div style="font-size:12px; color:rgba(255,255,255,0.5); line-height:1.7;">
-            api/ · components/ · config/ · constants/<br>model/ · providers/ · router/ · service/ · views/
+      .tag {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        margin: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slides" id="slides">
+      <!-- 1. 封面 -->
+      <section
+        class="slide"
+        style="
+          background:
+            radial-gradient(
+              ellipse at 30% 20%,
+              rgba(124, 77, 255, 0.08) 0%,
+              transparent 60%
+            ),
+            radial-gradient(
+              ellipse at 70% 80%,
+              rgba(0, 188, 212, 0.06) 0%,
+              transparent 50%
+            );
+        "
+      >
+        <div style="text-align: center">
+          <div style="font-size: 72px; margin-bottom: 8px">🎵</div>
+          <h1>M3Music</h1>
+          <div
+            class="subtitle"
+            style="
+              font-size: clamp(18px, 2.5vw, 28px);
+              color: rgba(255, 255, 255, 0.7);
+            "
+          >
+            跨平台本地音乐播放器
+          </div>
+          <div style="margin-top: 16px">
+            <span
+              class="tag"
+              style="background: rgba(124, 77, 255, 0.15); color: #b388ff"
+              >Flutter</span
+            >
+            <span
+              class="tag"
+              style="background: rgba(68, 138, 255, 0.15); color: #82b1ff"
+              >Rust</span
+            >
+            <span
+              class="tag"
+              style="background: rgba(0, 200, 83, 0.15); color: #69f0ae"
+              >Material 3</span
+            >
+            <span
+              class="tag"
+              style="background: rgba(255, 171, 0, 0.15); color: #ffd740"
+              >Cross-platform</span
+            >
+            <span
+              class="tag"
+              style="background: rgba(255, 64, 129, 0.15); color: #ff80ab"
+              >just_audio</span
+            >
+          </div>
+          <div class="tagline">
+            v1.30 · 本地音乐优先 · 250+ Dart 文件 · 15+ Rust 模块
           </div>
         </div>
-        <div style="background:rgba(255,255,255,0.02); border-radius:12px; padding:14px 16px; border:1px solid rgba(255,255,255,0.05);">
-          <div style="color:#4dd0e1; font-weight:600; margin-bottom:6px;">📁 rust/</div>
-          <div style="font-size:12px; color:rgba(255,255,255,0.5); line-height:1.7;">
-            api/scanner.rs · api/audio_db/<br>frb_generated.rs · lib.rs
+      </section>
+
+      <!-- 2. 项目概览 + 截图 -->
+      <section
+        class="slide"
+        style="
+          background: radial-gradient(
+            ellipse at 70% 20%,
+            rgba(0, 188, 212, 0.06) 0%,
+            transparent 60%
+          );
+        "
+      >
+        <h2>项目概览</h2>
+        <div class="subtitle" style="margin-bottom: 16px">
+          Flutter + Rust 构建的本地音乐播放器，支持全平台运行
+        </div>
+        <div class="grid-4">
+          <div class="card">
+            <div class="icon">📱</div>
+            <h4>全平台</h4>
+            <p>Android · iOS · Windows · macOS · Linux</p>
+          </div>
+          <div class="card">
+            <div class="icon">⚡</div>
+            <h4>Rust 高性能</h4>
+            <p>并行目录扫描 · 元数据解析 · 零成本抽象</p>
+          </div>
+          <div class="card">
+            <div class="icon">🎨</div>
+            <h4>Material 3</h4>
+            <p>动态主题色 · 深色/浅色 · 8 种种子色</p>
+          </div>
+          <div class="card">
+            <div class="icon">🔌</div>
+            <h4>可选后端</h4>
+            <p>Go 后端 · 用户认证 · 登录/注册 API</p>
           </div>
         </div>
-        <div style="background:rgba(255,255,255,0.02); border-radius:12px; padding:14px 16px; border:1px solid rgba(255,255,255,0.05);">
-          <div style="color:#69f0ae; font-weight:600; margin-bottom:6px;">📁 backend/</div>
-          <div style="font-size:12px; color:rgba(255,255,255,0.5); line-height:1.7;">
-            Go 后端 · 用户认证<br>API 路由 · 中间件
+        <div class="grid-2" style="margin-top: 20px; max-width: 900px">
+          <div class="screenshot">
+            <img src="previews/splash.png" alt="启动页" />
+            <div class="cap">🚀 启动页 — 初始化进度与权限引导</div>
+          </div>
+          <div class="screenshot">
+            <img src="previews/library.png" alt="音乐库" />
+            <div class="cap">📚 音乐库 — 专辑横向浏览与歌曲列表</div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- 8. 运行 & 展望 -->
-    <section class="slide" style="background: radial-gradient(ellipse at 50% 30%, rgba(255,171,0,0.04) 0%, transparent 60%);">
-      <h2>运行 &amp; 展望</h2>
-      <div class="subtitle">快速启动 · 持续进化</div>
-      <div class="grid-2" style="margin-top:16px; max-width:900px;">
-        <div style="background:rgba(255,255,255,0.02); border-radius:14px; padding:24px; border:1px solid rgba(255,255,255,0.06);">
-          <h3>🚀 快速启动</h3>
-          <ul class="list">
-            <li><strong>环境：</strong>Flutter SDK ^3.11.4 · Dart ^3.11.4</li>
-            <li><strong>安装：</strong><code style="color:#b388ff;">flutter pub get</code></li>
-            <li><strong>配置：</strong>根目录创建 <code style="color:#82b1ff;">.env</code>（<code>API_URL=...</code>）</li>
-            <li><strong>运行：</strong><code style="color:#69f0ae;">flutter run</code></li>
-            <li><strong>Rust 编译：</strong>自动由 flutter_rust_bridge 处理</li>
-            <li><strong>支持平台：</strong>Android / iOS / Windows / macOS / Linux</li>
-          </ul>
+      <!-- 3. 技术架构 -->
+      <section
+        class="slide"
+        style="
+          background: radial-gradient(
+            ellipse at 50% 30%,
+            rgba(124, 77, 255, 0.05) 0%,
+            transparent 60%
+          );
+        "
+      >
+        <h2>技术架构</h2>
+        <div class="subtitle">
+          Flutter UI · Rust 核心 · flutter_rust_bridge 连接
         </div>
-        <div style="background:rgba(255,255,255,0.02); border-radius:14px; padding:24px; border:1px solid rgba(255,255,255,0.06);">
-          <h3>🔮 未来方向</h3>
-          <ul class="list">
-            <li>在线音乐流媒体整合 · 歌词/封面批量下载</li>
-            <li>播放列表云同步 · 均衡器与音频效果</li>
-            <li>桌面端全局快捷键 · 更多主题色</li>
-            <li>Web 平台支持</li>
-          </ul>
+        <div class="arch-row" style="margin-top: 20px">
+          <div class="arch-box" style="border-color: rgba(124, 77, 255, 0.3)">
+            <div class="lbl">UI 层</div>
+            <div class="val" style="color: #b388ff">Flutter</div>
+            <div class="sub">go_router · provider · just_audio</div>
+          </div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box" style="border-color: rgba(0, 188, 212, 0.3)">
+            <div class="lbl">Bridge</div>
+            <div class="val" style="color: #4dd0e1">flutter_rust_bridge</div>
+            <div class="sub">自动生成 Dart ↔ Rust 绑定</div>
+          </div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box" style="border-color: rgba(0, 200, 83, 0.3)">
+            <div class="lbl">核心引擎</div>
+            <div class="val" style="color: #69f0ae">Rust</div>
+            <div class="sub">jwalk 并行扫描 · lofty 元数据</div>
+          </div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box" style="border-color: rgba(255, 171, 0, 0.3)">
+            <div class="lbl">存储</div>
+            <div class="val" style="color: #ffd740">本地文件</div>
+            <div class="sub">MP3 / FLAC / M4A / OGG / WAV</div>
+          </div>
         </div>
-      </div>
-      <div style="margin-top:24px; text-align:center;">
-        <div style="font-size:13px; color:rgba(255,255,255,0.2);">
-          Flutter + Rust + Material 3 · 开源 · 跨平台 · v1.30
+        <div class="stat-row">
+          <div class="stat">
+            <div class="num" style="color: #b388ff">250+</div>
+            <div class="lbl">Dart 文件</div>
+          </div>
+          <div class="stat">
+            <div class="num" style="color: #4dd0e1">15+</div>
+            <div class="lbl">Rust 模块</div>
+          </div>
+          <div class="stat">
+            <div class="num" style="color: #69f0ae">50+</div>
+            <div class="lbl">依赖包</div>
+          </div>
+          <div class="stat">
+            <div class="num" style="color: #ffd740">9</div>
+            <div class="lbl">App Icon 变体</div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-  </div>
+      <!-- 4. 核心功能 -->
+      <section
+        class="slide"
+        style="
+          background: radial-gradient(
+            ellipse at 30% 80%,
+            rgba(255, 64, 129, 0.04) 0%,
+            transparent 60%
+          );
+        "
+      >
+        <h2>核心功能</h2>
+        <div class="subtitle">8 大功能模块，覆盖完整播放体验</div>
+        <div class="grid-4" style="margin-top: 16px; max-width: 1000px">
+          <div class="feat">
+            <h4>🎶 本地音乐扫描</h4>
+            <p>Rust 并行递归扫描，自动提取标题/歌手/专辑/封面/时长</p>
+          </div>
+          <div class="feat">
+            <h4>📋 播放队列</h4>
+            <p>顺序 / 随机 / 单曲循环 · 队列增删改 · 替换与清空</p>
+          </div>
+          <div class="feat">
+            <h4>📝 歌词引擎</h4>
+            <p>
+              本地 .lrc 自动读取 · lrclib.net 在线搜索 · 实时高亮 · 编辑保存
+            </p>
+          </div>
+          <div class="feat">
+            <h4>📁 歌单管理</h4>
+            <p>自建歌单 CRUD · 收藏/最近播放 · 网易云歌单导入</p>
+          </div>
+          <div class="feat">
+            <h4>🎨 Material 3</h4>
+            <p>浅色/深色/跟随系统 · 8 种种子色 · 动态调和</p>
+          </div>
+          <div class="feat">
+            <h4>⚙️ 丰富设置</h4>
+            <p>列表密度 · 音质 · 启动行为 · 通知栏 · 排序 · 历史数量</p>
+          </div>
+          <div class="feat">
+            <h4>📱 桌面适配</h4>
+            <p>窗口拖拽/最大化 · 自适应 450px 阈值 · 侧边栏/底部导航</p>
+          </div>
+          <div class="feat">
+            <h4>🔗 后端集成</h4>
+            <p>Go 后端 · 用户注册登录 · JWT 认证 · 接口就绪</p>
+          </div>
+        </div>
+      </section>
 
-  <div class="hint">← 方向键 / 空格 翻页 →</div>
-  <div class="nav">
-    <button onclick="prevSlide()">‹</button>
-    <div class="dots" id="dots"></div>
-    <button onclick="nextSlide()">›</button>
-  </div>
+      <!-- 5. 播放详情 + 设置 截图 -->
+      <section
+        class="slide"
+        style="
+          background: radial-gradient(
+            ellipse at 50% 50%,
+            rgba(0, 188, 212, 0.04) 0%,
+            transparent 60%
+          );
+        "
+      >
+        <h2>界面展示</h2>
+        <div class="subtitle">播放详情页与设置页</div>
+        <div class="grid-2" style="margin-top: 16px; max-width: 900px">
+          <div class="screenshot">
+            <img src="previews/player.png" alt="播放详情" />
+            <div class="cap">🎵 播放详情 — 封面 · 歌词实时高亮 · 播放队列</div>
+          </div>
+          <div class="screenshot">
+            <img src="previews/settings.png" alt="设置页" />
+            <div class="cap">⚙️ 设置页 — 主题 · 播放 · 歌词 · 存储管理</div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top: 16px; max-width: 900px">
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 12px;
+              padding: 16px 20px;
+              border: 1px solid rgba(255, 255, 255, 0.05);
+            "
+          >
+            <h3 style="margin: 0 0 6px 0">📱 移动端</h3>
+            <ul class="list">
+              <li>底部导航栏（&lt; 450px）· 手势滑动翻页</li>
+              <li>权限引导向导页 · 悬浮播放按钮</li>
+            </ul>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 12px;
+              padding: 16px 20px;
+              border: 1px solid rgba(255, 255, 255, 0.05);
+            "
+          >
+            <h3 style="margin: 0 0 6px 0">🖥️ 桌面端</h3>
+            <ul class="list">
+              <li>侧边栏导航（≥ 450px）· 窗口拖拽移动</li>
+              <li>双击最大化 · 窗口控制按钮 · 大屏自适应</li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
-  <script>
-    const slides = document.getElementById('slides');
-    const total = slides.children.length;
-    let current = 0;
+      <!-- 6. 页面路由 -->
+      <section
+        class="slide"
+        style="
+          background: radial-gradient(
+            ellipse at 30% 20%,
+            rgba(213, 0, 249, 0.04) 0%,
+            transparent 60%
+          );
+        "
+      >
+        <h2>页面与路由</h2>
+        <div class="subtitle">go_router 驱动 · 4 个一级页面 + 8 个二级页面</div>
+        <div class="grid-2" style="margin-top: 16px; max-width: 900px">
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 14px;
+              padding: 20px;
+            "
+          >
+            <h3>📌 一级导航</h3>
+            <ul class="list">
+              <li>
+                <strong>/home</strong> — 首页 · 轮播图 · 最近播放 · 排行榜
+              </li>
+              <li>
+                <strong>/music</strong> — 音乐库 · 专辑浏览 · 所有单曲 · 歌单
+                tab
+              </li>
+              <li>
+                <strong>/user</strong> — 我的 · 用户卡片 · 快捷入口 · 歌单管理
+              </li>
+              <li><strong>/dashboard</strong> — 仪表盘</li>
+            </ul>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 14px;
+              padding: 20px;
+            "
+          >
+            <h3>📌 二级页面</h3>
+            <ul class="list">
+              <li>
+                <strong>/music-detail</strong> — 播放详情 · /settings — 设置
+              </li>
+              <li><strong>/login</strong> — 登录/注册 · /search — 全局搜索</li>
+              <li>
+                <strong>/user/files</strong> — 本地文件 · /user/playlist/:id —
+                歌单详情
+              </li>
+              <li><strong>/user/recent</strong> — 最近播放 · /about — 关于</li>
+            </ul>
+          </div>
+        </div>
+        <div
+          style="
+            margin-top: 16px;
+            background: rgba(124, 77, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 20px;
+            text-align: center;
+            border: 1px solid rgba(124, 77, 255, 0.15);
+          "
+        >
+          <span style="color: rgba(255, 255, 255, 0.5)">自适应布局：</span>
+          <span style="color: #b388ff; font-weight: 600">≥ 450px → 侧边栏</span>
+          <span style="color: rgba(255, 255, 255, 0.15)"> | </span>
+          <span style="color: #4dd0e1; font-weight: 600"
+            >&lt; 450px → 底部导航</span
+          >
+        </div>
+      </section>
 
-    const dotsEl = document.getElementById('dots');
-    for (let i = 0; i < total; i++) {
-      const dot = document.createElement('span');
-      dot.className = 'dot' + (i === 0 ? ' active' : '');
-      dot.onclick = () => goTo(i);
-      dotsEl.appendChild(dot);
-    }
+      <!-- 7. 状态管理 & 项目结构 -->
+      <section
+        class="slide"
+        style="
+          background: radial-gradient(
+            ellipse at 70% 80%,
+            rgba(0, 200, 83, 0.04) 0%,
+            transparent 60%
+          );
+        "
+      >
+        <h2>状态管理与项目结构</h2>
+        <div class="subtitle">Provider 驱动 · 清晰模块划分</div>
+        <div class="grid-3" style="margin-top: 12px; max-width: 1000px">
+          <div class="card">
+            <div class="icon">🎵</div>
+            <h4>MusicProvider</h4>
+            <p>播放控制 · 队列 · 歌词 · 收藏/历史 · 音量</p>
+          </div>
+          <div class="card">
+            <div class="icon">📋</div>
+            <h4>PlaylistProvider</h4>
+            <p>歌单 CRUD · 系统歌单 · 本地持久化</p>
+          </div>
+          <div class="card">
+            <div class="icon">🎨</div>
+            <h4>ThemeProvider</h4>
+            <p>主题模式 · 种子色 · Material 3 动态调色</p>
+          </div>
+          <div class="card">
+            <div class="icon">👤</div>
+            <h4>UserProvider</h4>
+            <p>用户信息 · 登录状态 · Token 管理</p>
+          </div>
+          <div class="card">
+            <div class="icon">🧭</div>
+            <h4>NavProvider</h4>
+            <p>导航状态 · Shell 管理</p>
+          </div>
+          <div class="card">
+            <div class="icon">🚀</div>
+            <h4>StartupProvider</h4>
+            <p>启动流程 · 权限引导 · 数据恢复</p>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top: 12px; max-width: 1000px">
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 12px;
+              padding: 14px 16px;
+              border: 1px solid rgba(255, 255, 255, 0.05);
+            "
+          >
+            <div style="color: #b388ff; font-weight: 600; margin-bottom: 6px">
+              📁 lib/
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.5);
+                line-height: 1.7;
+              "
+            >
+              api/ · components/ · config/ · constants/<br />model/ · providers/
+              · router/ · service/ · views/
+            </div>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 12px;
+              padding: 14px 16px;
+              border: 1px solid rgba(255, 255, 255, 0.05);
+            "
+          >
+            <div style="color: #4dd0e1; font-weight: 600; margin-bottom: 6px">
+              📁 rust/
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.5);
+                line-height: 1.7;
+              "
+            >
+              api/scanner.rs · api/audio_db/<br />frb_generated.rs · lib.rs
+            </div>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 12px;
+              padding: 14px 16px;
+              border: 1px solid rgba(255, 255, 255, 0.05);
+            "
+          >
+            <div style="color: #69f0ae; font-weight: 600; margin-bottom: 6px">
+              📁 backend/
+            </div>
+            <div
+              style="
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.5);
+                line-height: 1.7;
+              "
+            >
+              Go 后端 · 用户认证<br />API 路由 · 中间件
+            </div>
+          </div>
+        </div>
+      </section>
 
-    function goTo(index) {
-      current = Math.max(0, Math.min(index, total - 1));
-      slides.style.transform = `translateX(-${current * 100}vw)`;
-      document.querySelectorAll('.dot').forEach((d, i) => {
-        d.className = 'dot' + (i === current ? ' active' : '');
+      <!-- 8. 运行 & 展望 -->
+      <section
+        class="slide"
+        style="
+          background: radial-gradient(
+            ellipse at 50% 30%,
+            rgba(255, 171, 0, 0.04) 0%,
+            transparent 60%
+          );
+        "
+      >
+        <h2>运行 &amp; 展望</h2>
+        <div class="subtitle">快速启动 · 持续进化</div>
+        <div class="grid-2" style="margin-top: 16px; max-width: 900px">
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 14px;
+              padding: 24px;
+              border: 1px solid rgba(255, 255, 255, 0.06);
+            "
+          >
+            <h3>🚀 快速启动</h3>
+            <ul class="list">
+              <li><strong>环境：</strong>Flutter SDK ^3.11.4 · Dart ^3.11.4</li>
+              <li>
+                <strong>安装：</strong
+                ><code style="color: #b388ff">flutter pub get</code>
+              </li>
+              <li>
+                <strong>配置：</strong>根目录创建
+                <code style="color: #82b1ff">.env</code
+                >（<code>GO_BACKEND_URL=...</code>）
+              </li>
+              <li>
+                <strong>运行：</strong
+                ><code style="color: #69f0ae">flutter run</code>
+              </li>
+              <li>
+                <strong>Rust 编译：</strong>自动由 flutter_rust_bridge 处理
+              </li>
+              <li>
+                <strong>支持平台：</strong>Android / iOS / Windows / macOS /
+                Linux
+              </li>
+            </ul>
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 14px;
+              padding: 24px;
+              border: 1px solid rgba(255, 255, 255, 0.06);
+            "
+          >
+            <h3>🔮 未来方向</h3>
+            <ul class="list">
+              <li>在线音乐流媒体整合 · 歌词/封面批量下载</li>
+              <li>播放列表云同步 · 均衡器与音频效果</li>
+              <li>桌面端全局快捷键 · 更多主题色</li>
+              <li>Web 平台支持</li>
+            </ul>
+          </div>
+        </div>
+        <div style="margin-top: 24px; text-align: center">
+          <div style="font-size: 13px; color: rgba(255, 255, 255, 0.2)">
+            Flutter + Rust + Material 3 · 开源 · 跨平台 · v1.30
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="hint">← 方向键 / 空格 翻页 →</div>
+    <div class="nav">
+      <button onclick="prevSlide()">‹</button>
+      <div class="dots" id="dots"></div>
+      <button onclick="nextSlide()">›</button>
+    </div>
+
+    <script>
+      const slides = document.getElementById("slides");
+      const total = slides.children.length;
+      let current = 0;
+
+      const dotsEl = document.getElementById("dots");
+      for (let i = 0; i < total; i++) {
+        const dot = document.createElement("span");
+        dot.className = "dot" + (i === 0 ? " active" : "");
+        dot.onclick = () => goTo(i);
+        dotsEl.appendChild(dot);
+      }
+
+      function goTo(index) {
+        current = Math.max(0, Math.min(index, total - 1));
+        slides.style.transform = `translateX(-${current * 100}vw)`;
+        document.querySelectorAll(".dot").forEach((d, i) => {
+          d.className = "dot" + (i === current ? " active" : "");
+        });
+      }
+      function nextSlide() {
+        goTo(current + 1);
+      }
+      function prevSlide() {
+        goTo(current - 1);
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " " || e.key === "ArrowDown") {
+          e.preventDefault();
+          nextSlide();
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          prevSlide();
+        }
       });
-    }
-    function nextSlide() { goTo(current + 1); }
-    function prevSlide() { goTo(current - 1); }
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); nextSlide(); }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevSlide(); }
-    });
-
-    let touchX = 0;
-    document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
-    document.addEventListener('touchend', e => {
-      const diff = touchX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 60) { diff > 0 ? nextSlide() : prevSlide(); }
-    });
-  </script>
-</body>
+      let touchX = 0;
+      document.addEventListener("touchstart", (e) => {
+        touchX = e.touches[0].clientX;
+      });
+      document.addEventListener("touchend", (e) => {
+        const diff = touchX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 60) {
+          diff > 0 ? nextSlide() : prevSlide();
+        }
+      });
+    </script>
+  </body>
 </html>

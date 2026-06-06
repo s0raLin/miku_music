@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -16,6 +17,7 @@ class M3SongEntry {
   final Uint8List? coverBytes;
   final String? coverPath;
   final String? coverUrl;
+  final Map<String, String>? coverHeaders;
   final IconData fallbackIcon;
   final bool isHighlighted;
   final Widget? trailing;
@@ -29,6 +31,7 @@ class M3SongEntry {
     this.coverBytes,
     this.coverPath,
     this.coverUrl,
+    this.coverHeaders,
     this.fallbackIcon = Icons.music_note_rounded,
     this.isHighlighted = false,
     this.trailing,
@@ -47,6 +50,7 @@ class M3SongList extends StatelessWidget {
   final String? emptyTitle;
   final String? emptySubtitle;
   final MusicProvider? coverLoader;
+  final bool isScrollable;
 
   const M3SongList({
     super.key,
@@ -55,6 +59,7 @@ class M3SongList extends StatelessWidget {
     this.emptyTitle,
     this.emptySubtitle,
     this.coverLoader,
+    this.isScrollable = false,
   });
 
   @override
@@ -87,7 +92,9 @@ class M3SongList extends StatelessWidget {
                     emptySubtitle!,
                     style: TextStyle(
                       fontSize: 12,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
                     ),
                   ),
                 ],
@@ -99,8 +106,10 @@ class M3SongList extends StatelessWidget {
     }
 
     return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: isScrollable ? false : true,
+      physics: isScrollable
+          ? const AlwaysScrollableScrollPhysics()
+          : const NeverScrollableScrollPhysics(),
       padding: padding,
       itemCount: songs.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
@@ -152,23 +161,20 @@ class SliverM3SongList extends StatelessWidget {
     return SliverPadding(
       padding: padding,
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            if (index.isOdd) {
-              return const Divider(height: 1);
-            }
-            final songIndex = index ~/ 2;
-            final isFirst = songIndex == 0;
-            final isLast = songIndex == songs.length - 1;
-            return _M3SongRow(
-              entry: songs[songIndex],
-              isFirst: isFirst,
-              isLast: isLast,
-              coverLoader: coverLoader,
-            );
-          },
-          childCount: songs.length * 2 - 1,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          if (index.isOdd) {
+            return const Divider(height: 1);
+          }
+          final songIndex = index ~/ 2;
+          final isFirst = songIndex == 0;
+          final isLast = songIndex == songs.length - 1;
+          return _M3SongRow(
+            entry: songs[songIndex],
+            isFirst: isFirst,
+            isLast: isLast,
+            coverLoader: coverLoader,
+          );
+        }, childCount: songs.length * 2 - 1),
       ),
     );
   }
@@ -194,32 +200,53 @@ class _M3SongRow extends StatelessWidget {
 
   BorderRadius _clipRadius() {
     if (isFirst && isLast) return BorderRadius.circular(_cornerRadius);
-    if (isFirst) return const BorderRadius.vertical(top: Radius.circular(_cornerRadius));
-    if (isLast) return const BorderRadius.vertical(bottom: Radius.circular(_cornerRadius));
+    if (isFirst)
+      return const BorderRadius.vertical(top: Radius.circular(_cornerRadius));
+    if (isLast)
+      return const BorderRadius.vertical(
+        bottom: Radius.circular(_cornerRadius),
+      );
     return BorderRadius.zero;
   }
 
   Widget _buildCoverImage(ColorScheme colorScheme) {
-    // 优先使用内存中的字节数据
+    // 1. 优先使用内存中的字节数据
     if (entry.coverBytes != null && entry.coverBytes!.isNotEmpty) {
       return Image.memory(entry.coverBytes!, fit: BoxFit.cover);
     }
-    // 其次使用文件路径
+
+    // 2. 其次使用文件路径
     if (entry.coverPath != null && entry.coverPath!.isNotEmpty) {
       final file = File(entry.coverPath!);
       if (file.existsSync()) {
         return Image.file(file, fit: BoxFit.cover);
       }
     }
-    // 再次使用网络 URL
+
+    // 3. 再次使用网络 URL（改用强大的 CachedNetworkImage）
     if (entry.coverUrl != null && entry.coverUrl!.isNotEmpty) {
-      return Image.network(
-        entry.coverUrl!,
+      // 确保有一个兜底的 User-Agent 防盗链请求头
+      final Map<String, String> finalHeaders = {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ...?entry.coverHeaders, // 融合模型自带的 headers
+      };
+
+      return CachedNetworkImage(
+        imageUrl: entry.coverUrl!,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildFallbackIcon(colorScheme),
+        httpHeaders: finalHeaders, // ✨ 核心修复：携带伪装请求头请求图片
+        // 加载过程中的占位组件（可选，这里用一个微弱的骨架屏或图标代替）
+        placeholder: (context, url) => ColoredBox(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          child: const SizedBox.expand(),
+        ),
+        // 报错兜底（403 或网络断开时触发）
+        errorWidget: (_, __, ___) => _buildFallbackIcon(colorScheme),
       );
     }
-    // 兜底图标
+
+    // 4. 最终兜底图标
     return _buildFallbackIcon(colorScheme);
   }
 
@@ -255,8 +282,9 @@ class _M3SongRow extends StatelessWidget {
     }
 
     // 选中行使用 secondaryContainer 背景
-    final rowColor =
-        entry.isHighlighted ? colorScheme.secondaryContainer : Colors.transparent;
+    final rowColor = entry.isHighlighted
+        ? colorScheme.secondaryContainer
+        : Colors.transparent;
 
     return Material(
       color: rowColor,
@@ -292,8 +320,9 @@ class _M3SongRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodyMedium?.copyWith(
-                        fontWeight:
-                            entry.isHighlighted ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: entry.isHighlighted
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                         color: entry.isHighlighted
                             ? colorScheme.primary
                             : colorScheme.onSurface,

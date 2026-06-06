@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+typescript/node_modules/
 
 # IntelliJ related
 *.iml
@@ -19,6 +20,8 @@ migrate_working_dir/
 .idea/
 .env
 backend/.env
+.env.production
+.env.development
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line

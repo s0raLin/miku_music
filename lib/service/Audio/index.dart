@@ -48,6 +48,38 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     }
   }
 
+  /// Play music from a network URL
+  Future<void> playFromUrl(
+    String url, {
+    String id = '',
+    String title = '未知歌曲',
+    String artist = '未知歌手',
+    String? coverUrl,
+    bool autoPlay = true,
+  }) async {
+    await _player.setAudioSource(AudioSource.uri(Uri.parse(url)), preload: true);
+    final item = MediaItem(
+      id: id.isNotEmpty ? id : url,
+      title: title,
+      artist: artist,
+      artUri: coverUrl != null ? Uri.parse(coverUrl) : null,
+    );
+
+    mediaItem.add(item);
+
+    try {
+      if (autoPlay) {
+        await play();
+      } else {
+        await pause();
+      }
+    } catch (e) {
+      playbackState.add(
+        playbackState.value.copyWith(errorMessage: e.toString()),
+      );
+    }
+  }
+
   @override
   Future<void> play() => _player.play();
 

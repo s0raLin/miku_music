@@ -45,10 +45,12 @@ class InitializationService {
     await MusicDbService().init();
 
     // 加载环境变量
+   String fileName = kReleaseMode ? ".env.production" : ".env.development";
     try {
-      await dotenv.load(fileName: ".env");
+      await dotenv.load(fileName: fileName);
+      debugPrint("自动选择并加载环境: $fileName");
     } catch (e) {
-      debugPrint("Warning: Could not load .env file, using default values.");
+      debugPrint("Warning: Could not load $fileName file.");
     }
 
     try {

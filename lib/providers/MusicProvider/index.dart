@@ -28,6 +28,20 @@ enum PlayMode { sequence, shuffle, repeat }
 
 enum PlayTrigger { user, auto }
 
+class _NetworkSongMeta {
+  final String url;
+  final String title;
+  final String artist;
+  final String? coverUrl;
+
+  const _NetworkSongMeta({
+    required this.url,
+    required this.title,
+    required this.artist,
+    this.coverUrl,
+  });
+}
+
 class MusicProvider extends ChangeNotifier {
   final MyAudioHandler audioHandler;
 
@@ -354,6 +368,67 @@ class MusicProvider extends ChangeNotifier {
 
   void togglePlay() {
     player.playing ? player.pause() : player.play();
+    _safeNotifyListeners();
+  }
+
+  /// Map to store network URLs for songs added via playNetworkSong
+  final Map<String, _NetworkSongMeta> _networkMeta = {};
+
+  /// Get the cover URL for a network song, if available.
+  String? getCoverUrl(String musicId) => _networkMeta[musicId]?.coverUrl;
+
+  /// Play a network song (e.g. from Netease cloud search).
+  /// Adds a synthetic Music to the queue so currentMusic + detail page work.
+  Future<void> playNetworkSong({
+    required String url,
+    required String id,
+    required String title,
+    required String artist,
+    String? coverUrl,
+    String? lyricContent,
+  }) async {
+    final musicId = 'net_$id';
+    final music = Music(
+      id: musicId,
+      title: title,
+      artist: artist,
+      duration: Duration.zero,
+      coverBytes: null,
+      lyrics: lyricContent,
+      album: null,
+    );
+
+    // Store network metadata for later playback (prev/next)
+    _networkMeta[musicId] = _NetworkSongMeta(
+      url: url,
+      title: title,
+      artist: artist,
+      coverUrl: coverUrl,
+    );
+
+    _currentLyrics = await _parseLrc(lyricContent);
+
+    // Add to queue if not already there
+    if (!_queue.any((m) => m.id == musicId)) {
+      _queue.add(music);
+    }
+    _currentIndex = _queue.indexWhere((m) => m.id == musicId);
+
+    _safeNotifyListeners();
+
+    await audioHandler.playFromUrl(
+      url,
+      id: musicId,
+      title: title,
+      artist: artist,
+      coverUrl: coverUrl,
+      autoPlay: true,
+    );
+  }
+
+  /// Set lyrics directly (for network playback without queue)
+  Future<void> setLyricsDirectly(String lrcContent) async {
+    _currentLyrics = await _parseLrc(lrcContent);
     _safeNotifyListeners();
   }
 

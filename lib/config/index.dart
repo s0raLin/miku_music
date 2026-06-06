@@ -13,7 +13,8 @@ class Config {
   }
 
   // 使用 getter 确保每次读取时 dotenv 已经就绪
-  String get baseUrl => dotenv.get("API_URL", fallback: "");
+  String get baseUrl =>
+      dotenv.get("GO_BACKEND_URL", fallback: "http://localhost:8000");
 }
 
 // 使用方式：

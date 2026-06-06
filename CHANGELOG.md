@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.37.0](https://github.com/s0raLin/miku_music/compare/v1.36.0...v1.37.0) (2026-06-06)
+
+
+### Features
+
+* **auth:** implement local avatar downloading and storage ([cfc46bd](https://github.com/s0raLin/miku_music/commit/cfc46bda128887b55e5b29f14d6a13f87ca0e4dd))
+* **core:** integrate network streaming and environment management ([eb2e02b](https://github.com/s0raLin/miku_music/commit/eb2e02b5ffda7d248633169d8e4803a9828eabc3))
+
 ## [1.36.0](https://github.com/s0raLin/miku_music/compare/v1.35.0...v1.36.0) (2026-06-05)
 
 

@@ -42,6 +42,13 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // 监听输入框变化，以便实时刷新清除按钮的显示状态
+    _searchController.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _focusNode.dispose();
@@ -53,6 +60,8 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   Future<void> _search() async {
     final q = _searchController.text.trim();
     if (q.isEmpty) return;
+
+    _focusNode.unfocus(); // 搜索时自动收起键盘
 
     setState(() {
       _isSearching = true;
@@ -117,14 +126,6 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
       if (lr['lyric'] != null && lr['lyric']!.isNotEmpty && mounted) {
         await mp.setLyricsDirectly(lr['lyric']!);
       }
-
-      if (!mounted) return;
-      AppToast.success(
-        context,
-        message: '${song.title} - ${song.author}',
-        title: '正在播放',
-        duration: const Duration(seconds: 1),
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _playingId = null);
@@ -165,71 +166,117 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final entries = _results.map((s) => M3SongEntry(
-      id: 'net_${s.id}',
-      title: s.title,
-      subtitle: '${s.author}  ·  ${s.source.toUpperCase()}',
-      coverUrl: s.pic,
-      coverHeaders: const {'Referer': 'https://music.163.com/'},
-      fallbackIcon: Icons.music_note_rounded,
-      isHighlighted: _playingId == s.id,
-      trailing: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert_rounded, size: 20),
-        onSelected: (v) {
-          switch (v) {
-            case 'play': _play(s);
-            case 'detail': _openDetail(s);
-            case 'download': _download(s);
-          }
-        },
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'play', child: ListTile(leading: Icon(Icons.play_arrow_rounded), title: Text('在线收听'), contentPadding: EdgeInsets.zero, visualDensity: VisualDensity.compact)),
-          PopupMenuItem(value: 'detail', child: ListTile(leading: Icon(Icons.album_rounded), title: Text('查看详情'), contentPadding: EdgeInsets.zero, visualDensity: VisualDensity.compact)),
-          PopupMenuItem(value: 'download', child: ListTile(leading: Icon(Icons.download_rounded), title: Text('下载到本地'), contentPadding: EdgeInsets.zero, visualDensity: VisualDensity.compact)),
-        ],
-      ),
-      onTap: () => _openDetail(s),
-    )).toList();
+    final entries = _results
+        .map(
+          (s) => M3SongEntry(
+            id: 'net_${s.id}',
+            title: s.title,
+            subtitle: '${s.author}  ·  ${s.source.toUpperCase()}',
+            coverUrl: s.pic,
+            coverHeaders: const {'Referer': 'https://music.163.com/'},
+            fallbackIcon: Icons.music_note_rounded,
+            isHighlighted: _playingId == s.id,
+            trailing: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded, size: 20),
+              onSelected: (v) {
+                switch (v) {
+                  case 'play':
+                    _play(s);
+                  case 'detail':
+                    _openDetail(s);
+                  case 'download':
+                    _download(s);
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'play',
+                  child: ListTile(
+                    leading: Icon(Icons.play_arrow_rounded),
+                    title: Text('在线收听'),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'detail',
+                  child: ListTile(
+                    leading: Icon(Icons.album_rounded),
+                    title: Text('查看详情'),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'download',
+                  child: ListTile(
+                    leading: Icon(Icons.download_rounded),
+                    title: Text('下载到本地'),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+            onTap: () => _openDetail(s),
+          ),
+        )
+        .toList();
+
+    final isLoading = _isSearching || _isFiltering;
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // Search bar
+            // 优化 1：精简现代的顶部搜索栏区域
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SearchBar(
-                      controller: _searchController,
-                      focusNode: _focusNode,
-                      hintText: '搜索网易云音乐...',
-                      leading: const Icon(Icons.search_rounded),
-                      trailing: [
-                        if (_searchController.text.trim().isNotEmpty)
-                          IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() { _results = []; _hasSearched = false; _statusMsg = null; });
-                            },
-                          ),
-                      ],
-                      onSubmitted: (_) => _search(),
-                      elevation: WidgetStateProperty.all(0.0),
-                      backgroundColor: WidgetStateProperty.all(cs.surfaceContainerHigh),
-                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: SearchBar(
+                controller: _searchController,
+                focusNode: _focusNode,
+                hintText: '搜索网易云音乐...',
+                leading: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
+                trailing: [
+                  // 清除按钮
+                  if (_searchController.text.trim().isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear_rounded),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _results = [];
+                          _hasSearched = false;
+                          _statusMsg = null;
+                        });
+                      },
+                    ),
+                  // 将发送/加载按钮内嵌到 SearchBar 内部，视觉更一体化
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: IconButton(
+                      onPressed: isLoading ? null : _search,
+                      icon: isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: cs.primary,
+                              ),
+                            )
+                          : Icon(Icons.send_rounded, color: cs.primary),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _isSearching || _isFiltering ? null : _search,
-                    icon: (_isSearching || _isFiltering)
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.send_rounded),
-                  ),
                 ],
+                onSubmitted: (_) => _search(),
+                elevation: WidgetStateProperty.all(0.0),
+                backgroundColor: WidgetStateProperty.all(
+                  cs.surfaceContainerHigh,
+                ),
+                // 采用完美的胶囊形状
+                shape: WidgetStateProperty.all(const StadiumBorder()),
+                constraints: const BoxConstraints(minHeight: 56.0),
               ),
             ),
 
@@ -241,7 +288,11 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
     );
   }
 
-  Widget _buildContent(ColorScheme cs, TextTheme tt, List<M3SongEntry> entries) {
+  Widget _buildContent(
+    ColorScheme cs,
+    TextTheme tt,
+    List<M3SongEntry> entries,
+  ) {
     if (!_hasSearched) return _buildSuggestions(cs, tt);
 
     if (_isSearching || _isFiltering) {
@@ -250,11 +301,19 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(_statusMsg ?? '', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(height: 20),
+            Text(
+              _statusMsg ?? '',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
             if (_isFiltering) ...[
               const SizedBox(height: 8),
-              Text('检测歌曲链接可用性...', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
+              Text(
+                '检测歌曲链接可用性...',
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
+              ),
             ],
           ],
         ),
@@ -266,11 +325,18 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off_rounded, size: 64, color: cs.onSurfaceVariant),
+            Icon(Icons.cloud_off_rounded, size: 64, color: cs.outlineVariant),
             const SizedBox(height: 16),
-            Text(_statusMsg ?? '未找到可播放的歌曲', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            TextButton.icon(onPressed: _search, icon: const Icon(Icons.refresh_rounded), label: const Text('重新搜索')),
+            Text(
+              _statusMsg ?? '未找到可播放的歌曲',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: _search,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('重新搜索'),
+            ),
           ],
         ),
       );
@@ -279,22 +345,45 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 优化 2：优化状态栏指示器的外间距与高度
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.fromLTRB(20, 4, 12, 12),
           child: Row(
             children: [
-              Icon(Icons.cloud_done_rounded, size: 16, color: cs.primary),
+              Icon(Icons.cloud_done_rounded, size: 14, color: cs.primary),
               const SizedBox(width: 6),
-              Text(_statusMsg ?? '', style: tt.labelSmall?.copyWith(color: cs.primary)),
-              const Spacer(),
-              TextButton.icon(onPressed: _search, icon: const Icon(Icons.refresh_rounded, size: 16), label: const Text('重新搜索'), style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap)),
+              Expanded(
+                child: Text(
+                  _statusMsg ?? '',
+                  style: tt.labelMedium?.copyWith(color: cs.primary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _search,
+                icon: const Icon(Icons.refresh_rounded, size: 14),
+                label: const Text('重新搜索'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: tt.labelMedium,
+                ),
+              ),
             ],
           ),
         ),
         const Divider(height: 1),
+        // 优化 3：移除外层多余 Padding，将边距留给可滚动的组件内部或微调横向间距
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            // 提示：如果 M3SongList 内部支持传入 padding，建议将横向 padding (如 12) 传给其内部的 ListView。
+            // 这里我们仅保留极小的外边距，防止内容贴边，同时保证了滚动的整体性。
             child: M3SongList(songs: entries, isScrollable: true),
           ),
         ),
@@ -304,32 +393,80 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
 
   Widget _buildSuggestions(ColorScheme cs, TextTheme tt) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      // 优化 4：微调主页推荐页面的 padding，使其上下呼吸感更强
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
       children: [
         Center(
           child: Column(
             children: [
-              Icon(Icons.cloud_queue_rounded, size: 64, color: cs.primary),
-              const SizedBox(height: 16),
-              Text('在线音乐搜索', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('搜索网易云音乐，在线收听或下载', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+              // 使用次级容器颜色作为背景，做成圆角图标显得更精致
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.cloud_queue_rounded,
+                  size: 48,
+                  color: cs.primary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '在线音乐搜索',
+                style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '搜索网易云音乐，在线收听或下载',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        Text('搜索推荐', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.primary)),
-        const SizedBox(height: 12),
+        const SizedBox(height: 40),
+        Text(
+          '搜索推荐',
+          style: tt.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: cs.primary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        // 优化 5：精致的 FilterChip 推荐标签样式
         Wrap(
-          spacing: 8, runSpacing: 4,
-          children: _suggestedTags.map((t) => FilterChip(
-            label: Text(t),
-            labelStyle: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-            backgroundColor: cs.surfaceContainerLow,
-            side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            onSelected: (_) { _searchController.text = t; _search(); },
-          )).toList(),
+          spacing: 8,
+          runSpacing: 10,
+          children: _suggestedTags
+              .map(
+                (t) => ChoiceChip(
+                  selected: false, // 纯作点击推荐使用
+                  label: Text(t),
+                  labelStyle: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  backgroundColor: cs.surfaceContainerLow,
+                  side: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                  // 更现代的 M3 圆角控制 (全圆角或高圆角)
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  // 移除 Chip 默认过大的内部补白
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onSelected: (_) {
+                    _searchController.text = t;
+                    _search();
+                  },
+                ),
+              )
+              .toList(),
         ),
       ],
     );

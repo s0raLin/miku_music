@@ -309,11 +309,38 @@ class MusicProvider extends ChangeNotifier {
       });
     }
 
-    if (autoPlay) {
-      onMusicPlayed?.call(music);
-      audioHandler.playMusic(music);
+    // 检查是否为网络歌曲：有 _networkMeta 记录的说明需要用 URL 播放
+    final netMeta = _networkMeta[music.id];
+    if (netMeta != null) {
+      // 网络歌曲：使用 URL 播放
+      if (autoPlay) {
+        onMusicPlayed?.call(music);
+        await audioHandler.playFromUrl(
+          netMeta.url,
+          id: music.id,
+          title: netMeta.title,
+          artist: netMeta.artist,
+          coverUrl: netMeta.coverUrl,
+          autoPlay: true,
+        );
+      } else {
+        await audioHandler.playFromUrl(
+          netMeta.url,
+          id: music.id,
+          title: netMeta.title,
+          artist: netMeta.artist,
+          coverUrl: netMeta.coverUrl,
+          autoPlay: false,
+        );
+      }
     } else {
-      audioHandler.playMusic(music, autoPlay: false);
+      // 本地歌曲：使用文件路径播放
+      if (autoPlay) {
+        onMusicPlayed?.call(music);
+        audioHandler.playMusic(music);
+      } else {
+        audioHandler.playMusic(music, autoPlay: false);
+      }
     }
   }
 

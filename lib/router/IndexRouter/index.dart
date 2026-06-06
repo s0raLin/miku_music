@@ -65,7 +65,7 @@ final List<AppNavItem> navItems = [
     page: MusicPage(),
     i: ImageIcon(AssetImage(MyAssets.music)),
     icon: Icons.music_note,
-    label: "音乐",
+    label: "本地音乐",
   ),
   AppNavItem(
     name: "network",

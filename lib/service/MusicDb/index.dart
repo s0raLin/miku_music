@@ -131,8 +131,8 @@ class MusicDbService {
     _playlistUpdateController.add(null);
   }
 
-  Future<void> addMusicToHistory(String musicId) async {
-    await _dbManager?.addToHistory(musicId: musicId);
+  Future<void> addMusicToHistory(String musicId, int maxLimit) async {
+    await _dbManager?.addToHistory(musicId: musicId, maxLimit: maxLimit);
     _playlistUpdateController.add(null);
   }
 

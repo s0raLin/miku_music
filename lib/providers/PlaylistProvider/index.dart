@@ -191,8 +191,8 @@ class PlaylistProvider extends ChangeNotifier {
     await refreshFromDb();
   }
 
-  Future<void> addToHistory(Music music) async {
-    await _dbService.addMusicToHistory(music.id);
+  Future<void> addToHistory(Music music, int maxLimit) async {
+    await _dbService.addMusicToHistory(music.id, maxLimit);
     await refreshFromDb();
   }
 

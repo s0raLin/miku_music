@@ -3,7 +3,7 @@ use rusqlite::{params, Result};
 
 impl DbManager {
     /// 记录一次播放历史，并自动执行“滑动窗口”裁剪
-    pub fn add_to_history(&self, music_id: &str) -> Result<()> {
+    pub fn add_to_history(&self, music_id: &str, max_limit: i64) -> Result<()> {
         let mut conn = self.conn.lock().unwrap();
         let tx = conn.transaction()?;
 
@@ -16,9 +16,9 @@ impl DbManager {
         // 2. 核心裁剪：删掉排名 200 之外的所有旧播放记录
         tx.execute(
             "DELETE FROM play_history WHERE music_id NOT IN (
-                SELECT music_id FROM play_history ORDER BY played_at DESC LIMIT 200
+                SELECT music_id FROM play_history ORDER BY played_at DESC LIMIT ?1
              );",
-            [],
+            [max_limit],
         )?;
 
         tx.commit()?;
@@ -28,9 +28,8 @@ impl DbManager {
     /// 获取最近播放的歌曲 ID 列表（按播放时间倒序）
     pub fn get_play_history(&self) -> Result<Vec<String>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare(
-            "SELECT music_id FROM play_history ORDER BY played_at DESC;",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT music_id FROM play_history ORDER BY played_at DESC;")?;
 
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 

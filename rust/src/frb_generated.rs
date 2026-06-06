@@ -130,6 +130,7 @@ fn wire__crate__api__audio_db__DbManager_add_to_history_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DbManager>,
             >>::sse_decode(&mut deserializer);
             let api_music_id = <String>::sse_decode(&mut deserializer);
+            let api_max_limit = <i64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -151,6 +152,7 @@ fn wire__crate__api__audio_db__DbManager_add_to_history_impl(
                         let output_ok = crate::api::audio_db::DbManager::add_to_history(
                             &*api_that_guard,
                             &api_music_id,
+                            api_max_limit,
                         )?;
                         Ok(output_ok)
                     })(),

@@ -17,7 +17,10 @@ abstract class DbManager implements RustOpaqueInterface {
   });
 
   /// 记录一次播放历史，并自动执行“滑动窗口”裁剪
-  Future<void> addToHistory({required String musicId});
+  Future<void> addToHistory({
+    required String musicId,
+    required PlatformInt64 maxLimit,
+  });
 
   /// 清空播放历史
   Future<void> clearHistory();

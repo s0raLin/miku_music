@@ -91,6 +91,7 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiAudioDbDbManagerAddToHistory({
     required DbManager that,
     required String musicId,
+    required PlatformInt64 maxLimit,
   });
 
   Future<void> crateApiAudioDbDbManagerClearHistory({required DbManager that});
@@ -253,6 +254,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<void> crateApiAudioDbDbManagerAddToHistory({
     required DbManager that,
     required String musicId,
+    required PlatformInt64 maxLimit,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -263,6 +265,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(musicId, serializer);
+          sse_encode_i_64(maxLimit, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -275,7 +278,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerAddToHistoryConstMeta,
-        argValues: [that, musicId],
+        argValues: [that, musicId, maxLimit],
         apiImpl: this,
       ),
     );
@@ -284,7 +287,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAudioDbDbManagerAddToHistoryConstMeta =>
       const TaskConstMeta(
         debugName: "DbManager_add_to_history",
-        argNames: ["that", "musicId"],
+        argNames: ["that", "musicId", "maxLimit"],
       );
 
   @override
@@ -1955,8 +1958,14 @@ class DbManagerImpl extends RustOpaque implements DbManager {
   );
 
   /// 记录一次播放历史，并自动执行“滑动窗口”裁剪
-  Future<void> addToHistory({required String musicId}) => RustLib.instance.api
-      .crateApiAudioDbDbManagerAddToHistory(that: this, musicId: musicId);
+  Future<void> addToHistory({
+    required String musicId,
+    required PlatformInt64 maxLimit,
+  }) => RustLib.instance.api.crateApiAudioDbDbManagerAddToHistory(
+    that: this,
+    musicId: musicId,
+    maxLimit: maxLimit,
+  );
 
   /// 清空播放历史
   Future<void> clearHistory() =>

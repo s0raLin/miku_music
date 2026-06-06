@@ -67,7 +67,7 @@ class _SplashPageState extends State<SplashPage>
     final musicProvider = context.read<MusicProvider>();
     final playlistProvider = context.read<PlaylistProvider>();
     musicProvider.onMusicPlayed = (song) {
-      playlistProvider.addToHistory(song);
+      playlistProvider.addToHistory(song, themeProvider.maxHistoryCount);
     };
 
     final pfs = await SharedPreferences.getInstance();

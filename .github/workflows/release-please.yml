@@ -15,38 +15,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4
-        id: release
         with:
           release-type: dart
-
-      - uses: actions/checkout@v4
-        if: ${{ steps.release.outputs.release_created }}
-
-      - name: Update version.json for jsDelivr CDN
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          # 从 release-please 输出中提取版本号、tag 和 body
-          TAG="${{ steps.release.outputs.tag_name }}"
-          VERSION="${TAG#v}"
-          URL="${{ steps.release.outputs.html_url }}"
-          # 提取第一段非空行作为简短描述（release-please 默认 body 就是 CHANGELOG 条目）
-          BODY="${{ steps.release.outputs.body }}"
-          # 使用 jq 生成 JSON（GitHub Actions ubuntu-latest 自带 jq）
-          echo "$BODY" | head -c 500 > /tmp/desc.txt
-          DESC=$(cat /tmp/desc.txt)
-          jq -n \
-            --arg version "$VERSION" \
-            --arg tag_name "$TAG" \
-            --arg html_url "$URL" \
-            --arg description "$DESC" \
-            '{version: $version, tag_name: $tag_name, html_url: $html_url, description: $description}' > version.json
-          cat version.json
-
-      - name: Commit & Push version.json
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add version.json
-          git commit -m "chore: update version.json to ${{ steps.release.outputs.tag_name }}"
-          git push

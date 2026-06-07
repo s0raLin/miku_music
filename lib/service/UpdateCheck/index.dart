@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:version/version.dart';
 
@@ -9,11 +10,15 @@ class ReleaseInfo {
   final String tagName;
   final String description;
   final String htmlUrl;
+  final String cloudDriveUrl;
+  final String cloudDrivePassword;
 
   const ReleaseInfo({
     required this.tagName,
     required this.description,
     required this.htmlUrl,
+    required this.cloudDriveUrl,
+    required this.cloudDrivePassword,
   });
 }
 
@@ -30,9 +35,8 @@ class UpdateCheckResult {
 }
 
 class UpdateCheckService {
-  /// jsDelivr CDN 加速的 version.json 地址（全球 CDN，国内可用）
-  static const String _versionUrl =
-      'https://cdn.jsdelivr.net/gh/s0raLin/miku_music@latest/version.json';
+  static const String _repoOwner = 's0raLin';
+  static const String _repoName = 'miku_music';
 
   /// 防止同一应用生命周期内重复弹窗
   static bool _hasCheckedThisSession = false;
@@ -46,8 +50,9 @@ class UpdateCheckService {
   static UpdateCheckService get instance {
     _instance ??= UpdateCheckService._(
       dio: Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 5),
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {'Accept': 'application/vnd.github.v3+json'},
       )),
     );
     return _instance!;
@@ -63,7 +68,6 @@ class UpdateCheckService {
     }
     _hasCheckedThisSession = true;
 
-    // 获取当前版本号
     final packageInfo = await PackageInfo.fromPlatform();
     final currentVersionStr = packageInfo.version;
     final currentVersion = _parseVersion(currentVersionStr);
@@ -77,32 +81,53 @@ class UpdateCheckService {
     }
 
     try {
-      // 从 jsDelivr CDN 获取 version.json（秒级响应，国内不卡）
-      final response = await _dio.get(_versionUrl);
+      final response = await _dio.get(
+        'https://api.github.com/repos/$_repoOwner/$_repoName/releases',
+        queryParameters: {'per_page': 5},
+      );
 
       if (response.statusCode != 200) {
-        debugPrint('⚠️ CDN 返回非 200: ${response.statusCode}');
+        debugPrint('⚠️ GitHub API 返回非 200: ${response.statusCode}');
         return UpdateCheckResult(
           hasUpdate: false,
           currentVersion: currentVersionStr,
         );
       }
 
-      final data = response.data as Map<String, dynamic>;
-      final remoteVersionStr = data['version'] as String?;
-      final tagName = data['tag_name'] as String? ?? '';
-      final htmlUrl = data['html_url'] as String? ?? '';
-      final description = data['description'] as String? ?? '';
-
-      if (remoteVersionStr == null || remoteVersionStr.isEmpty) {
-        debugPrint('⚠️ version.json 中无有效版本号');
+      final List releases = response.data as List;
+      if (releases.isEmpty) {
         return UpdateCheckResult(
           hasUpdate: false,
           currentVersion: currentVersionStr,
         );
       }
 
+      // 找到最新的带有 APK 的 release
+      Map<String, dynamic>? latestReleaseWithApk;
+      for (final release in releases) {
+        final assets = release['assets'] as List? ?? [];
+        final hasApk = assets.any(
+          (a) => (a['name'] as String? ?? '').endsWith('.apk'),
+        );
+        if (hasApk) {
+          latestReleaseWithApk = release as Map<String, dynamic>;
+          break;
+        }
+      }
+
+      if (latestReleaseWithApk == null) {
+        debugPrint('ℹ️ 未找到包含 APK 的发布版本');
+        return UpdateCheckResult(
+          hasUpdate: false,
+          currentVersion: currentVersionStr,
+        );
+      }
+
+      final tagName = latestReleaseWithApk['tag_name'] as String? ?? '';
+      final remoteVersionStr =
+          tagName.startsWith('v') ? tagName.substring(1) : tagName;
       final remoteVersion = _parseVersion(remoteVersionStr);
+
       if (remoteVersion == null) {
         debugPrint('⚠️ 无法解析远程版本号: $remoteVersionStr');
         return UpdateCheckResult(
@@ -111,25 +136,32 @@ class UpdateCheckService {
         );
       }
 
-      // 版本比较
-      final hasUpdate = remoteVersion > currentVersion;
-
-      if (hasUpdate) {
+      if (remoteVersion <= currentVersion) {
+        debugPrint('✅ 当前已是最新版本: $currentVersionStr');
         return UpdateCheckResult(
-          hasUpdate: true,
+          hasUpdate: false,
           currentVersion: currentVersionStr,
-          latestRelease: ReleaseInfo(
-            tagName: tagName,
-            description: description,
-            htmlUrl: htmlUrl,
-          ),
         );
       }
 
-      debugPrint('✅ 当前已是最新版本: $currentVersionStr');
+      final body = latestReleaseWithApk['body'] as String? ?? '';
+      final description = body.length > 500
+          ? '${body.substring(0, 500)}...'
+          : body;
+
+      final cloudUrl = dotenv.get('CLOUD_DRIVE_URL', fallback: '');
+      final cloudPwd = dotenv.get('CLOUD_DRIVE_PASSWORD', fallback: '');
+
       return UpdateCheckResult(
-        hasUpdate: false,
+        hasUpdate: true,
         currentVersion: currentVersionStr,
+        latestRelease: ReleaseInfo(
+          tagName: tagName,
+          description: description,
+          htmlUrl: latestReleaseWithApk['html_url'] as String? ?? '',
+          cloudDriveUrl: cloudUrl,
+          cloudDrivePassword: cloudPwd,
+        ),
       );
     } on DioException catch (e) {
       debugPrint('⚠️ 检查更新网络错误: ${e.message}');

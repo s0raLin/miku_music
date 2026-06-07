@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.39.0](https://github.com/s0raLin/miku_music/compare/v1.38.0...v1.39.0) (2026-06-07)
+
+
+### Features
+
+* **app:** implement automatic update check mechanism ([6665b72](https://github.com/s0raLin/miku_music/commit/6665b72452781c91ab8df11c391b02e462223a24))
+
 ## [1.38.0](https://github.com/s0raLin/miku_music/compare/v1.37.0...v1.38.0) (2026-06-07)
 
 

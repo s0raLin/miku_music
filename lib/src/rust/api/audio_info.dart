@@ -15,6 +15,11 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 Future<AudioInfo> getAudioInfo({required String path}) =>
     RustLib.instance.api.crateApiAudioInfoGetAudioInfo(path: path);
 
+Future<Uint8List?> getExternalCover({required String audioPath}) => RustLib
+    .instance
+    .api
+    .crateApiAudioInfoGetExternalCover(audioPath: audioPath);
+
 /// 从音频文件中读取到的完整元数据
 class AudioInfo {
   final String title;

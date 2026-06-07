@@ -1,3 +1,4 @@
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -83,6 +84,36 @@ class NeteaseApi {
     } catch (e) {
       debugPrint('获取歌词失败 [$id]: $e');
       return {'lyric': null, 'tlyric': null};
+    }
+  }
+
+  /// Download cover image from URL to the specified path.
+  /// Returns the save path on success, null on failure.
+  static Future<String?> downloadCover(
+    String coverUrl,
+    String savePath, {
+    void Function(int received, int total)? onProgress,
+  }) async {
+    try {
+      await Dio().download(
+        coverUrl,
+        savePath,
+        onReceiveProgress: onProgress,
+        options: Options(
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(minutes: 5),
+          // ─── 核心修复：注入防盗链请求头 ───
+          headers: {
+            'Referer': 'https://music.163.com/',
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        ),
+      );
+      return savePath;
+    } catch (e) {
+      debugPrint('下载封面失败: $e');
+      return null;
     }
   }
 

@@ -7,8 +7,9 @@ import 'package:myapp/api/Model/NeteaseSong/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:myapp/service/Files/index.dart';
 import 'package:provider/provider.dart';
+import 'package:path/path.dart' as p;
 
 class NetworkSongPage extends StatefulWidget {
   const NetworkSongPage({super.key});
@@ -141,15 +142,71 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   Future<void> _download(NeteaseSong song) async {
     try {
       AppToast.neutral(context, message: '正在下载: ${song.title}', title: '下载中');
-      final dir = await getApplicationDocumentsDirectory();
-      final musicDir = Directory('${dir.path}/downloads');
-      if (!await musicDir.exists()) await musicDir.create(recursive: true);
-      final safeName = song.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final path = '${musicDir.path}/$safeName - ${song.author}.mp3';
-      final ok = await NeteaseApi.downloadSong(song.url, path);
+
+      // Get M3Music directory under Downloads
+      final m3MusicDir = await FileService.getM3MusicDir();
+      if (!await m3MusicDir.exists()) {
+        await m3MusicDir.create(recursive: true);
+      }
+
+      // Create song-specific folder: M3Music/歌曲名 - 歌手名/
+      final safeTitle = song.title
+          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+          .trim();
+      final safeArtist = song.author
+          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+          .trim();
+      final songFolderName = '$safeTitle - $safeArtist';
+      final songDir = Directory(p.join(m3MusicDir.path, songFolderName));
+      if (!await songDir.exists()) {
+        await songDir.create(recursive: true);
+      }
+
+      String ext = p.url.extension(song.url);
+
+      // 如果 URL 里没有带后缀（比如某些流媒体链接），或者带了超长参数，做个清洗和兜底
+      if (ext.contains('?')) {
+        ext = ext.split('?').first;
+      }
+      if (ext.isEmpty || ext.length > 5) {
+        ext = '.mp3'; // 兜底格式
+      }
+
+      // Download audio file
+      final audioPath = p.join(songDir.path, '$safeTitle - $safeArtist$ext');
+      final audioResult = await NeteaseApi.downloadSong(song.url, audioPath);
+
+      // Download lyrics
+      String? lrcPath;
+      try {
+        final lyricMap = await NeteaseApi.getLyric(song.id);
+        final lyricContent = lyricMap['lyric'];
+        if (lyricContent != null && lyricContent.isNotEmpty) {
+          lrcPath = p.join(songDir.path, '$safeTitle - $safeArtist.lrc');
+          final lrcFile = File(lrcPath);
+          await lrcFile.writeAsString(lyricContent);
+        }
+      } catch (e) {
+        debugPrint('下载歌词失败: $e');
+      }
+
+      // Download cover image
+      String? coverPath;
+      try {
+        if (song.pic.isNotEmpty) {
+          coverPath = p.join(songDir.path, 'cover.jpg');
+          await NeteaseApi.downloadCover(song.pic, coverPath);
+        }
+      } catch (e) {
+        debugPrint('下载封面失败: $e');
+      }
+
       if (!mounted) return;
-      if (ok != null) {
-        AppToast.success(context, message: '已保存到: $path', title: '下载完成');
+      if (audioResult != null) {
+        final msgBuf = StringBuffer('已保存到: $audioPath');
+        if (lrcPath != null) msgBuf.write('\n歌词: $lrcPath');
+        if (coverPath != null) msgBuf.write('\n封面: $coverPath');
+        AppToast.success(context, message: msgBuf.toString(), title: '下载完成');
       } else {
         AppToast.error(context, message: '下载失败', title: '错误');
       }

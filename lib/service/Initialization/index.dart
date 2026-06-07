@@ -123,7 +123,7 @@ class InitializationService {
     void Function(StartupScanProgress progress)? onProgress,
   }) async {
     final List<Music> fetchedLibrary = [];
-    final paths = await FileService.loadPaths();
+    final paths = await FileService.loadPathsWithDefault();
     final isAndroid = !kIsWeb && Platform.isAndroid;
     final hasSelectedPaths = paths.isNotEmpty;
 
@@ -132,10 +132,8 @@ class InitializationService {
         module: '读取本地目录',
         detail: isAndroid && hasSelectedPaths
             ? 'Android 使用已保存目录扫描音频'
-            : isAndroid
-            ? 'Android 使用系统媒体库扫描音频'
             : paths.isEmpty
-            ? '没有已保存的音乐目录'
+            ? '没有可扫描的音乐目录'
             : '已读取 ${paths.length} 个目录',
       ),
     );

@@ -10,6 +10,7 @@ pub struct AudioMetadata {
     pub title: String,
     pub artist: String,
     pub album: String,
+    
     pub duration_seconds: u32,
     pub path: String,
 }

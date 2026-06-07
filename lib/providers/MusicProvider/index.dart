@@ -33,12 +33,14 @@ class _NetworkSongMeta {
   final String title;
   final String artist;
   final String? coverUrl;
+  String? lyricContent;
 
-  const _NetworkSongMeta({
+  _NetworkSongMeta({
     required this.url,
     required this.title,
     required this.artist,
     this.coverUrl,
+    this.lyricContent,
   });
 }
 
@@ -299,7 +301,9 @@ class MusicProvider extends ChangeNotifier {
 
     _currentIndex = index;
     final music = _queue[index];
-    _currentLyrics = await _parseLrc(music.lyrics);
+    // Prefer cached network lyrics over music.lyrics (which may be null for net songs)
+    final effectiveLyrics = _networkMeta[music.id]?.lyricContent ?? music.lyrics;
+    _currentLyrics = await _parseLrc(effectiveLyrics);
     _safeNotifyListeners(); // 这里已经通过安全机制发出通知
 
     if (music.coverBytes == null || music.coverBytes!.isEmpty) {
@@ -433,10 +437,20 @@ class MusicProvider extends ChangeNotifier {
       coverUrl: coverUrl,
     );
 
-    _currentLyrics = await _parseLrc(lyricContent);
+    // Check if the song already exists in queue and has cached lyrics
+    final existingIndex = _queue.indexWhere((m) => m.id == musicId);
+    final existingMusic = existingIndex != -1 ? _queue[existingIndex] : null;
+    final effectiveLyrics = lyricContent ?? existingMusic?.lyrics;
+
+    _currentLyrics = await _parseLrc(effectiveLyrics);
+
+    // Store lyrics in meta for later reuse
+    if (effectiveLyrics != null) {
+      _networkMeta[musicId]?.lyricContent = effectiveLyrics;
+    }
 
     // Add to queue if not already there
-    if (!_queue.any((m) => m.id == musicId)) {
+    if (existingIndex == -1) {
       _queue.add(music);
     }
     _currentIndex = _queue.indexWhere((m) => m.id == musicId);
@@ -456,7 +470,18 @@ class MusicProvider extends ChangeNotifier {
   /// Set lyrics directly (for network playback without queue)
   Future<void> setLyricsDirectly(String lrcContent) async {
     _currentLyrics = await _parseLrc(lrcContent);
+    // Also cache in network meta and queue so re-plays don't re-fetch
+    if (_currentIndex >= 0 && _currentIndex < _queue.length) {
+      final music = _queue[_currentIndex];
+      _networkMeta[music.id]?.lyricContent = lrcContent;
+      music.lyrics = lrcContent;
+    }
     _safeNotifyListeners();
+  }
+
+  /// Get cached lyrics for a network song, returns null if not yet fetched.
+  String? getCachedLyrics(String musicId) {
+    return _networkMeta[musicId]?.lyricContent;
   }
 
   PlayMode _playMode = PlayMode.sequence;

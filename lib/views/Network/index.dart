@@ -113,19 +113,34 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
     setState(() => _playingId = song.id);
     try {
       final mp = context.read<MusicProvider>();
-      final lyricF = NeteaseApi.getLyric(song.id);
+      final musicId = 'net_${song.id}';
 
-      await mp.playNetworkSong(
-        url: song.url,
-        id: song.id,
-        title: song.title,
-        artist: song.author,
-        coverUrl: song.pic,
-      );
+      // Use cached lyrics if already fetched for this song
+      final cachedLyrics = mp.getCachedLyrics(musicId);
+      if (cachedLyrics != null) {
+        await mp.playNetworkSong(
+          url: song.url,
+          id: song.id,
+          title: song.title,
+          artist: song.author,
+          coverUrl: song.pic,
+          lyricContent: cachedLyrics,
+        );
+      } else {
+        final lyricF = NeteaseApi.getLyric(song.id);
 
-      final lr = await lyricF;
-      if (lr['lyric'] != null && lr['lyric']!.isNotEmpty && mounted) {
-        await mp.setLyricsDirectly(lr['lyric']!);
+        await mp.playNetworkSong(
+          url: song.url,
+          id: song.id,
+          title: song.title,
+          artist: song.author,
+          coverUrl: song.pic,
+        );
+
+        final lr = await lyricF;
+        if (lr['lyric'] != null && lr['lyric']!.isNotEmpty && mounted) {
+          await mp.setLyricsDirectly(lr['lyric']!);
+        }
       }
     } catch (e) {
       if (!mounted) return;

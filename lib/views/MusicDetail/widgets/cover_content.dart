@@ -43,10 +43,10 @@ class _CoverContentState extends State<CoverContent> {
         httpHeaders: coverUrl.contains('music.126.net')
             ? {'Referer': 'https://music.163.com/'}
             : {},
-        placeholder: (_, __) => Container(
+        placeholder: (_, _) => Container(
           color: cs.surfaceContainerHighest,
         ),
-        errorWidget: (_, __, ___) => Container(
+        errorWidget: (_, _, _) => Container(
           color: cs.surfaceContainerHighest,
           child: Icon(
             Icons.music_note_rounded,

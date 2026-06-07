@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
+import 'package:myapp/service/UpdateCheck/index.dart';
 
 extension RouterCtx on BuildContext {
   // ── 绝对根路由 ──
@@ -15,6 +16,8 @@ extension RouterCtx on BuildContext {
   void toRegister() => go('/register');
   void toAbout() => go('/about');
   void toSearch() => go('/search');
+  void toUpdateDownload(ReleaseInfo releaseInfo) =>
+      go('/update-download', extra: releaseInfo);
 
   // ── /user 的子路由（修正了之前不匹配的绝对路径） ──
   void toFiles() => go('/user/files');

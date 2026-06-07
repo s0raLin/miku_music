@@ -102,28 +102,10 @@ class UpdateCheckService {
         );
       }
 
-      // 找到最新的带有 APK 的 release
-      Map<String, dynamic>? latestReleaseWithApk;
-      for (final release in releases) {
-        final assets = release['assets'] as List? ?? [];
-        final hasApk = assets.any(
-          (a) => (a['name'] as String? ?? '').endsWith('.apk'),
-        );
-        if (hasApk) {
-          latestReleaseWithApk = release as Map<String, dynamic>;
-          break;
-        }
-      }
+      // 取最新的 release 做版本比较
+      final latestRelease = releases.first as Map<String, dynamic>;
 
-      if (latestReleaseWithApk == null) {
-        debugPrint('ℹ️ 未找到包含 APK 的发布版本');
-        return UpdateCheckResult(
-          hasUpdate: false,
-          currentVersion: currentVersionStr,
-        );
-      }
-
-      final tagName = latestReleaseWithApk['tag_name'] as String? ?? '';
+      final tagName = latestRelease['tag_name'] as String? ?? '';
       final remoteVersionStr =
           tagName.startsWith('v') ? tagName.substring(1) : tagName;
       final remoteVersion = _parseVersion(remoteVersionStr);
@@ -144,7 +126,7 @@ class UpdateCheckService {
         );
       }
 
-      final body = latestReleaseWithApk['body'] as String? ?? '';
+      final body = latestRelease['body'] as String? ?? '';
       final description = body.length > 500
           ? '${body.substring(0, 500)}...'
           : body;
@@ -158,7 +140,7 @@ class UpdateCheckService {
         latestRelease: ReleaseInfo(
           tagName: tagName,
           description: description,
-          htmlUrl: latestReleaseWithApk['html_url'] as String? ?? '',
+          htmlUrl: latestRelease['html_url'] as String? ?? '',
           cloudDriveUrl: cloudUrl,
           cloudDrivePassword: cloudPwd,
         ),

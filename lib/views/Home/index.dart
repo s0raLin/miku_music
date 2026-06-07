@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/components/UpdateDialog/index.dart';
 import 'package:myapp/config/globals.dart';
+import 'package:myapp/router/Extensions/router.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
@@ -61,12 +61,8 @@ class _HomePageState extends State<HomePage> {
       final result = await UpdateCheckService.instance.checkForUpdate();
       if (!mounted) return;
 
-      if (result.hasUpdate && result.latestRelease != null) {
-        await UpdateDialog.show(
-          context,
-          releaseInfo: result.latestRelease!,
-          currentVersion: result.currentVersion,
-        );
+      if (result.hasUpdate && result.latestRelease != null && mounted) {
+        context.toUpdateDownload(result.latestRelease!);
       }
     } catch (e) {
       debugPrint('检查更新失败: $e');

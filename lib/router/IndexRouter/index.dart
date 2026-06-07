@@ -26,6 +26,8 @@ import 'package:myapp/views/User/RecentlyPlayed/index.dart';
 import 'package:myapp/views/User/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
+import 'package:myapp/views/UpdateDownload/index.dart';
+import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:provider/provider.dart';
 
 class AppNavItem {
@@ -168,6 +170,13 @@ final _routes = [
     name: "about",
     path: "/about",
     builder: (context, state) => const AboutPage(),
+  ),
+  GoRoute(
+    path: "/update-download",
+    builder: (context, state) {
+      final releaseInfo = state.extra as ReleaseInfo;
+      return UpdateDownloadPage(releaseInfo: releaseInfo);
+    },
   ),
   GoRoute(path: "/search", builder: (context, state) => const SearchPage()),
   GoRoute(

@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
+import 'package:myapp/components/UpdateDialog/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
+import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -31,11 +33,44 @@ enum ImageInfo {
 
 class _HomePageState extends State<HomePage> {
   final CarouselController controller = CarouselController(initialItem: 1);
+  bool _updateCheckStarted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 首帧渲染完成后异步检查更新，不阻塞首页显示
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_updateCheckStarted) {
+        _updateCheckStarted = true;
+        _checkForUpdate();
+      }
+    });
+  }
 
   @override
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+
+  /// 仅在 Android 平台检查更新，有新版则弹出更新弹窗
+  Future<void> _checkForUpdate() async {
+    if (!UpdateCheckService.isSupportedPlatform) return;
+
+    try {
+      final result = await UpdateCheckService.instance.checkForUpdate();
+      if (!mounted) return;
+
+      if (result.hasUpdate && result.latestRelease != null) {
+        await UpdateDialog.show(
+          context,
+          releaseInfo: result.latestRelease!,
+          currentVersion: result.currentVersion,
+        );
+      }
+    } catch (e) {
+      debugPrint('检查更新失败: $e');
+    }
   }
 
   @override

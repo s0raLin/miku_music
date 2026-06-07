@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.38.0](https://github.com/s0raLin/miku_music/compare/v1.37.0...v1.38.0) (2026-06-07)
+
+
+### Features
+
+* **music:** implement enhanced download and cover art support ([a7e905d](https://github.com/s0raLin/miku_music/commit/a7e905de48ff6d16d98d35d94ffcb474e39ffffd))
+* **music:** implement network stream playback support ([02bb6e3](https://github.com/s0raLin/miku_music/commit/02bb6e30721cec7427c7c94f1edd11aab27a39e3))
+* **ui:** enhance network search interaction and code style ([606046b](https://github.com/s0raLin/miku_music/commit/606046b886e91d98d9f0c738e6fa9c0c82133a82))
+
 ## [1.37.0](https://github.com/s0raLin/miku_music/compare/v1.36.0...v1.37.0) (2026-06-06)
 
 

@@ -200,12 +200,14 @@ class _M3SongRow extends StatelessWidget {
 
   BorderRadius _clipRadius() {
     if (isFirst && isLast) return BorderRadius.circular(_cornerRadius);
-    if (isFirst)
+    if (isFirst) {
       return const BorderRadius.vertical(top: Radius.circular(_cornerRadius));
-    if (isLast)
+    }
+    if (isLast) {
       return const BorderRadius.vertical(
         bottom: Radius.circular(_cornerRadius),
       );
+    }
     return BorderRadius.zero;
   }
 
@@ -235,7 +237,7 @@ class _M3SongRow extends StatelessWidget {
       return CachedNetworkImage(
         imageUrl: entry.coverUrl!,
         fit: BoxFit.cover,
-        httpHeaders: finalHeaders, // ✨ 核心修复：携带伪装请求头请求图片
+        httpHeaders: finalHeaders, // 携带伪装请求头请求图片
         // 加载过程中的占位组件（可选，这里用一个微弱的骨架屏或图标代替）
         placeholder: (context, url) => ColoredBox(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),

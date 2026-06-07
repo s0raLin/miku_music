@@ -40,8 +40,7 @@ class _NetworkSongMeta {
     required this.title,
     required this.artist,
     this.coverUrl,
-    this.lyricContent,
-  });
+  }) : lyricContent = null;
 }
 
 class MusicProvider extends ChangeNotifier {

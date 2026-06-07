@@ -57,21 +57,24 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
     final release = widget.releaseInfo;
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.cardBR,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.cardBR),
       backgroundColor: colorScheme.surface,
       surfaceTintColor: Colors.transparent,
       titlePadding: EdgeInsets.zero,
       contentPadding: EdgeInsets.zero,
-      actionsPadding:
-          const EdgeInsets.only(left: 24, right: 24, bottom: 20, top: 8),
+      actionsPadding: const EdgeInsets.only(
+        left: 24,
+        right: 24,
+        bottom: 20,
+        top: 8,
+      ),
       title: Container(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.card),
+          ),
         ),
         child: Row(
           children: [
@@ -185,9 +188,9 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
             if (await canLaunchUrl(url)) {
               await launchUrl(url, mode: LaunchMode.externalApplication);
             }
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
+            if (!context.mounted) return;
+            
+            Navigator.of(context).pop();
           },
           icon: const Icon(Icons.download_rounded, size: 20),
           label: const Text('前往更新'),

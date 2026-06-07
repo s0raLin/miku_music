@@ -86,7 +86,7 @@ class MusicProvider extends ChangeNotifier {
     });
   }
 
-  /// 💡 核心防御防线：提供一个绝对安全的通知机制，规避 Build 期的各种背压与撞车
+  /// 核心防御防线：提供一个绝对安全的通知机制，规避 Build 期的各种背压与撞车
   void _safeNotifyListeners() {
     final binding = WidgetsBinding.instance;
     // 如果当前正处于 Build 阶段，把通知任务放到下一帧结束时的微任务/宏任务队列中

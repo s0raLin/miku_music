@@ -23,7 +23,8 @@ enum ImageInfo {
   image0("1", "", MyAssets.background),
   image1("2", "", MyAssets.background2),
   image2("3", "", MyAssets.background3),
-  image3("4", "", MyAssets.background4);
+  image3("4", "", MyAssets.background4),
+  image4("5", "", MyAssets.background5);
 
   const ImageInfo(this.title, this.subtitle, this.url);
   final String title;

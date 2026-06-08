@@ -32,4 +32,6 @@ class MyAssets {
   static const String background2 = "assets/background/2.png";
   static const String background3 = "assets/background/3.png";
   static const String background4 = "assets/background/4.png";
+  static const String background5 = "assets/background/5.png";
+
 }

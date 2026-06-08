@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -214,6 +215,26 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
         }
       } catch (e) {
         debugPrint('下载封面失败: $e');
+      }
+
+      // Save metadata.json alongside the audio file
+      try {
+        final metadataJson = {
+          'id': song.id,
+          'title': song.title,
+          'author': song.author,
+          'source': song.source,
+          if (audioResult != null) 'audio_path': audioResult,
+          if (lrcPath != null) 'lyric_path': lrcPath,
+          if (coverPath != null) 'cover_path': coverPath,
+        };
+        final metadataPath = p.join(songDir.path, 'metadata.json');
+        final metadataFile = File(metadataPath);
+        await metadataFile.writeAsString(
+          const JsonEncoder.withIndent('  ').convert(metadataJson),
+        );
+      } catch (e) {
+        debugPrint('保存metadata.json失败: $e');
       }
 
       if (!mounted) return;

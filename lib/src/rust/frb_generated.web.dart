@@ -9,6 +9,7 @@
 import 'api/audio_db.dart';
 import 'api/audio_info.dart';
 import 'api/hotkey.dart';
+import 'api/metadata.dart';
 import 'api/scanner.dart';
 import 'api/simple.dart';
 import 'dart:async';
@@ -112,6 +113,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlaylistInfo dco_decode_playlist_info(dynamic raw);
 
   @protected
+  SongMetadata dco_decode_song_metadata(dynamic raw);
+
+  @protected
   int dco_decode_u_32(dynamic raw);
 
   @protected
@@ -211,6 +215,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlaylistInfo sse_decode_playlist_info(SseDeserializer deserializer);
+
+  @protected
+  SongMetadata sse_decode_song_metadata(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -337,6 +344,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_playlist_info(PlaylistInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_song_metadata(SongMetadata self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

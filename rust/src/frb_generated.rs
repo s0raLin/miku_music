@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1273672791;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1551382896;
 
 // Section: executor
 
@@ -1282,6 +1282,39 @@ fn wire__crate__api__hotkey__init_native_hotkeys_impl(
         },
     )
 }
+fn wire__crate__api__audio_info__read_lrc_file_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "read_lrc_file",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_lyric_path = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::audio_info::read_lrc_file(api_lyric_path)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__metadata__read_metadata_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1425,12 +1458,14 @@ impl SseDecode for crate::api::audio_info::AudioInfo {
         let mut var_album = <String>::sse_decode(deserializer);
         let mut var_durationSeconds = <u32>::sse_decode(deserializer);
         let mut var_coverArt = <Option<Vec<u8>>>::sse_decode(deserializer);
+        let mut var_lrcContent = <Option<String>>::sse_decode(deserializer);
         return crate::api::audio_info::AudioInfo {
             title: var_title,
             artist: var_artist,
             album: var_album,
             duration_seconds: var_durationSeconds,
             cover_art: var_coverArt,
+            lrc_content: var_lrcContent,
         };
     }
 }
@@ -1807,8 +1842,9 @@ fn pde_ffi_dispatcher_primary_impl(
         23 => wire__crate__api__simple__greet_impl(port, ptr, rust_vec_len, data_len),
         24 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
         25 => wire__crate__api__hotkey__init_native_hotkeys_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__metadata__read_metadata_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__scanner__scan_directory_parallel_impl(
+        26 => wire__crate__api__audio_info__read_lrc_file_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__metadata__read_metadata_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__scanner__scan_directory_parallel_impl(
             port,
             ptr,
             rust_vec_len,
@@ -1856,6 +1892,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::audio_info::AudioInfo {
             self.album.into_into_dart().into_dart(),
             self.duration_seconds.into_into_dart().into_dart(),
             self.cover_art.into_into_dart().into_dart(),
+            self.lrc_content.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2053,6 +2090,7 @@ impl SseEncode for crate::api::audio_info::AudioInfo {
         <String>::sse_encode(self.album, serializer);
         <u32>::sse_encode(self.duration_seconds, serializer);
         <Option<Vec<u8>>>::sse_encode(self.cover_art, serializer);
+        <Option<String>>::sse_encode(self.lrc_content, serializer);
     }
 }
 

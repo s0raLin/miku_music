@@ -2,14 +2,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
+import 'package:myapp/model/Toplist/index.dart';
 import 'package:myapp/router/Extensions/router.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
+import 'package:myapp/views/Home/widgets/toplist_card.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -35,16 +38,18 @@ enum ImageInfo {
 class _HomePageState extends State<HomePage> {
   final CarouselController controller = CarouselController(initialItem: 1);
   bool _updateCheckStarted = false;
+  ToplistInfo? _toplistInfo;
 
   @override
   void initState() {
     super.initState();
-    // 首帧渲染完成后异步检查更新，不阻塞首页显示
+    // 首帧渲染完成后异步加载数据，不阻塞首页显示
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_updateCheckStarted) {
         _updateCheckStarted = true;
         _checkForUpdate();
       }
+      _fetchToplist();
     });
   }
 
@@ -52,6 +57,15 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchToplist() async {
+    final info = await MusicApi.fetchToplist();
+    if (mounted) {
+      setState(() {
+        _toplistInfo = info;
+      });
+    }
   }
 
   /// 仅在 Android 平台检查更新，有新版则弹出更新弹窗
@@ -89,7 +103,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () {
                 rootScaffoldKey.currentState?.openDrawer();
               },
-              icon: const Icon(Icons.menu), // M3 标准抽屉图标
+              icon: const Icon(Icons.menu),
             ),
             title: Text(
               '发现',
@@ -129,7 +143,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // ── 3. 最近播放标题栏（M3 左右对齐规范） ──────────────────────────────────
+          // ── 3. 最近播放标题栏 ──────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
@@ -167,7 +181,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // ── 4. 最近播放横向列表 ─────────────────────────────────────────────
+          // ── 4. 最近播放横向列表 ────────────────────────────────────────────
           history.isEmpty
               ? SliverToBoxAdapter(
                   key: const ValueKey('history-empty'),
@@ -217,6 +231,31 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+                
+          // ── 5. 排行榜模块 ──────────────────────────────────────────────────
+          if (_toplistInfo != null) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Text(
+                  '热门榜单',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ToplistCard(
+                  info: _toplistInfo!,
+                  onTap: () => context.push('/toplist'),
+                ),
+              ),
+            ),
+          ],
 
           // 底部预留安全距离
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -237,7 +276,6 @@ class HeroLayoutCard extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // M3 卡片组件标准大圆角 (16~28dp)，这里采用标准的 16 纯扁平修剪
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image(
@@ -247,7 +285,6 @@ class HeroLayoutCard extends StatelessWidget {
             height: double.infinity,
           ),
         ),
-        // 极简纯黑渐变遮罩，只沉淀在底部 40% 的区域，不污染整张卡片
         DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),

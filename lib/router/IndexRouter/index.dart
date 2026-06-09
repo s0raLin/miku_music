@@ -26,6 +26,7 @@ import 'package:myapp/views/User/RecentlyPlayed/index.dart';
 import 'package:myapp/views/User/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
+import 'package:myapp/views/ToplistDetail/index.dart';
 import 'package:myapp/views/UpdateDownload/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:provider/provider.dart';
@@ -180,6 +181,10 @@ final _routes = [
   ),
   GoRoute(path: "/search", builder: (context, state) => const SearchPage()),
   GoRoute(
+    path: "/toplist",
+    builder: (context, state) => const ToplistDetailPage(),
+  ),
+  GoRoute(
     path: "/playlist-edit/:id",
     builder: (context, state) {
       final id = state.pathParameters['id'] ?? '';
@@ -195,8 +200,6 @@ final _routes = [
           return SlideTransition(
             position:
                 Tween<Offset>(
-                  // Offset(1, 0) 表示屏幕右侧边缘外
-                  // Offset(0, 0) 表示屏幕中心位置
                   begin: const Offset(0, 1),
                   end: Offset.zero,
                 ).animate(
@@ -215,8 +218,6 @@ final _routes = [
   ),
   StatefulShellRoute.indexedStack(
     builder: (context, state, navigationShell) {
-      // [关键点] 使用 context.read 获取 Provider 并更新 shell
-      // 使用 addPostFrameCallback 确保在构建完成后更新状态，避免构建冲突
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<NavProvider>().updateShell(navigationShell);
       });

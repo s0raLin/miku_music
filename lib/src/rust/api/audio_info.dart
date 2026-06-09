@@ -6,9 +6,11 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `try_read_metadata_json`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
 /// 读取任意受支持音频格式（MP3 / FLAC / M4A / OGG …）的完整元数据。
+/// 当音频内嵌标签缺失时，优先使用同级目录下的 `metadata.json` 作为备选。
 ///
 /// # 错误
 /// 返回 `Err(String)` 描述第一个遇到的错误。
@@ -20,6 +22,18 @@ Future<Uint8List?> getExternalCover({required String audioPath}) => RustLib
     .api
     .crateApiAudioInfoGetExternalCover(audioPath: audioPath);
 
+/// 读取歌词文件内容，用于 Dart 端获取 metadata.json 中 lyric_path 指向的完整 LRC 文本。
+///
+/// # Arguments
+/// * `lyric_path` - LRC 文件的完整路径
+///
+/// # Returns
+/// * `Ok(Some(String))` - 读取到的 LRC 文本内容
+/// * `Ok(None)` - 文件不存在或读取失败
+/// * `Err(String)` - 路径参数为空
+Future<String?> readLrcFile({required String lyricPath}) =>
+    RustLib.instance.api.crateApiAudioInfoReadLrcFile(lyricPath: lyricPath);
+
 /// 从音频文件中读取到的完整元数据
 class AudioInfo {
   final String title;
@@ -30,12 +44,16 @@ class AudioInfo {
   /// 封面图片的原始字节（JPEG / PNG），若无则为 None
   final Uint8List? coverArt;
 
+  /// 从 metadata.json 的 lyric_path 中读取的 LRC 歌词内容（如有）
+  final String? lrcContent;
+
   const AudioInfo({
     required this.title,
     required this.artist,
     required this.album,
     required this.durationSeconds,
     this.coverArt,
+    this.lrcContent,
   });
 
   static Future<List<LyricLine>> parseLrc({String? lrcContent}) => RustLib
@@ -49,7 +67,8 @@ class AudioInfo {
       artist.hashCode ^
       album.hashCode ^
       durationSeconds.hashCode ^
-      coverArt.hashCode;
+      coverArt.hashCode ^
+      lrcContent.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -60,7 +79,8 @@ class AudioInfo {
           artist == other.artist &&
           album == other.album &&
           durationSeconds == other.durationSeconds &&
-          coverArt == other.coverArt;
+          coverArt == other.coverArt &&
+          lrcContent == other.lrcContent;
 }
 
 class LyricLine {

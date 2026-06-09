@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors'; 
+import cors from 'cors';
 import Meting from '@meting/core';
 
 const app = express();
@@ -32,6 +32,69 @@ function parseRawData(rawData) {
     return rawData; // 如果本来就是个对象或者解析失败，直接返回原数据
   }
 }
+
+// ✨ 新增：排行榜 ID 映射配置（以网易云音乐为例）
+const TOP_LISTS = {
+  netease: {
+    hot: '3778678',      // 热歌榜
+    new: '3779629',      // 新歌榜
+    soaring: '19723756',  // 飙升榜
+    original: '2884035'   // 原创榜
+  },
+  // 如果未来扩展 QQ 音乐，可以在这里追加其对应的排行榜 ID
+  tencent: {
+    hot: '26',
+    new: '27'
+  }
+};
+
+// ✨ 新增：6. 排行榜接口
+app.get('/api/toplist', async (req, res) => {
+  // type 可选值: hot(热歌), new(新歌), soaring(飙升), original(原创)
+  const { type = 'hot', source = 'netease', limit } = req.query;
+
+  // 1. 安全校验：检查该平台下是否存在该类型的排行榜
+  const platformLists = TOP_LISTS[source];
+  if (!platformLists) {
+    return res.status(400).json({ error: `暂不支持平台: ${source}` });
+  }
+
+  const playlistId = platformLists[type];
+  if (!playlistId) {
+    return res.status(400).json({ error: `未找到该类型的排行榜: ${type}。可选值: hot, new, soaring, original` });
+  }
+
+  try {
+    const meting = new Meting(source);
+    meting.format(false);
+
+    // 2. 排行榜本质就是官方歌单，直接调用 meting.playlist()
+    const playlistRaw = await meting.playlist(playlistId);
+    const parsedRaw = parseRawData(playlistRaw);
+
+    // 3. 复用你原有的歌单歌曲提取与清洗逻辑
+    const rawSongs = parsedRaw?.playlist?.tracks || parsedRaw?.tracks || parsedRaw?.data || [];
+    let cleanedSongs = rawSongs.map(song => cleanSongData(song, source));
+
+    // ✨ 优化：支持前端通过 limit 参数控制返回的歌曲数量（例如：只要前10首做首页推荐）
+    if (limit && !isNaN(limit)) {
+      cleanedSongs = cleanedSongs.slice(0, parseInt(limit));
+    }
+
+    // 4. 返回规范的数据
+    res.json({
+      code: 200,
+      title: parsedRaw?.playlist?.name || '未知排行榜',
+      description: parsedRaw?.playlist?.description || '',
+      cover: parsedRaw?.playlist?.coverImgUrl || '', // 排行榜封面图
+      count: cleanedSongs.length,
+      data: cleanedSongs
+    });
+  } catch (err) {
+    console.error(`❌ 获取 [${source}] 排行榜 [${type}] 失败:`, err.message);
+    res.status(500).json({ error: '获取排行榜失败' });
+  }
+});
 
 // 1. 搜索接口
 app.get('/api/search', async (req, res) => {

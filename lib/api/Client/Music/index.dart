@@ -2,10 +2,28 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:myapp/api/Model/Music/index.dart';
+import 'package:myapp/model/Toplist/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/utils/Http/index.dart';
 
 class MusicApi {
+  /// 获取排行榜数据 (调用 /api/toplist)
+  static Future<ToplistInfo?> fetchToplist() async {
+    try {
+      final response = await HttpUtils().get("/api/toplist");
+      if (response.statusCode == 200 && response.data is Map) {
+        final data = response.data as Map<String, dynamic>;
+        if (data['code'] == 200) {
+          return ToplistInfo.fromJson(data);
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint("获取排行榜失败: $e");
+      return null;
+    }
+  }
+
   static Future<void> pickAndUploadMusic() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
@@ -57,9 +75,8 @@ class MusicApi {
     if (response.statusCode == 200) {
       debugPrint("获取成功: ${response.data}");
       List dataList = response.data["data"];
-      List<Music> musics = dataList
-          .map((item) => Music.fromJson(item))
-          .toList();
+      List<Music> musics =
+          dataList.map((item) => Music.fromJson(item)).toList();
       return musics;
     } else {
       throw Exception("获取失败: ${response.statusMessage}");

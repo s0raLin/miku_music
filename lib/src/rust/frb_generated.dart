@@ -71,7 +71,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 1273672791;
+  int get rustContentHash => -1551382896;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -193,6 +193,8 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiSimpleInitApp();
 
   Stream<String> crateApiHotkeyInitNativeHotkeys();
+
+  Future<String?> crateApiAudioInfoReadLrcFile({required String lyricPath});
 
   Future<SongMetadata> crateApiMetadataReadMetadata({required String dirPath});
 
@@ -1120,6 +1122,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "init_native_hotkeys", argNames: ["sink"]);
 
   @override
+  Future<String?> crateApiAudioInfoReadLrcFile({required String lyricPath}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(lyricPath, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 26,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiAudioInfoReadLrcFileConstMeta,
+        argValues: [lyricPath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioInfoReadLrcFileConstMeta =>
+      const TaskConstMeta(debugName: "read_lrc_file", argNames: ["lyricPath"]);
+
+  @override
   Future<SongMetadata> crateApiMetadataReadMetadata({required String dirPath}) {
     return handler.executeNormal(
       NormalTask(
@@ -1129,7 +1159,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 26,
+            funcId: 27,
             port: port_,
           );
         },
@@ -1162,7 +1192,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 27,
+              funcId: 28,
               port: port_,
             );
           },
@@ -1250,14 +1280,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AudioInfo dco_decode_audio_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
     return AudioInfo(
       title: dco_decode_String(arr[0]),
       artist: dco_decode_String(arr[1]),
       album: dco_decode_String(arr[2]),
       durationSeconds: dco_decode_u_32(arr[3]),
       coverArt: dco_decode_opt_list_prim_u_8_strict(arr[4]),
+      lrcContent: dco_decode_opt_String(arr[5]),
     );
   }
 
@@ -1511,12 +1542,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_album = sse_decode_String(deserializer);
     var var_durationSeconds = sse_decode_u_32(deserializer);
     var var_coverArt = sse_decode_opt_list_prim_u_8_strict(deserializer);
+    var var_lrcContent = sse_decode_opt_String(deserializer);
     return AudioInfo(
       title: var_title,
       artist: var_artist,
       album: var_album,
       durationSeconds: var_durationSeconds,
       coverArt: var_coverArt,
+      lrcContent: var_lrcContent,
     );
   }
 
@@ -1847,6 +1880,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.album, serializer);
     sse_encode_u_32(self.durationSeconds, serializer);
     sse_encode_opt_list_prim_u_8_strict(self.coverArt, serializer);
+    sse_encode_opt_String(self.lrcContent, serializer);
   }
 
   @protected

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.43.0](https://github.com/s0raLin/miku_music/compare/v1.42.0...v1.43.0) (2026-06-09)
+
+
+### Features
+
+* **ui:** add toplist feature and integrate lyric file reading ([7cca7fb](https://github.com/s0raLin/miku_music/commit/7cca7fb94cef850ae70379162669b4e47f192aa5))
+
 ## [1.42.0](https://github.com/s0raLin/miku_music/compare/v1.41.0...v1.42.0) (2026-06-09)
 
 

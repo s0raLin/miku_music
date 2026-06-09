@@ -11,6 +11,7 @@ import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -375,6 +376,25 @@ class _SettingsPageState extends State<SettingsPage> {
                         underline: Container(),
                       ),
                     ),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+
+                    // ── 清除缓存 ──
+                    ListTile(
+                      leading: Icon(
+                        Icons.cleaning_services_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      title: const Text("清除缓存"),
+                      subtitle: Text(
+                        "清除专辑封面、歌词等临时文件",
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => _showClearCacheDialog(context),
+                    ),
                   ],
                 ),
               ),
@@ -421,6 +441,64 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  /// 清除缓存对话框
+  Future<void> _showClearCacheDialog(BuildContext context) async {
+    final cs = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("清除缓存"),
+        content: const Text("将清除专辑封面、歌词等临时缓存文件，不会影响您的音乐库和播放列表。"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("取消"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("确定清除"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final tmpDir = await getTemporaryDirectory();
+      if (await tmpDir.exists()) {
+        await tmpDir.delete(recursive: true);
+      }
+      final cacheDir = await getApplicationCacheDirectory();
+      if (await cacheDir.exists()) {
+        await for (final entity in cacheDir.list(recursive: true)) {
+          if (entity is File) {
+            try {
+              await entity.delete();
+            } catch (_) {}
+          }
+        }
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("缓存已清除"),
+            backgroundColor: cs.primaryContainer,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("清除失败: $e"),
+            backgroundColor: cs.error,
+          ),
+        );
+      }
+    }
   }
 
   /// 扫描目录设置项 — 内联于父级 Card，与其它设置项风格统一

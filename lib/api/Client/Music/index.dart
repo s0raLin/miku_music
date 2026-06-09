@@ -1,16 +1,22 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myapp/api/Model/Music/index.dart';
 import 'package:myapp/model/Toplist/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/utils/Http/index.dart';
 
 class MusicApi {
-  /// 获取排行榜数据 (调用 /api/toplist)
+  /// 获取排行榜数据 (调用 Node.js 服务器的 /api/toplist，端口 3000)
   static Future<ToplistInfo?> fetchToplist() async {
     try {
-      final response = await HttpUtils().get("/api/toplist");
+      final dio = Dio(BaseOptions(
+        baseUrl: dotenv.get("JS_BACKEND_URL", fallback: 'http://localhost:3000'),
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
+      final response = await dio.get("/api/toplist");
       if (response.statusCode == 200 && response.data is Map) {
         final data = response.data as Map<String, dynamic>;
         if (data['code'] == 200) {

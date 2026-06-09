@@ -1,4 +1,4 @@
-use std::{path::Path, sync::OnceLock};
+use std::{fs, path::Path, sync::OnceLock};
 
 // use chrono::Duration;
 use lofty::{
@@ -18,6 +18,8 @@ pub struct AudioInfo {
     pub duration_seconds: u32,
     /// 封面图片的原始字节（JPEG / PNG），若无则为 None
     pub cover_art: Option<Vec<u8>>,
+    /// 从 metadata.json 的 lyric_path 中读取的 LRC 歌词内容（如有）
+    pub lrc_content: Option<String>,
 }
 
 pub struct LyricLine {
@@ -25,7 +27,15 @@ pub struct LyricLine {
     pub text: String,
 }
 
+/// 尝试读取音频文件同级目录下的 metadata.json，作为元数据的备选来源
+fn try_read_metadata_json(audio_path: &str) -> Option<crate::api::metadata::SongMetadata> {
+    let parent_dir = Path::new(audio_path).parent()?;
+    let dir_str = parent_dir.to_string_lossy().to_string();
+    crate::api::metadata::read_metadata(dir_str).ok()
+}
+
 /// 读取任意受支持音频格式（MP3 / FLAC / M4A / OGG …）的完整元数据。
+/// 当音频内嵌标签缺失时，优先使用同级目录下的 `metadata.json` 作为备选。
 ///
 /// # 错误
 /// 返回 `Err(String)` 描述第一个遇到的错误。
@@ -46,37 +56,74 @@ pub fn get_audio_info(path: &str) -> Result<AudioInfo, String> {
     let duration_seconds = tagged_file.properties().duration().as_secs() as u32;
 
     // 4. 提取封面图片（优先 CoverFront，否则取第一张）
-    let mut cover_art = tag
+    let embedded_cover = tag
         .pictures()
         .iter()
         .find(|pic| matches!(pic.pic_type(), lofty::picture::PictureType::CoverFront))
         .or_else(|| tag.pictures().first())
         .map(|pic| pic.data().to_vec());
 
-    // ─── 如果音频内部没有嵌封面，去同级目录下找 cover.jpg ───
-    if cover_art.is_none() {
-        cover_art = get_external_cover(path);
-    }
+    // 5. 尝试读取 metadata.json 作为备选
+    let metadata_json = try_read_metadata_json(path);
 
-    // 5. 准备好从文件名提取兜底歌名
+    // 6. 封面优先级：内嵌封面 > metadata.json cover_path > 同级目录图片文件
+    let cover_art = match &embedded_cover {
+        Some(_) => embedded_cover,
+        None => {
+            // 尝试从 metadata.json 的 cover_path 读取封面
+            let from_meta = metadata_json
+                .as_ref()
+                .and_then(|m| m.cover_path.as_ref())
+                .and_then(|cp| fs::read(cp).ok());
+            if from_meta.is_some() {
+                from_meta
+            } else {
+                get_external_cover(path)
+            }
+        }
+    };
+
+    // 7. 从文件名提取兜底歌名
     let file_stem = std::path::Path::new(path)
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("未知歌曲")
         .to_string();
 
+    // 8. 标题优先级：内嵌标签 > metadata.json title > 文件名
+    let title = tag
+        .title()
+        .map(|s| s.into_owned())
+        .or_else(|| metadata_json.as_ref().map(|m| m.title.clone()))
+        .unwrap_or(file_stem);
+
+    // 9. 歌手优先级：内嵌标签 > metadata.json author
+    let artist = tag
+        .artist()
+        .map(|s| s.into_owned())
+        .or_else(|| metadata_json.as_ref().map(|m| m.author.clone()))
+        .unwrap_or_else(|| "未知歌手".to_string());
+
+    // 10. 专辑优先级：内嵌标签 > metadata.json source
+    let album = tag
+        .album()
+        .map(|s| s.into_owned())
+        .or_else(|| metadata_json.as_ref().map(|m| m.source.clone()))
+        .unwrap_or_else(|| "未知专辑".to_string());
+
+    // 11. 读取 LRC 歌词：优先从 metadata.json 的 lyric_path 读取
+    let lrc_content = metadata_json
+        .as_ref()
+        .and_then(|m| m.lyric_path.as_ref())
+        .and_then(|lp| fs::read_to_string(lp).ok());
+
     Ok(AudioInfo {
-        title: tag.title().map(|s| s.into_owned()).unwrap_or(file_stem),
-        artist: tag
-            .artist()
-            .map(|s| s.into_owned())
-            .unwrap_or_else(|| "未知歌手".to_string()),
-        album: tag
-            .album()
-            .map(|s| s.into_owned())
-            .unwrap_or_else(|| "未知专辑".to_string()),
+        title,
+        artist,
+        album,
         duration_seconds,
         cover_art,
+        lrc_content,
     })
 }
 
@@ -99,7 +146,7 @@ pub fn get_external_cover(audio_path: &str) -> Option<Vec<u8>> {
         let cover_path = parent_dir.join(name);
         if cover_path.is_file() {
             // 读取图片文件的原始字节
-            if let Ok(bytes) = std::fs::read(&cover_path) {
+            if let Ok(bytes) = fs::read(&cover_path) {
                 return Some(bytes);
             }
         }
@@ -111,7 +158,7 @@ pub fn get_external_cover(audio_path: &str) -> Option<Vec<u8>> {
         for ext in &["jpg", "png", "jpeg"] {
             let sibling_cover = parent_dir.join(file_stem).with_extension(ext);
             if sibling_cover.is_file() {
-                if let Ok(bytes) = std::fs::read(&sibling_cover) {
+                if let Ok(bytes) = fs::read(&sibling_cover) {
                     return Some(bytes);
                 }
             }
@@ -177,5 +224,30 @@ impl AudioInfo {
 
         lyrics.sort_by_key(|line| line.time_ms);
         lyrics
+    }
+}
+
+/// 读取歌词文件内容，用于 Dart 端获取 metadata.json 中 lyric_path 指向的完整 LRC 文本。
+///
+/// # Arguments
+/// * `lyric_path` - LRC 文件的完整路径
+///
+/// # Returns
+/// * `Ok(Some(String))` - 读取到的 LRC 文本内容
+/// * `Ok(None)` - 文件不存在或读取失败
+/// * `Err(String)` - 路径参数为空
+pub fn read_lrc_file(lyric_path: String) -> Result<Option<String>, String> {
+    if lyric_path.is_empty() {
+        return Err("lyric_path 不能为空".to_string());
+    }
+    match fs::read_to_string(&lyric_path) {
+        Ok(content) => Ok(Some(content)),
+        Err(e) => {
+            eprintln!(
+                "[audio_info] 无法读取歌词文件 '{}': {}",
+                lyric_path, e
+            );
+            Ok(None)
+        }
     }
 }

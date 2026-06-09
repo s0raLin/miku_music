@@ -8,6 +8,21 @@ import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+/// 合并了原始歌词和翻译歌词的内部数据结构
+class _LyricGroup {
+  final int timeMs;
+  final String text;
+  final String? translation;
+
+  const _LyricGroup({
+    required this.timeMs,
+    required this.text,
+    this.translation,
+  });
+
+  bool get hasTranslation => translation != null && translation!.trim().isNotEmpty;
+}
+
 class LyricsSection extends StatefulWidget {
   const LyricsSection({super.key});
 
@@ -21,15 +36,44 @@ class _LyricsSectionState extends State<LyricsSection>
   final ItemPositionsListener _positionsListener =
       ItemPositionsListener.create();
 
-  bool _isUserInteracting = false; // 用户是否正在手动操作
-  int _focusedIndex = -1; // 拖动时中间聚焦的行
-  Timer? _interactionTimeout; // 超时后恢复自动滚动
+  bool _isUserInteracting = false;
+  int _focusedIndex = -1;
+  Timer? _interactionTimeout;
 
   List<LyricLine> _prevLyrics = [];
+  List<_LyricGroup> _lyricGroups = [];
   int _lastAutoScrollIndex = -1;
 
   @override
   bool get wantKeepAlive => true;
+
+  /// 将原始 [LyricLine] 列表按相同时间戳合并为 [_LyricGroup]。
+  /// 连续出现的同一时间戳的歌词，第一条作为原文，第二条及之后作为翻译。
+  static List<_LyricGroup> _mergeLyrics(List<LyricLine> lyrics) {
+    if (lyrics.isEmpty) return [];
+
+    final merged = <_LyricGroup>[];
+    int i = 0;
+    while (i < lyrics.length) {
+      final current = lyrics[i];
+      String? translation;
+
+      // 检查下一行是否有相同时间戳（翻译行）
+      if (i + 1 < lyrics.length && lyrics[i + 1].timeMs == current.timeMs) {
+        translation = lyrics[i + 1].text;
+        i += 2; // 跳过翻译行
+      } else {
+        i += 1;
+      }
+
+      merged.add(_LyricGroup(
+        timeMs: current.timeMs,
+        text: current.text,
+        translation: translation,
+      ));
+    }
+    return merged;
+  }
 
   @override
   void initState() {
@@ -106,6 +150,7 @@ class _LyricsSectionState extends State<LyricsSection>
     final lyrics = context.read<MusicProvider>().currentLyrics;
     if (!_lyricsEqual(lyrics, _prevLyrics)) {
       _prevLyrics = List.from(lyrics);
+      _lyricGroups = _mergeLyrics(lyrics);
       _lastAutoScrollIndex = -1;
       _focusedIndex = -1;
     }
@@ -118,7 +163,12 @@ class _LyricsSectionState extends State<LyricsSection>
     final lyrics = mp.currentLyrics;
     final cs = Theme.of(context).colorScheme;
 
-    if (lyrics.isEmpty) {
+    // 确保 _lyricGroups 与 lyrics 同步
+    if (_lyricGroups.isEmpty && lyrics.isNotEmpty) {
+      _lyricGroups = _mergeLyrics(lyrics);
+    }
+
+    if (_lyricGroups.isEmpty) {
       return _buildEmptyState(mp, context);
     }
 
@@ -126,15 +176,15 @@ class _LyricsSectionState extends State<LyricsSection>
       stream: mp.positionDataStream,
       builder: (context, snapshot) {
         final positionMs = snapshot.data?.position.inMilliseconds ?? 0;
-        final currentIndex = _calculateCurrentIndex(lyrics, positionMs);
+        final currentIndex = _calculateCurrentIndex(positionMs);
 
-        _handleAutoScroll(currentIndex, lyrics);
+        _handleAutoScroll(currentIndex);
 
         return Stack(
           children: [
-            _buildLyricsList(lyrics, currentIndex, cs),
+            _buildLyricsList(currentIndex, cs),
             if (_isUserInteracting && _focusedIndex >= 0)
-              _buildCenterInteractionBar(lyrics, cs),
+              _buildCenterInteractionBar(cs),
             _buildFadeGradient(Alignment.topCenter, cs),
             _buildFadeGradient(Alignment.bottomCenter, cs),
           ],
@@ -175,14 +225,15 @@ class _LyricsSectionState extends State<LyricsSection>
     }
   }
 
-  int _calculateCurrentIndex(List<LyricLine> lyrics, int positionMs) {
-    for (int i = lyrics.length - 1; i >= 0; i--) {
-      if (positionMs >= lyrics[i].timeMs) return i;
+  int _calculateCurrentIndex(int positionMs) {
+    final groups = _lyricGroups;
+    for (int i = groups.length - 1; i >= 0; i--) {
+      if (positionMs >= groups[i].timeMs) return i;
     }
     return 0;
   }
 
-  void _handleAutoScroll(int currentIndex, List<LyricLine> lyrics) {
+  void _handleAutoScroll(int currentIndex) {
     if (_isUserInteracting ||
         currentIndex == _lastAutoScrollIndex ||
         !_scrollController.isAttached) {
@@ -190,7 +241,8 @@ class _LyricsSectionState extends State<LyricsSection>
     }
 
     _lastAutoScrollIndex = currentIndex;
-    final isNearEnd = currentIndex >= lyrics.length - 3;
+    final groups = _lyricGroups;
+    final isNearEnd = currentIndex >= groups.length - 3;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -203,11 +255,8 @@ class _LyricsSectionState extends State<LyricsSection>
     });
   }
 
-  Widget _buildLyricsList(
-    List<LyricLine> lyrics,
-    int currentIndex,
-    ColorScheme cs,
-  ) {
+  Widget _buildLyricsList(int currentIndex, ColorScheme cs) {
+    final groups = _lyricGroups;
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
       child: NotificationListener<ScrollNotification>(
@@ -223,22 +272,22 @@ class _LyricsSectionState extends State<LyricsSection>
         child: ScrollablePositionedList.builder(
           itemScrollController: _scrollController,
           itemPositionsListener: _positionsListener,
-          padding: const EdgeInsets.symmetric(vertical: 180), // 适当减小
-          itemCount: lyrics.length,
+          padding: const EdgeInsets.symmetric(vertical: 180),
+          itemCount: groups.length,
           itemBuilder: (context, index) =>
-              _buildLyricItem(lyrics[index], index, currentIndex, cs),
+              _buildLyricItem(groups[index], index, currentIndex, cs),
         ),
       ),
     );
   }
 
   Widget _buildLyricItem(
-    LyricLine item,
+    _LyricGroup group,
     int index,
     int currentIndex,
     ColorScheme cs,
   ) {
-    final isTextEmpty = item.text.trim().isEmpty;
+    final isTextEmpty = group.text.trim().isEmpty;
     final isActive = _isUserInteracting
         ? (index == _focusedIndex)
         : (index == currentIndex);
@@ -246,56 +295,100 @@ class _LyricsSectionState extends State<LyricsSection>
         ? (index - _focusedIndex).abs() == 1
         : (index - currentIndex).abs() == 1;
 
-    TextStyle style = isActive
+    // 原文样式
+    final TextStyle originalStyle = isActive
         ? TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
             color: cs.primary,
-            height: 1.45,
+            height: 1.35,
           )
         : isNear
         ? TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w500,
             color: cs.onSurface.withValues(alpha: 0.75),
-            height: 1.45,
+            height: 1.35,
           )
         : TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w400,
             color: cs.onSurfaceVariant.withValues(alpha: 0.85),
-            height: 1.45,
+            height: 1.35,
           );
 
-    if (isTextEmpty && !isActive) {
-      style = style.copyWith(
-        color: style.color?.withValues(alpha: 0.3),
-        fontWeight: FontWeight.w300,
-      );
-    }
+    // 翻译样式
+    final TextStyle translationStyle = isActive
+        ? TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: cs.primary.withValues(alpha: 0.65),
+            height: 1.3,
+          )
+        : isNear
+        ? TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: cs.onSurface.withValues(alpha: 0.45),
+            height: 1.3,
+          )
+        : TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w300,
+            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+            height: 1.3,
+          );
 
     return InkWell(
-      onTap: () => context.read<MusicProvider>().player.seek(
-        Duration(milliseconds: item.timeMs),
-      ),
+      onTap: () {
+        context.read<MusicProvider>().player.seek(
+          Duration(milliseconds: group.timeMs),
+        );
+      },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          style: style,
-          child: Text(
-            isTextEmpty ? '~' : item.text,
-            textAlign: TextAlign.center,
-          ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 原文
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              style: originalStyle,
+              child: Text(
+                isTextEmpty ? '~' : group.text,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // 翻译（如果存在）
+            if (group.hasTranslation) ...[
+              const SizedBox(height: 2),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                style: translationStyle,
+                child: Text(
+                  group.translation!,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCenterInteractionBar(List<LyricLine> lyrics, ColorScheme cs) {
-    final focusedLyric = lyrics[_focusedIndex];
+  Widget _buildCenterInteractionBar(ColorScheme cs) {
+    final groups = _lyricGroups;
+    if (_focusedIndex >= groups.length) return const SizedBox.shrink();
+    final focusedGroup = groups[_focusedIndex];
 
     return IgnorePointer(
       ignoring: false,
@@ -304,11 +397,10 @@ class _LyricsSectionState extends State<LyricsSection>
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             children: [
-              // 播放按钮
               GestureDetector(
                 onTap: () {
                   context.read<MusicProvider>().player.seek(
-                    Duration(milliseconds: focusedLyric.timeMs),
+                    Duration(milliseconds: focusedGroup.timeMs),
                   );
                   setState(() => _isUserInteracting = false);
                 },
@@ -322,8 +414,6 @@ class _LyricsSectionState extends State<LyricsSection>
                 ),
               ),
               const SizedBox(width: 12),
-
-              // 分割线
               Expanded(
                 child: Divider(
                   color: cs.primary.withValues(alpha: 0.35),
@@ -331,10 +421,8 @@ class _LyricsSectionState extends State<LyricsSection>
                 ),
               ),
               const SizedBox(width: 12),
-
-              // 时间
               Text(
-                _formatTime(focusedLyric.timeMs),
+                _formatTime(focusedGroup.timeMs),
                 style: TextStyle(
                   color: cs.primary,
                   fontSize: 13,

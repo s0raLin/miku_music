@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.42.0](https://github.com/s0raLin/miku_music/compare/v1.41.0...v1.42.0) (2026-06-09)
+
+
+### Features
+
+* **metadata:** add song metadata reading and JSON persistence ([4cf649d](https://github.com/s0raLin/miku_music/commit/4cf649da6da5e43e3107491bd1f11058c8f20ade))
+* **music:** implement metadata fallback and bilingual lyrics support ([aa47d18](https://github.com/s0raLin/miku_music/commit/aa47d189ec301d10d259a95301c9e618dff952e7))
+* **server:** implement cors and add song detail endpoint ([92f617a](https://github.com/s0raLin/miku_music/commit/92f617a6adf54261bcb556cf4b7cd61d6a250ea7))
+
+
+### Bug Fixes
+
+* **music:** remove lyricContent from NetworkSongMeta constructor ([dfedb81](https://github.com/s0raLin/miku_music/commit/dfedb81f78fe6ce42b8223ac64f63a829f1ff632))
+
 ## [1.41.0](https://github.com/s0raLin/miku_music/compare/v1.40.0...v1.41.0) (2026-06-07)
 
 

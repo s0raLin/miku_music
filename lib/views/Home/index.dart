@@ -117,7 +117,7 @@ class _HomePageState extends State<HomePage> {
           // ── 2. M3 轮播图区域 ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final double carouselHeight = (constraints.maxWidth * 0.52)
@@ -146,7 +146,7 @@ class _HomePageState extends State<HomePage> {
           // ── 3. 最近播放标题栏 ──────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -231,7 +231,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-                
+
           // ── 5. 排行榜模块 ──────────────────────────────────────────────────
           if (_toplistInfo != null) ...[
             SliverToBoxAdapter(

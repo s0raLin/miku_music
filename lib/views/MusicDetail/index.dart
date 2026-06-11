@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
@@ -22,6 +23,12 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
     final music = context.select<MusicProvider, Music?>((p) => p.currentMusic);
 
     if (music == null) {
+      // 队列被清空后自动返回上一页
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          GoRouter.of(context).pop();
+        }
+      });
       return AppEmptyState(
         icon: Icons.music_note_rounded,
         title: "未选择歌曲",

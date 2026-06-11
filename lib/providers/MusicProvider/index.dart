@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/api/Client/Netease/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Audio/index.dart';
@@ -310,7 +311,22 @@ class MusicProvider extends ChangeNotifier {
     _currentIndex = index;
     final music = _queue[index];
     // Prefer cached network lyrics over music.lyrics (which may be null for net songs)
-    final effectiveLyrics = _networkMeta[music.id]?.lyricContent ?? music.lyrics;
+    String? effectiveLyrics = _networkMeta[music.id]?.lyricContent ?? music.lyrics;
+
+    // 网络歌曲无缓存歌词时，自动从远端搜索获取
+    if (effectiveLyrics == null && music.source == MusicSource.network) {
+      try {
+        final (lrc, found) = await MusicApi.searchLyrics(music.artist, music.title);
+        if (found && lrc.isNotEmpty) {
+          effectiveLyrics = lrc;
+          _networkMeta[music.id]?.lyricContent = lrc;
+          music.lyrics = lrc;
+        }
+      } catch (_) {
+        // 搜索失败则保持空歌词，用户可手动搜索
+      }
+    }
+
     _currentLyrics = await _parseLrc(effectiveLyrics);
     _safeNotifyListeners(); // 这里已经通过安全机制发出通知
 

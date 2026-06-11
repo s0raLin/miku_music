@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/views/Music/widgets/playlist_card.dart';
 import 'package:provider/provider.dart';
@@ -13,9 +14,10 @@ class PlaylistTab extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final playlistProvider = context.watch<PlaylistProvider>();
+    final musicProvider = context.watch<MusicProvider>();
     final userPlaylists = playlistProvider.userPlaylists;
 
-    // 获取“喜欢”系统歌单
+    // 获取"喜欢"系统歌单
     final favorites = playlistProvider.getPlaylistById(
       PlaylistProvider.favoritesPlaylistId,
     );
@@ -58,7 +60,17 @@ class PlaylistTab extends StatelessWidget {
                   return PlaylistCard(
                     playlist: favorites,
                     songCount: favorites.songIds.length,
-                    onTap: () => context.push("/user/playlist/favorites"),
+                    onTap: () {
+                      final songs = playlistProvider.getPlaylistSongs(
+                        favorites.id,
+                        musicProvider.library,
+                        musicProvider: musicProvider,
+                      );
+                      if (songs.isNotEmpty) {
+                        musicProvider.replaceQueue(songs, startIndex: 0, autoPlay: false);
+                      }
+                      context.push("/user/playlist/favorites");
+                    },
                   );
                 }, childCount: 1),
               ),
@@ -120,8 +132,17 @@ class PlaylistTab extends StatelessWidget {
                       return PlaylistCard(
                         playlist: playlist,
                         songCount: playlist.songIds.length,
-                        onTap: () =>
-                            context.push("/user/playlist/${playlist.id}"),
+                        onTap: () {
+                          final songs = playlistProvider.getPlaylistSongs(
+                            playlist.id,
+                            musicProvider.library,
+                            musicProvider: musicProvider,
+                          );
+                          if (songs.isNotEmpty) {
+                            musicProvider.replaceQueue(songs, startIndex: 0, autoPlay: false);
+                          }
+                          context.push("/user/playlist/${playlist.id}");
+                        },
                       );
                     },
                   ),

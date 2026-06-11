@@ -1,6 +1,5 @@
 // ─── 右侧边栏播放队列组件 ──────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -99,7 +98,7 @@ class PlaybackQueueDrawer extends StatelessWidget {
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 20,
                                 ),
-                                
+
                                 title: Text(
                                   song.title,
                                   maxLines: 1,
@@ -138,7 +137,6 @@ class PlaybackQueueDrawer extends StatelessWidget {
                                     size: 16,
                                   ),
                                   onPressed: () {
-                                    context.pop();
                                     mp.removeFromQueue(index);
                                   },
                                 ),

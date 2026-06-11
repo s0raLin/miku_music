@@ -1,9 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -281,7 +279,7 @@ class _MiniProgressBar extends StatelessWidget {
 }
 
 // ============================================================
-// 播放队列 Bottom Sheet
+// 播放队列 Bottom Sheet（支持拖拽排序 / 删除 / 清空）
 // ============================================================
 class _QueueSheet extends StatelessWidget {
   const _QueueSheet();
@@ -291,11 +289,14 @@ class _QueueSheet extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final mp = context.watch<MusicProvider>();
+    final songs = mp.queue;
+    final currentMusic = mp.currentMusic;
 
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Drag handle
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 4),
             child: Center(
@@ -303,68 +304,96 @@ class _QueueSheet extends StatelessWidget {
                 width: 32,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withOpacity(0.4),
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
           ),
+          // Header with count + clear button
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('播放队列 (${mp.queue.length})', style: tt.titleMedium),
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('播放队列 (${songs.length})', style: tt.titleMedium),
+                if (songs.isNotEmpty)
+                  IconButton(
+                    tooltip: '清空队列',
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    onPressed: () {
+                      mp.clearQueue();
+                      Navigator.pop(context); // 清空后关闭 sheet
+                    },
+                  ),
+              ],
             ),
           ),
+          if (songs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 32),
+              child: Text(
+                '播放队列为空',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
+            ),
           const Divider(height: 1),
-          Flexible(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.45,
-              ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(bottom: 16),
-                itemCount: mp.queue.length,
-                itemBuilder: (context, index) {
-                  final m = mp.queue[index];
-                  final isCurrent = mp.currentMusic?.id == m.id;
+          if (songs.isNotEmpty)
+            Flexible(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.45,
+                ),
+                child: ReorderableListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: songs.length,
+                  onReorderItem: (int oldIndex, int newIndex) {
+                    mp.reorderQueue(oldIndex, newIndex);
+                  },
+                  buildDefaultDragHandles: false,
+                  itemBuilder: (context, index) {
+                    final m = songs[index];
+                    final isCurrent = currentMusic?.id == m.id;
 
-                  return ListTile(
-                    leading: isCurrent
-                        ? Lottie.asset(
-                            MyAssets.equalizer,
-                            width: 20,
-                            height: 20,
-                            animate: mp.player.playing,
-                          )
-                        : Icon(
-                            Icons.music_note_rounded,
-                            size: 20,
-                            color: cs.onSurfaceVariant,
-                          ),
-                    title: Text(
-                      m.title,
-                      style: tt.bodyLarge?.copyWith(
-                        color: isCurrent ? cs.primary : null,
-                        fontWeight: isCurrent
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                    return ListTile(
+                      key: ValueKey('queue_${m.id}_$index'),
+                      leading: isCurrent
+                          ? Icon(Icons.volume_up_rounded,
+                              size: 20, color: cs.primary)
+                          : ReorderableDragStartListener(
+                              index: index,
+                              child: Icon(Icons.drag_handle_rounded,
+                                  size: 20, color: cs.onSurfaceVariant),
+                            ),
+                      title: Text(
+                        m.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyLarge?.copyWith(
+                          color: isCurrent ? cs.primary : null,
+                          fontWeight:
+                              isCurrent ? FontWeight.w600 : FontWeight.normal,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      m.artist,
-                      style: tt.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
+                      subtitle: Text(
+                        m.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyMedium
+                            ?.copyWith(color: cs.onSurfaceVariant),
                       ),
-                    ),
-                    selected: isCurrent,
-                    onTap: () => mp.playByIndex(index),
-                  );
-                },
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 16),
+                        onPressed: () => mp.removeFromQueue(index),
+                      ),
+                      selected: isCurrent,
+                      onTap: () => mp.playByIndex(index),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

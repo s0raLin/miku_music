@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Audio/index.dart';
 import 'package:myapp/service/Hotkeys/index.dart';
+
 import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/service/NetworkSongStore/index.dart';
 import 'package:myapp/src/rust/api/audio_info.dart';
@@ -50,6 +51,7 @@ class MusicProvider extends ChangeNotifier {
   AudioPlayer get player => audioHandler.player;
   StreamSubscription? _stateSubscription;
   StreamSubscription? _stateSubscription2;
+  StreamSubscription? _positionSubscription;
 
   PackageInfo? _appInfo;
   PackageInfo? get appInfo => _appInfo;
@@ -82,10 +84,12 @@ class MusicProvider extends ChangeNotifier {
       if (state == ProcessingState.completed) _playNext();
     });
 
-    _stateSubscription2 = player.playingStream.listen((_) {
+    _stateSubscription2 = player.playingStream.listen((playing) {
       // 💡 优化 1：流监听通知属于外部事件，必须走安全期调度
+
       _safeNotifyListeners();
     });
+
   }
 
   /// 核心防御防线：提供一个绝对安全的通知机制，规避 Build 期的各种背压与撞车
@@ -104,6 +108,8 @@ class MusicProvider extends ChangeNotifier {
     required List<Music> scannedSongs,
     void Function(String module, String detail)? onProgress,
   }) async {
+
+
     //快捷键
     HotkeyService().init(
       onNextTrack: () => playNext(),
@@ -264,6 +270,7 @@ class MusicProvider extends ChangeNotifier {
     _queue.clear();
     _currentIndex = -1;
     player.stop();
+
     _safeNotifyListeners();
   }
 
@@ -306,15 +313,19 @@ class MusicProvider extends ChangeNotifier {
     _currentLyrics = await _parseLrc(effectiveLyrics);
     _safeNotifyListeners(); // 这里已经通过安全机制发出通知
 
-    if (music.coverBytes == null || music.coverBytes!.isEmpty) {
+    if (music.source != MusicSource.network &&
+        (music.coverBytes == null || music.coverBytes!.isEmpty)) {
       // 💡 优化 2：切歌时的解析同样需要受控，直接重用规范的懒加载方法
+      // 网络歌曲的封面由 _networkMeta.coverUrl 提供，不需要从本地文件解析
       WidgetsBinding.instance.addPostFrameCallback((_) {
         loadCoverLazy(music.id);
       });
     }
 
-    // 检查是否为网络歌曲：有 _networkMeta 记录的说明需要用 URL 播放
+    // Update MPRIS metadata (with cover resolution)
     final netMeta = _networkMeta[music.id];
+
+    // 检查是否为网络歌曲：有 _networkMeta 记录的说明需要用 URL 播放
     if (netMeta != null) {
       // 网络歌曲：使用 URL 播放
       if (autoPlay) {
@@ -352,6 +363,8 @@ class MusicProvider extends ChangeNotifier {
   bool hasNoCover(String musicId) => _noCoverIds.contains(musicId);
 
   Future<void> loadCoverLazy(String musicId) async {
+    // 网络歌曲没有本地文件，无法从中解析封面，直接跳过
+    if (isNetworkSong(musicId)) return;
     if (_noCoverIds.contains(musicId)) return;
     if (_loadingCoverIds.contains(musicId)) return;
 
@@ -408,7 +421,7 @@ class MusicProvider extends ChangeNotifier {
   /// Get the cover URL for a network song, if available.
   String? getCoverUrl(String musicId) => _networkMeta[musicId]?.coverUrl;
 
-  /// Get a music object by ID, searching both local library and queue (for network songs).
+  /// Get a music object by ID, searching local library, queue, and persisted network meta.
   Music? getSongById(String id) {
     // First check local library
     final local = _library.where((m) => m.id == id).firstOrNull;
@@ -416,6 +429,20 @@ class MusicProvider extends ChangeNotifier {
     // Then check queue for network songs
     final queued = _queue.where((m) => m.id == id).firstOrNull;
     if (queued != null) return queued;
+    // Finally, synthesize from persisted network metadata
+    final netMeta = _networkMeta[id];
+    if (netMeta != null) {
+      return Music(
+        id: id,
+        title: netMeta.title,
+        artist: netMeta.artist,
+        duration: Duration.zero,
+        coverBytes: null,
+        lyrics: netMeta.lyricContent,
+        album: null,
+        source: MusicSource.network,
+      );
+    }
     return null;
   }
 
@@ -673,6 +700,7 @@ class MusicProvider extends ChangeNotifier {
   void dispose() {
     _stateSubscription?.cancel();
     _stateSubscription2?.cancel();
+    _positionSubscription?.cancel();
     player.dispose();
     super.dispose();
   }

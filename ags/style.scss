@@ -1,0 +1,150 @@
+// Dynamic Island - MD3 Style
+$bg: rgba(28, 27, 31, 0.9);
+$bg-hover: rgba(44, 42, 48, 0.95);
+$fg: rgb(230, 224, 233);
+$muted: rgba(230, 224, 233, 0.6);
+$primary: rgb(208, 188, 255);
+$primary-hover: rgb(221, 204, 255);
+$on-primary: rgb(56, 30, 114);
+
+window.DynamicIsland {
+  background: transparent;
+  color: $fg;
+}
+
+.island-wrapper {
+  margin: 8px 0 0 0;
+}
+
+// Compact pill
+.compact-view {
+  background: $bg;
+  border-radius: 100px;
+  padding: 6px 14px;
+  min-height: 38px;
+
+  :hover {
+    background: $bg-hover;
+  }
+
+  label {
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  .compact-cover {
+    border-radius: 6px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .compact-title { color: $fg; }
+  .compact-status-icon { color: $muted; }
+}
+
+// Audio visualizer
+.audio-visualizer {
+  min-width: 16px;
+  min-height: 12px;
+
+  .vis-bar {
+    background: $primary;
+    border-radius: 2px;
+    min-width: 3px;
+  }
+
+  .v1 { animation: vis 0.5s ease-in-out infinite alternate; }
+  .v2 { animation: vis 0.7s ease-in-out 0.15s infinite alternate; }
+  .v3 { animation: vis 0.45s ease-in-out 0.1s infinite alternate; }
+  .v4 { animation: vis 0.6s ease-in-out 0.25s infinite alternate; }
+}
+
+@keyframes vis {
+  from { min-height: 3px; }
+  to { min-height: 12px; }
+}
+
+// Expanded card
+.expanded-view {
+  background: $bg;
+  border-radius: 28px;
+  padding: 24px;
+  min-width: 320px;
+}
+
+.expanded-cover {
+  border-radius: 14px;
+}
+
+.track-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: $fg;
+}
+
+.track-artist {
+  font-size: 13px;
+  font-weight: 400;
+  color: $muted;
+}
+
+// Progress slider
+.progress-slider {
+  min-width: 280px;
+
+  trough {
+    background: rgba(208, 188, 255, 0.1);
+    border-radius: 3px;
+    min-height: 4px;
+
+    highlight {
+      background: $primary;
+      border-radius: 3px;
+    }
+
+    slider {
+      background: $primary;
+      border-radius: 50%;
+      min-width: 12px;
+      min-height: 12px;
+    }
+  }
+}
+
+.time-labels label {
+  font-size: 11px;
+  color: $muted;
+}
+
+// Controls
+.controls .control-btn {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+
+  :hover { background: rgba(208, 188, 255, 0.08); }
+  :active { background: rgba(208, 188, 255, 0.12); }
+
+  image { color: $fg; }
+}
+
+.play-pause-btn {
+  background: $primary;
+  border-radius: 50%;
+  padding: 14px;
+
+  :hover { background: $primary-hover; }
+
+  image { color: $on-primary; }
+}
+
+.collapse-btn {
+  background: transparent;
+  border: none;
+  border-radius: 100px;
+  padding: 4px 16px;
+
+  :hover { background: rgba(208, 188, 255, 0.06); }
+  image { color: $muted; }
+}

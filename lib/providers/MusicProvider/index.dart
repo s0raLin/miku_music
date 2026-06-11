@@ -311,24 +311,14 @@ class MusicProvider extends ChangeNotifier {
     _currentIndex = index;
     final music = _queue[index];
     // Prefer cached network lyrics over music.lyrics (which may be null for net songs)
-    String? effectiveLyrics = _networkMeta[music.id]?.lyricContent ?? music.lyrics;
-
-    // 网络歌曲无缓存歌词时，自动从远端搜索获取
-    if (effectiveLyrics == null && music.source == MusicSource.network) {
-      try {
-        final (lrc, found) = await MusicApi.searchLyrics(music.artist, music.title);
-        if (found && lrc.isNotEmpty) {
-          effectiveLyrics = lrc;
-          _networkMeta[music.id]?.lyricContent = lrc;
-          music.lyrics = lrc;
-        }
-      } catch (_) {
-        // 搜索失败则保持空歌词，用户可手动搜索
-      }
-    }
-
+    final effectiveLyrics = _networkMeta[music.id]?.lyricContent ?? music.lyrics;
     _currentLyrics = await _parseLrc(effectiveLyrics);
-    _safeNotifyListeners(); // 这里已经通过安全机制发出通知
+    _safeNotifyListeners();
+
+    // 网络歌曲无缓存歌词时，后台异步搜索，不阻塞播放
+    if (effectiveLyrics == null && music.source == MusicSource.network) {
+      _fetchLyricsInBackground(music);
+    }
 
     if (music.source != MusicSource.network &&
         (music.coverBytes == null || music.coverBytes!.isEmpty)) {
@@ -670,6 +660,43 @@ class MusicProvider extends ChangeNotifier {
   /// Get cached lyrics for a network song, returns null if not yet fetched.
   String? getCachedLyrics(String musicId) {
     return _networkMeta[musicId]?.lyricContent;
+  }
+
+  /// 后台异步获取网络歌词，不阻塞播放主流程
+  void _fetchLyricsInBackground(Music music) {
+    // 网易云歌曲优先使用 NeteaseApi.getLyric（更可靠），非网易云歌曲用 lrclib.net 兜底
+    Future<(String, bool)> lyricFuture;
+    if (music.id.startsWith('net_')) {
+      final numericId = music.id.substring(4);
+      lyricFuture = NeteaseApi.getLyric(numericId).then((map) {
+        final lrc = map['lyric'];
+        return (lrc ?? '', lrc != null && lrc.isNotEmpty);
+      });
+    } else {
+      lyricFuture = MusicApi.searchLyrics(music.artist, music.title);
+    }
+
+    lyricFuture.then((result) {
+      final (lrc, found) = result;
+      if (found && lrc.isNotEmpty) {
+        _networkMeta[music.id]?.lyricContent = lrc;
+        music.lyrics = lrc;
+        // 持久化歌词到本地存储，下次启动可直接加载
+        _persistNetworkSong(music, _networkMeta[music.id]?.url ?? '',
+            _networkMeta[music.id]?.coverUrl, lrc);
+        // 如果当前仍在播放这首歌，刷新歌词显示
+        if (_currentIndex >= 0 &&
+            _currentIndex < _queue.length &&
+            _queue[_currentIndex].id == music.id) {
+          _parseLrc(lrc).then((parsed) {
+            _currentLyrics = parsed;
+            _safeNotifyListeners();
+          });
+        }
+      }
+    }).catchError((_) {
+      // 静默处理搜索失败
+    });
   }
 
   PlayMode _playMode = PlayMode.sequence;

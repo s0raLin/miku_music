@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -20,7 +19,11 @@ class _LyricGroup {
     this.translation,
   });
 
-  bool get hasTranslation => translation != null && translation!.trim().isNotEmpty;
+  bool get hasTranslation =>
+      translation != null && translation!.trim().isNotEmpty;
+  bool get isEmpty =>
+      text.trim().isEmpty &&
+      (translation == null || translation!.trim().isEmpty);
 }
 
 class LyricsSection extends StatefulWidget {
@@ -39,7 +42,6 @@ class _LyricsSectionState extends State<LyricsSection>
   bool _isUserInteracting = false;
   int _focusedIndex = -1;
   Timer? _interactionTimeout;
-
   List<LyricLine> _prevLyrics = [];
   List<_LyricGroup> _lyricGroups = [];
   int _lastAutoScrollIndex = -1;
@@ -48,29 +50,26 @@ class _LyricsSectionState extends State<LyricsSection>
   bool get wantKeepAlive => true;
 
   /// 将原始 [LyricLine] 列表按相同时间戳合并为 [_LyricGroup]。
-  /// 连续出现的同一时间戳的歌词，第一条作为原文，第二条及之后作为翻译。
   static List<_LyricGroup> _mergeLyrics(List<LyricLine> lyrics) {
     if (lyrics.isEmpty) return [];
-
     final merged = <_LyricGroup>[];
     int i = 0;
     while (i < lyrics.length) {
       final current = lyrics[i];
       String? translation;
-
-      // 检查下一行是否有相同时间戳（翻译行）
       if (i + 1 < lyrics.length && lyrics[i + 1].timeMs == current.timeMs) {
         translation = lyrics[i + 1].text;
-        i += 2; // 跳过翻译行
+        i += 2;
       } else {
         i += 1;
       }
-
-      merged.add(_LyricGroup(
-        timeMs: current.timeMs,
-        text: current.text,
-        translation: translation,
-      ));
+      merged.add(
+        _LyricGroup(
+          timeMs: current.timeMs,
+          text: current.text,
+          translation: translation,
+        ),
+      );
     }
     return merged;
   }
@@ -90,7 +89,6 @@ class _LyricsSectionState extends State<LyricsSection>
 
   void _updateFocusedIndex() {
     if (!_isUserInteracting) return;
-
     final positions = _positionsListener.itemPositions.value;
     if (positions.isEmpty) return;
 
@@ -163,7 +161,6 @@ class _LyricsSectionState extends State<LyricsSection>
     final lyrics = mp.currentLyrics;
     final cs = Theme.of(context).colorScheme;
 
-    // 确保 _lyricGroups 与 lyrics 同步
     if (_lyricGroups.isEmpty && lyrics.isNotEmpty) {
       _lyricGroups = _mergeLyrics(lyrics);
     }
@@ -177,12 +174,17 @@ class _LyricsSectionState extends State<LyricsSection>
       builder: (context, snapshot) {
         final positionMs = snapshot.data?.position.inMilliseconds ?? 0;
         final currentIndex = _calculateCurrentIndex(positionMs);
-
         _handleAutoScroll(currentIndex);
 
         return Stack(
           children: [
-            _buildLyricsList(currentIndex, cs),
+            // 使用 LayoutBuilder 动态获取容器高度，以实现精准的居中 Padding
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final halfHeight = constraints.maxHeight / 2;
+                return _buildLyricsList(currentIndex, cs, halfHeight);
+              },
+            ),
             if (_isUserInteracting && _focusedIndex >= 0)
               _buildCenterInteractionBar(cs),
             _buildFadeGradient(Alignment.topCenter, cs),
@@ -212,12 +214,10 @@ class _LyricsSectionState extends State<LyricsSection>
       final music = mp.currentMusic;
       final result = await MusicApi.searchLyrics(music?.artist, music?.title);
       if (!context.mounted) return;
-
       if (!result.$2) {
         AppToast.neutral(context, message: "暂未找到歌词");
         return;
       }
-
       mp.setCurrentLrc(result.$1);
       AppToast.neutral(context, message: "歌词获取成功");
     } catch (e) {
@@ -239,23 +239,24 @@ class _LyricsSectionState extends State<LyricsSection>
         !_scrollController.isAttached) {
       return;
     }
-
     _lastAutoScrollIndex = currentIndex;
-    final groups = _lyricGroups;
-    final isNearEnd = currentIndex >= groups.length - 3;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _scrollController.scrollTo(
         index: currentIndex,
-        alignment: isNearEnd ? 0.1 : 0.5,
-        duration: Duration(milliseconds: isNearEnd ? 340 : 300),
+        alignment: 0.5, // 始终保持正中心对齐
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
       );
     });
   }
 
-  Widget _buildLyricsList(int currentIndex, ColorScheme cs) {
+  Widget _buildLyricsList(
+    int currentIndex,
+    ColorScheme cs,
+    double verticalPadding,
+  ) {
     final groups = _lyricGroups;
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -272,7 +273,8 @@ class _LyricsSectionState extends State<LyricsSection>
         child: ScrollablePositionedList.builder(
           itemScrollController: _scrollController,
           itemPositionsListener: _positionsListener,
-          padding: const EdgeInsets.symmetric(vertical: 180),
+          // 核心改动：动态设置上下 Padding 为视图的一半高度，使首尾行可达正中间
+          padding: EdgeInsets.symmetric(vertical: verticalPadding),
           itemCount: groups.length,
           itemBuilder: (context, index) =>
               _buildLyricItem(groups[index], index, currentIndex, cs),
@@ -287,7 +289,6 @@ class _LyricsSectionState extends State<LyricsSection>
     int currentIndex,
     ColorScheme cs,
   ) {
-    final isTextEmpty = group.text.trim().isEmpty;
     final isActive = _isUserInteracting
         ? (index == _focusedIndex)
         : (index == currentIndex);
@@ -295,7 +296,50 @@ class _LyricsSectionState extends State<LyricsSection>
         ? (index - _focusedIndex).abs() == 1
         : (index - currentIndex).abs() == 1;
 
-    // 原文样式
+    // 1. 如果是空白行（间奏/纯音乐部分）的特殊渲染
+    if (group.isEmpty) {
+      return InkWell(
+        onTap: () {
+          context.read<MusicProvider>().player.seek(
+            Duration(milliseconds: group.timeMs),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          // 给空白行一个固定的高度，确保滚动到这里时能完美居中停顿
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          alignment: Alignment.center,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 180),
+            // 如果正在播放这一行，就让间奏标识变亮，否则淡化
+            opacity: isActive ? 1.0 : (isNear ? 0.5 : 0.2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.music_note_rounded,
+                  size: isActive ? 20 : 16,
+                  color: isActive ? cs.primary : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "• • •",
+                  style: TextStyle(
+                    fontSize: isActive ? 16 : 14,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                    color: isActive ? cs.primary : cs.onSurfaceVariant,
+                    letterSpacing: 4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 2. 以下是正常有歌词行的渲染（保持原有逻辑，仅微调间距）
     final TextStyle originalStyle = isActive
         ? TextStyle(
             fontSize: 22,
@@ -317,7 +361,6 @@ class _LyricsSectionState extends State<LyricsSection>
             height: 1.35,
           );
 
-    // 翻译样式
     final TextStyle translationStyle = isActive
         ? TextStyle(
             fontSize: 14,
@@ -347,24 +390,22 @@ class _LyricsSectionState extends State<LyricsSection>
       },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 原文
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               style: originalStyle,
               child: Text(
-                isTextEmpty ? '~' : group.text,
+                group.text,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // 翻译（如果存在）
             if (group.hasTranslation) ...[
               const SizedBox(height: 2),
               AnimatedDefaultTextStyle(

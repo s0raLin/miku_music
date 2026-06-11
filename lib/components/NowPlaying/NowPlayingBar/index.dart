@@ -358,14 +358,14 @@ class _QueueSheet extends StatelessWidget {
 
                     return ListTile(
                       key: ValueKey('queue_${m.id}_$index'),
-                      leading: isCurrent
-                          ? Icon(Icons.volume_up_rounded,
-                              size: 20, color: cs.primary)
-                          : ReorderableDragStartListener(
-                              index: index,
-                              child: Icon(Icons.drag_handle_rounded,
-                                  size: 20, color: cs.onSurfaceVariant),
-                            ),
+                      leading: ReorderableDragStartListener(
+                        index: index,
+                        child: isCurrent
+                            ? Icon(Icons.volume_up_rounded,
+                                size: 20, color: cs.primary)
+                            : Icon(Icons.drag_handle_rounded,
+                                size: 20, color: cs.onSurfaceVariant),
+                      ),
                       title: Text(
                         m.title,
                         maxLines: 1,

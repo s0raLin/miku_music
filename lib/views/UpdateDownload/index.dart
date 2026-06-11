@@ -16,7 +16,7 @@ class UpdateDownloadPage extends StatelessWidget {
     final textTheme = theme.textTheme;
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       child: Scaffold(
         body: CustomScrollView(
         physics: const BouncingScrollPhysics(),

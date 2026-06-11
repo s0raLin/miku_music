@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// 仅在 Android 平台检查更新，有新版则弹出更新弹窗
+  /// 仅在 Android 平台检查更新，有新版则弹出更新弹窗（用户可选择跳过）
   Future<void> _checkForUpdate() async {
     if (!UpdateCheckService.isSupportedPlatform) return;
 
@@ -77,18 +77,45 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       if (result.hasUpdate && result.latestRelease != null && mounted) {
-        context.toUpdateDownload(result.latestRelease!);
+        _showUpdateDialog(result.latestRelease!);
       }
     } catch (e) {
       debugPrint('检查更新失败: $e');
     }
   }
 
+  void _showUpdateDialog(ReleaseInfo releaseInfo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('发现新版本'),
+        content: Text('新版本 ${releaseInfo.tagName} 已发布，是否前往下载？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('稍后再说'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.push('/update-download', extra: releaseInfo);
+            },
+            child: const Text('前往下载'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final playlistProvider = context.watch<PlaylistProvider>();
     final library = context.watch<MusicProvider>().library;
-    final history = playlistProvider.getHistorySongs(library, musicProvider: context.read<MusicProvider>());
+    final history = playlistProvider.getHistorySongs(
+      library,
+      musicProvider: context.read<MusicProvider>(),
+    );
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 

@@ -19,10 +19,25 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
   bool _loading = true;
   String? _playingId;
 
+  final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  String _query = '';
+  bool _showSearch = false;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    _searchCtrl.addListener(() {
+      setState(() => _query = _searchCtrl.text.trim().toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _searchFocus.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -33,6 +48,32 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
         _loading = false;
       });
     }
+  }
+
+  List<ToplistItem> get _filteredItems {
+    if (_info == null) return [];
+    if (_query.isEmpty) return _info!.items;
+    return _info!.items.where((item) {
+      return item.title.toLowerCase().contains(_query) ||
+          item.author.toLowerCase().contains(_query) ||
+          item.source.toLowerCase().contains(_query) ||
+          item.id.contains(_query);
+    }).toList();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _showSearch = !_showSearch;
+      if (_showSearch) {
+        // 延迟 focus 等 TextField 构建完成
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _searchFocus.requestFocus();
+        });
+      } else {
+        _searchCtrl.clear();
+        _searchFocus.unfocus();
+      }
+    });
   }
 
   Future<void> _play(ToplistItem song) async {
@@ -58,7 +99,6 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
         coverUrl: song.pic,
       );
 
-      // 异步加载歌词
       final lyricMap = await NeteaseApi.getLyric(song.id, source: song.source);
       if (lyricMap['lyric'] != null && lyricMap['lyric']!.isNotEmpty && mounted) {
         await mp.setLyricsDirectly(lyricMap['lyric']!);
@@ -84,8 +124,53 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text(_info?.title ?? '排行榜'),
         scrolledUnderElevation: 0,
+        titleSpacing: 0,
+        actionsPadding: EdgeInsets.zero,
+        // 搜索模式下标题替换为搜索框
+        title: _showSearch
+            ? TextField(
+                controller: _searchCtrl,
+                focusNode: _searchFocus,
+                autofocus: true,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  hintText: '搜索歌曲、歌手...',
+                  hintStyle: textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.only(
+                    left: 12,
+                    top: 12,
+                    bottom: 12,
+                  ),
+                ),
+                onChanged: (_) {},
+              )
+            : null,
+        actions: [
+          // 搜索模式下：关闭按钮；普通模式：搜索按钮
+          if (_showSearch)
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 40,
+                minHeight: 40,
+              ),
+              icon: const Icon(Icons.close_rounded),
+              tooltip: '关闭搜索',
+              onPressed: _toggleSearch,
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.search_rounded),
+              tooltip: '搜索',
+              onPressed: _toggleSearch,
+            ),
+        ],
       ),
       body: _buildBody(colorScheme, textTheme),
     );
@@ -127,8 +212,9 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
     }
 
     final info = _info!;
+    final filtered = _filteredItems;
 
-    final entries = info.items.map((item) {
+    final entries = filtered.map((item) {
       return M3SongEntry(
         id: 'net_${item.id}',
         title: item.title,
@@ -139,7 +225,7 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
         isHighlighted: _playingId == 'net_${item.id}',
         onTap: () => _openDetail(item),
         trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded, size: 20),
+          icon: const Icon(Icons.more_vert_rounded, size: 18),
           onSelected: (v) {
             switch (v) {
               case 'play':
@@ -174,44 +260,38 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
 
     return CustomScrollView(
       slivers: [
-        // 头部信息卡片
+        // ── 紧凑头部信息卡片 ──
         SliverToBoxAdapter(
           child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  colorScheme.surface,
-                ],
-              ),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
             ),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   child: Image.network(
                     info.cover,
-                    width: 100,
-                    height: 100,
+                    width: 64,
+                    height: 64,
                     fit: BoxFit.cover,
                     headers: const {'Referer': 'https://music.163.com/'},
                     errorBuilder: (context, error, stackTrace) => Container(
-                      width: 100,
-                      height: 100,
+                      width: 64,
+                      height: 64,
                       color: colorScheme.surfaceContainerHighest,
                       child: Icon(
                         Icons.music_note_rounded,
-                        size: 48,
+                        size: 32,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,35 +299,28 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
                     children: [
                       Text(
                         info.title,
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                           color: colorScheme.onSurface,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 2),
                       Text(
                         info.description,
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
-                        maxLines: 3,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${info.count} 首',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onPrimaryContainer,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${info.count} 首',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -258,48 +331,52 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
           ),
         ),
 
-        // 分隔标题
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 12, 12),
-            child: Row(
-              children: [
-                Text(
-                  '歌曲列表',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+        // ── 搜索结果提示 ──
+        if (_query.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 12, 4),
+              child: Text(
+                '找到 ${filtered.length} 首',
+                style: textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
-                const Spacer(),
-                Text(
-                  '${entries.length} 首',
-                  style: textTheme.bodyMedium?.copyWith(
+              ),
+            ),
+          ),
+
+        // ── 歌曲列表 ──
+        if (filtered.isEmpty && _query.isNotEmpty)
+          SliverFillRemaining(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 40,
                     color: colorScheme.onSurfaceVariant,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '未找到匹配歌曲',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            sliver: SliverM3SongList(
+              songs: entries,
+              padding: EdgeInsets.zero,
             ),
           ),
-        ),
 
-        // 歌曲列表
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index.isOdd) return const Divider(height: 1);
-                final songIndex = index ~/ 2;
-                return M3SongList(
-                  songs: [entries[songIndex]],
-                  isScrollable: false,
-                );
-              },
-              childCount: entries.length * 2 - 1,
-            ),
-          ),
-        ),
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );

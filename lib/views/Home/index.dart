@@ -7,7 +7,6 @@ import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/model/Toplist/index.dart';
-import 'package:myapp/router/Extensions/router.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
@@ -173,7 +172,7 @@ class _HomePageState extends State<HomePage> {
           // ── 3. 最近播放标题栏 ──────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -263,7 +262,7 @@ class _HomePageState extends State<HomePage> {
           if (_toplistInfo != null) ...[
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Text(
                   '热门榜单',
                   style: textTheme.titleMedium?.copyWith(

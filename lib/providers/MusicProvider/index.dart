@@ -425,6 +425,55 @@ class MusicProvider extends ChangeNotifier {
   /// Get all known network song IDs (from persisted metadata).
   Set<String> get networkSongIds => _networkMeta.keys.toSet();
 
+  /// Replace the entire queue with network search results and play from [startIndex].
+  /// Each item is registered via playNetworkSong's internal logic (meta + persist).
+  Future<void> playNetworkSearchResults({
+    required List<Map<String, String?>> songs, // [{id, title, artist, url, coverUrl, lyrics}]
+    required int startIndex,
+    bool autoPlay = true,
+  }) async {
+    if (songs.isEmpty) return;
+
+    // Build Music objects and register network meta for all songs at once
+    final List<Music> queue = [];
+    for (final s in songs) {
+      final musicId = 'net_${s['id']}';
+      final music = Music(
+        id: musicId,
+        title: s['title'] ?? '',
+        artist: s['artist'] ?? '',
+        duration: Duration.zero,
+        coverBytes: null,
+        lyrics: s['lyrics'],
+        album: null,
+        source: MusicSource.network,
+      );
+
+      _networkMeta[musicId] = _NetworkSongMeta(
+        url: s['url'] ?? '',
+        title: s['title'] ?? '',
+        artist: s['artist'] ?? '',
+        coverUrl: s['coverUrl'],
+      );
+      if (s['lyrics'] != null && s['lyrics']!.isNotEmpty) {
+        _networkMeta[musicId]?.lyricContent = s['lyrics'];
+      }
+
+      // Persist to JSON store
+      _persistNetworkSong(
+        music,
+        s['url'] ?? '',
+        s['coverUrl'],
+        s['lyrics'],
+      );
+
+      queue.add(music);
+    }
+
+    // Replace queue and play
+    await replaceQueue(queue, startIndex: startIndex, autoPlay: autoPlay);
+  }
+
   /// Play a network song (e.g. from Netease cloud search).
   /// Adds a synthetic Music to the queue so currentMusic + detail page work.
   Future<void> playNetworkSong({

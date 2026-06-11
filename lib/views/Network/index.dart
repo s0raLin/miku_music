@@ -111,37 +111,32 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   // ─── Play / Detail ───
 
   Future<void> _play(NeteaseSong song) async {
-    setState(() => _playingId = song.id);
     try {
       final mp = context.read<MusicProvider>();
-      final musicId = 'net_${song.id}';
+      final idx = _results.indexOf(song);
+      if (idx < 0) return;
 
-      // Use cached lyrics if already fetched for this song
-      final cachedLyrics = mp.getCachedLyrics(musicId);
-      if (cachedLyrics != null) {
-        await mp.playNetworkSong(
-          url: song.url,
-          id: song.id,
-          title: song.title,
-          artist: song.author,
-          coverUrl: song.pic,
-          lyricContent: cachedLyrics,
-        );
-      } else {
-        final lyricF = NeteaseApi.getLyric(song.id);
+      setState(() => _playingId = song.id);
 
-        await mp.playNetworkSong(
-          url: song.url,
-          id: song.id,
-          title: song.title,
-          artist: song.author,
-          coverUrl: song.pic,
-        );
+      // Replace entire queue with all search results, play from clicked index
+      final songMaps = _results.map((s) => {
+        'id': s.id,
+        'title': s.title,
+        'artist': s.author,
+        'url': s.url,
+        'coverUrl': s.pic,
+        'lyrics': mp.getCachedLyrics('net_${s.id}'),
+      }).toList();
 
-        final lr = await lyricF;
-        if (lr['lyric'] != null && lr['lyric']!.isNotEmpty && mounted) {
-          await mp.setLyricsDirectly(lr['lyric']!);
-        }
+      await mp.playNetworkSearchResults(
+        songs: songMaps,
+        startIndex: idx,
+      );
+
+      // Fetch lyrics for current song asynchronously
+      final lr = await NeteaseApi.getLyric(song.id);
+      if (lr['lyric'] != null && lr['lyric']!.isNotEmpty && mounted) {
+        await mp.setLyricsDirectly(lr['lyric']!);
       }
     } catch (e) {
       if (!mounted) return;

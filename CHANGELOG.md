@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.44.0](https://github.com/s0raLin/miku_music/compare/v1.43.0...v1.44.0) (2026-06-11)
+
+
+### Features
+
+* **music:** implement network song metadata persistence ([68a13a1](https://github.com/s0raLin/miku_music/commit/68a13a1abba5d29a60aa650c6e9c6a3243eb3b37))
+* **music:** support batch playback for network search results ([a24ba1f](https://github.com/s0raLin/miku_music/commit/a24ba1ffdc5d7062451be2ec65dcbd65616a7e20))
+* **music:** support network music sources and display source badges ([3f46fe5](https://github.com/s0raLin/miku_music/commit/3f46fe5f82fd30e3123ff98997c4c06eb66a74bd))
+
+
+### Performance Improvements
+
+* **network:** batch metadata updates and sync playback highlight ([fa14c1a](https://github.com/s0raLin/miku_music/commit/fa14c1a0770b5c9650457c2b240b22803ca450bf))
+
 ## [1.43.0](https://github.com/s0raLin/miku_music/compare/v1.42.0...v1.43.0) (2026-06-09)
 
 

@@ -436,39 +436,53 @@ class MusicProvider extends ChangeNotifier {
 
     // Build Music objects and register network meta for all songs at once
     final List<Music> queue = [];
+    final List<NetworkSongMeta> storeMetas = [];
+
     for (final s in songs) {
       final musicId = 'net_${s['id']}';
+      final title = s['title'] ?? '';
+      final artist = s['artist'] ?? '';
+      final url = s['url'] ?? '';
+      final coverUrl = s['coverUrl'];
+      final lyrics = s['lyrics'];
+
       final music = Music(
         id: musicId,
-        title: s['title'] ?? '',
-        artist: s['artist'] ?? '',
+        title: title,
+        artist: artist,
         duration: Duration.zero,
         coverBytes: null,
-        lyrics: s['lyrics'],
+        lyrics: lyrics,
         album: null,
         source: MusicSource.network,
       );
 
       _networkMeta[musicId] = _NetworkSongMeta(
-        url: s['url'] ?? '',
-        title: s['title'] ?? '',
-        artist: s['artist'] ?? '',
-        coverUrl: s['coverUrl'],
+        url: url,
+        title: title,
+        artist: artist,
+        coverUrl: coverUrl,
       );
-      if (s['lyrics'] != null && s['lyrics']!.isNotEmpty) {
-        _networkMeta[musicId]?.lyricContent = s['lyrics'];
+      if (lyrics != null && lyrics.isNotEmpty) {
+        _networkMeta[musicId]?.lyricContent = lyrics;
       }
 
-      // Persist to JSON store
-      _persistNetworkSong(
-        music,
-        s['url'] ?? '',
-        s['coverUrl'],
-        s['lyrics'],
-      );
+      // Collect for batch persist
+      storeMetas.add(NetworkSongMeta(
+        id: musicId,
+        title: title,
+        artist: artist,
+        url: url,
+        coverUrl: coverUrl,
+        lyrics: lyrics,
+        durationMs: 0,
+      ));
 
       queue.add(music);
     }
+
+    // Batch persist to JSON store (one file read + one write)
+    NetworkSongStore().upsertAll(storeMetas);
 
     // Replace queue and play
     await replaceQueue(queue, startIndex: startIndex, autoPlay: autoPlay);

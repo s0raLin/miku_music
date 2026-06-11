@@ -117,4 +117,20 @@ class NetworkSongStore {
     all.removeWhere((m) => m.id == id);
     await _saveAll(all);
   }
+
+  /// Batch upsert: one file read + one write for all metas.
+  Future<void> upsertAll(List<NetworkSongMeta> metas) async {
+    if (metas.isEmpty) return;
+    try {
+      final all = await loadAll();
+      for (final meta in metas) {
+        all.removeWhere((m) => m.id == meta.id);
+        all.insert(0, meta);
+      }
+      await _saveAll(all);
+      debugPrint('[NetworkSongStore] upsertAll ${metas.length} songs (total: ${all.length})');
+    } catch (e) {
+      debugPrint('[NetworkSongStore] upsertAll error: $e');
+    }
+  }
 }

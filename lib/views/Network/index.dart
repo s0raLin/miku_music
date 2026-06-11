@@ -254,6 +254,12 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
+    // Listen to currentMusic to keep highlight in sync with prev/next
+    final currentMusic = context.watch<MusicProvider>().currentMusic;
+    final currentNetId = currentMusic?.id.startsWith('net_') == true
+        ? currentMusic!.id.substring(4)
+        : null;
+
     final entries = _results
         .map(
           (s) => M3SongEntry(
@@ -263,7 +269,7 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
             coverUrl: s.pic,
             coverHeaders: const {'Referer': 'https://music.163.com/'},
             fallbackIcon: Icons.music_note_rounded,
-            isHighlighted: _playingId == s.id,
+            isHighlighted: currentNetId == s.id,
             trailing: PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded, size: 20),
               onSelected: (v) {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 export 'EmailVerificationModal.dart';
@@ -554,18 +555,19 @@ class MediaOverlayCard extends StatelessWidget {
       return Image.memory(coverBytes!, fit: BoxFit.cover);
     }
 
-    // 其次：网络URL 封面
+    // 其次：网络URL 封面 — 使用 CachedNetworkImage 解决 163 CDN 防盗链
     if (coverUrl != null && coverUrl!.isNotEmpty) {
       final Map<String, String> headers = {
         'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         ...?coverHeaders,
       };
-      return Image.network(
-        coverUrl!,
+      return CachedNetworkImage(
+        imageUrl: coverUrl!,
         fit: BoxFit.cover,
-        headers: headers,
-        errorBuilder: (_, _, _) => _buildFallback(cs),
+        httpHeaders: headers,
+        placeholder: (_, _) => _buildFallback(cs),
+        errorWidget: (_, _, _) => _buildFallback(cs),
       );
     }
 

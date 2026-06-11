@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:myapp/api/Client/Netease/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Audio/index.dart';
 import 'package:myapp/service/Hotkeys/index.dart';
@@ -327,11 +328,33 @@ class MusicProvider extends ChangeNotifier {
 
     // 检查是否为网络歌曲：有 _networkMeta 记录的说明需要用 URL 播放
     if (netMeta != null) {
+      // 尝试刷新过期 URL（163 CDN 链接有时效性）
+      String playUrl = netMeta.url;
+      if (music.id.startsWith('net_')) {
+        final numericId = music.id.substring(4);
+        try {
+          final freshUrl = await NeteaseApi.getRealUrl(numericId, source: 'netease');
+          if (freshUrl != null && freshUrl.isNotEmpty) {
+            playUrl = freshUrl;
+            // 更新缓存中的 URL
+            _networkMeta[music.id] = _NetworkSongMeta(
+              url: freshUrl,
+              title: netMeta.title,
+              artist: netMeta.artist,
+              coverUrl: netMeta.coverUrl,
+            )..lyricContent = netMeta.lyricContent;
+          }
+        } catch (_) {
+          // 刷新失败则继续使用旧 URL（让播放器自行报错）
+          debugPrint('刷新网络歌曲URL失败，使用缓存URL');
+        }
+      }
+
       // 网络歌曲：使用 URL 播放
       if (autoPlay) {
         onMusicPlayed?.call(music);
         await audioHandler.playFromUrl(
-          netMeta.url,
+          playUrl,
           id: music.id,
           title: netMeta.title,
           artist: netMeta.artist,
@@ -340,7 +363,7 @@ class MusicProvider extends ChangeNotifier {
         );
       } else {
         await audioHandler.playFromUrl(
-          netMeta.url,
+          playUrl,
           id: music.id,
           title: netMeta.title,
           artist: netMeta.artist,

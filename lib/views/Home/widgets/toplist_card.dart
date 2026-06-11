@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/model/Toplist/index.dart';
@@ -28,15 +29,25 @@ class ToplistCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // 封面
+              // 封面 — CachedNetworkImage 解决 163 CDN 防盗链
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  info.cover,
+                child: CachedNetworkImage(
+                  imageUrl: info.cover,
                   width: 64,
                   height: 64,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
+                  httpHeaders: const {
+                    'Referer': 'https://music.163.com/',
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                  },
+                  placeholder: (_, _) => Container(
+                    width: 64,
+                    height: 64,
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  ),
+                  errorWidget: (context, error, stackTrace) => Container(
                     width: 64,
                     height: 64,
                     color: colorScheme.surfaceContainerHighest,

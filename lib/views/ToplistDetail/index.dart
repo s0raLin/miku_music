@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/Music/index.dart';
@@ -273,13 +274,22 @@ class _ToplistDetailPageState extends State<ToplistDetailPage> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    info.cover,
+                  child: CachedNetworkImage(
+                    imageUrl: info.cover,
                     width: 64,
                     height: 64,
                     fit: BoxFit.cover,
-                    headers: const {'Referer': 'https://music.163.com/'},
-                    errorBuilder: (context, error, stackTrace) => Container(
+                    httpHeaders: const {
+                      'Referer': 'https://music.163.com/',
+                      'User-Agent':
+                          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    },
+                    placeholder: (_, _) => Container(
+                      width: 64,
+                      height: 64,
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    ),
+                    errorWidget: (context, error, stackTrace) => Container(
                       width: 64,
                       height: 64,
                       color: colorScheme.surfaceContainerHighest,

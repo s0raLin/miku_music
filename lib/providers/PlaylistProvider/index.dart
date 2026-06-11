@@ -59,6 +59,9 @@ class PlaylistProvider extends ChangeNotifier {
           validIds.add(song.id);
         }
       }
+      // Also add all known network song IDs from persisted metadata
+      // (critical for cold-start: queue is empty but _networkMeta is loaded)
+      validIds.addAll(musicProvider.networkSongIds);
     }
 
     _activeSongIds = validIds;
@@ -81,6 +84,7 @@ class PlaylistProvider extends ChangeNotifier {
   Future<void> bootstrap({
     required List<Music> currentLibrary,
     void Function(String module, String detail)? onProgress,
+    MusicProvider? musicProvider,
   }) async {
     onProgress?.call('连接媒体数据库', '正在读取歌单架构...');
     await MusicDbService().init();
@@ -90,7 +94,7 @@ class PlaylistProvider extends ChangeNotifier {
     _rawHistoryIds = await _dbService.getHistoryIds();
 
     final localSongIds = currentLibrary.map((s) => s.id).toSet();
-    updateActivePlaylists(localSongIds);
+    updateActivePlaylists(localSongIds, musicProvider: musicProvider);
 
     // 从原始数据中定位收藏歌单（避免 filtered 为空导致无法加载）
     final favPlaylist = _rawPlaylists.firstWhereOrNull(

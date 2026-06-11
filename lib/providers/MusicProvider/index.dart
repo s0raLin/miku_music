@@ -9,6 +9,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Audio/index.dart';
 import 'package:myapp/service/Hotkeys/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:myapp/service/NetworkSongStore/index.dart';
 import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:rxdart/rxdart.dart';
@@ -421,6 +422,9 @@ class MusicProvider extends ChangeNotifier {
   /// Check if a given music ID is a network source song
   bool isNetworkSong(String musicId) => _networkMeta.containsKey(musicId);
 
+  /// Get all known network song IDs (from persisted metadata).
+  Set<String> get networkSongIds => _networkMeta.keys.toSet();
+
   /// Play a network song (e.g. from Netease cloud search).
   /// Adds a synthetic Music to the queue so currentMusic + detail page work.
   Future<void> playNetworkSong({
@@ -474,6 +478,9 @@ class MusicProvider extends ChangeNotifier {
     // Fire history callback so network songs appear in "Recently Played"
     onMusicPlayed?.call(music);
 
+    // Persist network song metadata so it survives app restarts
+    _persistNetworkSong(music, url, coverUrl, lyricContent);
+
     await audioHandler.playFromUrl(
       url,
       id: musicId,
@@ -482,6 +489,41 @@ class MusicProvider extends ChangeNotifier {
       coverUrl: coverUrl,
       autoPlay: true,
     );
+  }
+
+  /// Persist a network song's metadata to the JSON store.
+  void _persistNetworkSong(Music music, String url, String? coverUrl, String? lyrics) {
+    final meta = NetworkSongMeta(
+      id: music.id,
+      title: music.title,
+      artist: music.artist,
+      url: url,
+      coverUrl: coverUrl,
+      lyrics: lyrics,
+      durationMs: music.duration.inMilliseconds,
+    );
+    NetworkSongStore().upsert(meta);
+  }
+
+  /// Load persisted network songs from JSON store and register them.
+  Future<void> loadPersistedNetworkSongs() async {
+    try {
+      final metas = await NetworkSongStore().loadAll();
+      for (final meta in metas) {
+        _networkMeta[meta.id] = _NetworkSongMeta(
+          url: meta.url,
+          title: meta.title,
+          artist: meta.artist,
+          coverUrl: meta.coverUrl,
+        );
+        if (meta.lyrics != null && meta.lyrics!.isNotEmpty) {
+          _networkMeta[meta.id]?.lyricContent = meta.lyrics;
+        }
+      }
+      debugPrint('Loaded ${metas.length} persisted network songs');
+    } catch (e) {
+      debugPrint('Failed to load persisted network songs: $e');
+    }
   }
 
   /// Set lyrics directly (for network playback without queue)

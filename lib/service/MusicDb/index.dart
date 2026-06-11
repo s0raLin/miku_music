@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/src/rust/api/audio_db.dart';
 import 'package:path_provider/path_provider.dart';
@@ -148,5 +149,46 @@ class MusicDbService {
     );
 
     _playlistUpdateController.add(null);
+  }
+
+  /// Insert a network song into the `songs` table so its ID persists
+  /// across restarts. Fields: id = "net_xxx", path = stream URL,
+  /// cover_path = cover URL, etc.
+  Future<void> insertNetworkSong({
+    required String id,
+    required String title,
+    required String artist,
+    required String url,
+    String? coverUrl,
+    String? lyrics,
+    int durationMs = 0,
+  }) async {
+    await _dbManager?.insertSong(
+      music: MusicInfo(
+        id: id,
+        title: title,
+        artist: artist,
+        album: null,
+        durationMs: durationMs,
+        coverPath: coverUrl,
+        lyrics: lyrics,
+        path: url, // stream URL stored in path field
+      ),
+    );
+    debugPrint('[MusicDbService] insertNetworkSong: $id');
+  }
+
+  /// Load all previously saved network song IDs from the `songs` table
+  /// by checking for IDs starting with "net_".
+  Future<List<String>> getNetworkSongIds() async {
+    // Use getSong to try each known net_ id stored in play_history
+    // A more efficient approach: we can just use getAllRustPlaylists
+    // plus getHistoryIds and filter for "net_" prefix.
+    // Since there's no direct "get all songs" API, we rely on
+    // the fact that network songs only appear in playlists/history
+    // after being played — they'll be loaded via the normal flow.
+    // For now, return empty; the loadPersistedNetworkSongs()
+    // in MusicProvider reads _networkMeta from JSON instead.
+    return [];
   }
 }

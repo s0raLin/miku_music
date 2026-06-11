@@ -91,6 +91,7 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
         coverHeaders: isNetwork && coverUrl != null && coverUrl.contains('music.126.net')
             ? {'Referer': 'https://music.163.com/'}
             : null,
+        isNetworkSource: isNetwork,
         isHighlighted: isCurrent,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

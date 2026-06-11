@@ -441,6 +441,8 @@ class MediaOverlayCard extends StatelessWidget {
   final String subtitle;
   final Uint8List? coverBytes;
   final String? coverPath;
+  final String? coverUrl;
+  final Map<String, String>? coverHeaders;
   final IconData fallbackIcon;
   final VoidCallback? onTap;
   final Widget? badge; // 预留右上角组件（比如序号、状态标签等）
@@ -452,6 +454,8 @@ class MediaOverlayCard extends StatelessWidget {
     required this.subtitle,
     this.coverBytes,
     this.coverPath,
+    this.coverUrl,
+    this.coverHeaders,
     required this.fallbackIcon,
     this.onTap,
     this.badge,
@@ -550,7 +554,22 @@ class MediaOverlayCard extends StatelessWidget {
       return Image.memory(coverBytes!, fit: BoxFit.cover);
     }
 
-    // 其次：判断是否存在路径
+    // 其次：网络URL 封面
+    if (coverUrl != null && coverUrl!.isNotEmpty) {
+      final Map<String, String> headers = {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ...?coverHeaders,
+      };
+      return Image.network(
+        coverUrl!,
+        fit: BoxFit.cover,
+        headers: headers,
+        errorBuilder: (_, _, _) => _buildFallback(cs),
+      );
+    }
+
+    // 再次：判断是否存在路径
     if (coverPath != null && coverPath!.isNotEmpty) {
       // 如果是网络图片 URL
       if (coverPath!.startsWith('http://') ||
@@ -1151,10 +1170,17 @@ class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
       alpha: colorScheme.brightness == Brightness.dark ? 0.88 : 0.82,
     );
 
+    final isNetwork = music.source == MusicSource.network;
+    final coverUrl = isNetwork ? musicProvider.getCoverUrl(music.id) : null;
+
     return MediaOverlayCard(
       title: music.title,
       subtitle: music.artist,
       coverBytes: music.coverBytes,
+      coverUrl: coverUrl,
+      coverHeaders: isNetwork && coverUrl != null && coverUrl.contains('music.126.net')
+          ? {'Referer': 'https://music.163.com/'}
+          : null,
       fallbackIcon: Icons.music_note_rounded,
       onTap: widget.onTap,
       isLoading: hasNoCover && musicProvider.isCoverLoading(music.id),

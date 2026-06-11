@@ -66,6 +66,7 @@ class StartupProvider extends ChangeNotifier {
       await playlistProvider.bootstrap(
         onProgress: (module, detail) => _setStage(module, detail),
         currentLibrary: songs,
+        musicProvider: musicProvider,
       );
       _finishStep('恢复播放器状态', '播放器状态恢复完成');
 

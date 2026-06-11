@@ -70,9 +70,21 @@ class FileService {
     if (!await m3MusicDir.exists()) {
       await m3MusicDir.create(recursive: true);
     }
+
+    // Network cache directory (for persisted network song metadata/cache)
+    final docDir = await getApplicationDocumentsDirectory();
+    final networkCacheDir = Directory(p.join(docDir.path, 'network_cache'));
+    if (!await networkCacheDir.exists()) {
+      await networkCacheDir.create(recursive: true);
+    }
+
     final saved = await loadPaths();
-    if (saved.isEmpty) return [m3MusicDir.path];
-    
-    return [m3MusicDir.path, ...saved];
+    final allPaths = <String>{
+      m3MusicDir.path,
+      networkCacheDir.path,
+      ...saved,
+    };
+
+    return allPaths.toList();
   }
 }

@@ -407,6 +407,20 @@ class MusicProvider extends ChangeNotifier {
   /// Get the cover URL for a network song, if available.
   String? getCoverUrl(String musicId) => _networkMeta[musicId]?.coverUrl;
 
+  /// Get a music object by ID, searching both local library and queue (for network songs).
+  Music? getSongById(String id) {
+    // First check local library
+    final local = _library.where((m) => m.id == id).firstOrNull;
+    if (local != null) return local;
+    // Then check queue for network songs
+    final queued = _queue.where((m) => m.id == id).firstOrNull;
+    if (queued != null) return queued;
+    return null;
+  }
+
+  /// Check if a given music ID is a network source song
+  bool isNetworkSong(String musicId) => _networkMeta.containsKey(musicId);
+
   /// Play a network song (e.g. from Netease cloud search).
   /// Adds a synthetic Music to the queue so currentMusic + detail page work.
   Future<void> playNetworkSong({
@@ -426,6 +440,7 @@ class MusicProvider extends ChangeNotifier {
       coverBytes: null,
       lyrics: lyricContent,
       album: null,
+      source: MusicSource.network,
     );
 
     // Store network metadata for later playback (prev/next)
@@ -455,6 +470,9 @@ class MusicProvider extends ChangeNotifier {
     _currentIndex = _queue.indexWhere((m) => m.id == musicId);
 
     _safeNotifyListeners();
+
+    // Fire history callback so network songs appear in "Recently Played"
+    onMusicPlayed?.call(music);
 
     await audioHandler.playFromUrl(
       url,

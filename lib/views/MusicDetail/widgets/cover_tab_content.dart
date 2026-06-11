@@ -78,6 +78,7 @@ class _CoverTabContentState extends State<CoverTabContent> {
         .getPlaylistSongs(
           PlaylistProvider.favoritesPlaylistId,
           musicProvider.library,
+          musicProvider: musicProvider,
         )
         .any((m) => m.id == widget.music.id);
 
@@ -109,7 +110,47 @@ class _CoverTabContentState extends State<CoverTabContent> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: _buildAlbumArt(cs, musicProvider, size),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _buildAlbumArt(cs, musicProvider, size),
+                        // Network source badge
+                        if (widget.music.source == MusicSource.network)
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.primary.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_rounded,
+                                    size: 14,
+                                    color: cs.onPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '网络',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -138,9 +179,10 @@ class _CoverTabContentState extends State<CoverTabContent> {
                       .getPlaylistSongs(
                         PlaylistProvider.favoritesPlaylistId,
                         musicProvider.library,
+                        musicProvider: musicProvider,
                       )
                       .any((m) => m.id == widget.music.id);
-                  playlistProvider.toggleMusicFavorite(widget.music);
+                  playlistProvider.toggleMusicFavorite(widget.music, musicProvider: musicProvider);
                   AppToast.neutral(
                     context,
                     message: wasLiked ? '已取消收藏' : '已添加到喜欢',

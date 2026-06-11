@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -90,7 +91,8 @@ class MusicActionMenu {
                       color: Theme.of(ctx).colorScheme.secondary)
                   : null,
               onTap: () async {
-                await playlistProvider.addToPlaylist(p.id, song);
+                final musicProvider = context.read<MusicProvider>();
+                await playlistProvider.addToPlaylist(p.id, song, musicProvider: musicProvider);
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
                   AppToast.success(ctx, message: '已添加到「${p.name}」');

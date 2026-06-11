@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/model/Music/index.dart';
 
 import 'package:myapp/model/Playlist/index.dart';
+import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/service/MusicDb/index.dart';
 import 'package:collection/collection.dart';
 
@@ -36,27 +37,42 @@ class PlaylistProvider extends ChangeNotifier {
   }
 
   /// 从数据库拉取最新歌单与播放历史 ID
-  Future<void> refreshFromDb() async {
+  /// [musicProvider] is needed to retain network song IDs in the filtered results.
+  Future<void> refreshFromDb({MusicProvider? musicProvider}) async {
     _rawPlaylists = await _dbService.getAllRustPlaylists();
     _rawHistoryIds = await _dbService.getHistoryIds();
     // 使用当前缓存的有效歌曲ID进行过滤，确保CRUD后响应式生效
-    updateActivePlaylists(_activeSongIds);
+    updateActivePlaylists(_activeSongIds, musicProvider: musicProvider);
   }
 
   /// 由 ProxyProvider 驱动，结合当前内存中有效的全局乐库动态瘦身
-  void updateActivePlaylists(Set<String> localSongIds) {
-    _activeSongIds = localSongIds;
+  /// [musicProvider] is optional but recommended — network song IDs from the queue
+  /// will be retained alongside local library IDs.
+  void updateActivePlaylists(Set<String> localSongIds, {MusicProvider? musicProvider}) {
+    // Build a combined set of valid IDs: local library + network songs currently in queue
+    final validIds = <String>{};
+    validIds.addAll(localSongIds);
+    if (musicProvider != null) {
+      // Add network song IDs from queue that have _networkMeta entries
+      for (final song in musicProvider.queue) {
+        if (song.source == MusicSource.network) {
+          validIds.add(song.id);
+        }
+      }
+    }
+
+    _activeSongIds = validIds;
     // 过滤歌单内的无效 ID
     _filteredPlaylists = _rawPlaylists.map((playlist) {
       final activeIds = playlist.songIds
-          .where((id) => localSongIds.contains(id))
+          .where((id) => validIds.contains(id))
           .toList();
       return playlist.copyWith(songIds: activeIds);
     }).toList();
 
     // 过滤播放历史内的无效 ID
     _filteredHistoryIds = _rawHistoryIds
-        .where((id) => localSongIds.contains(id))
+        .where((id) => validIds.contains(id))
         .toList();
 
     notifyListeners();
@@ -95,6 +111,7 @@ class PlaylistProvider extends ChangeNotifier {
     String name, {
     String? coverPath,
     String? description,
+    MusicProvider? musicProvider,
   }) async {
     if (name.trim().isEmpty) {
       debugPrint("警告: 歌单名称不能为空");
@@ -105,11 +122,11 @@ class PlaylistProvider extends ChangeNotifier {
       coverPath: coverPath,
       description: description,
     );
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
   /// 删除歌单（系统歌单禁止删除）
-  Future<void> deletePlaylist(String id) async {
+  Future<void> deletePlaylist(String id, {MusicProvider? musicProvider}) async {
     final playlist = getPlaylistById(id);
     if (playlist == null) {
       debugPrint("警告: 歌单不存在, id=$id");
@@ -120,7 +137,7 @@ class PlaylistProvider extends ChangeNotifier {
       return;
     }
     await _dbService.deletePlaylist(id);
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
   /// 更新歌单信息（名称/描述/封面），传入 null 的参数保持不变
@@ -129,6 +146,7 @@ class PlaylistProvider extends ChangeNotifier {
     String name, {
     String? description,
     String? coverPath,
+    MusicProvider? musicProvider,
   }) async {
     if (name.trim().isEmpty) {
       debugPrint("警告: 歌单名称不能为空");
@@ -149,11 +167,11 @@ class PlaylistProvider extends ChangeNotifier {
       desc: description,
       coverPath: coverPath,
     );
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
   /// 重命名歌单（便捷方法，内部复用 updatePlaylist）
-  Future<void> renamePlaylist(String playlistId, String newName) async {
+  Future<void> renamePlaylist(String playlistId, String newName, {MusicProvider? musicProvider}) async {
     if (newName.trim().isEmpty) {
       debugPrint("警告: 歌单名称不能为空");
       return;
@@ -168,11 +186,11 @@ class PlaylistProvider extends ChangeNotifier {
       return;
     }
     await _dbService.renamePlaylist(playlistId, newName.trim());
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
   /// 将歌曲添加到歌单（自动去重）
-  Future<void> addToPlaylist(String playlistId, Music music) async {
+  Future<void> addToPlaylist(String playlistId, Music music, {MusicProvider? musicProvider}) async {
     final playlist = getPlaylistById(playlistId);
     if (playlist == null) {
       debugPrint("警告: 歌单不存在, id=$playlistId");
@@ -183,27 +201,27 @@ class PlaylistProvider extends ChangeNotifier {
       return;
     }
     await _dbService.addMusicToPlaylist(playlistId, music.id);
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
-  Future<void> removeFromPlaylist(String playlistId, String musicId) async {
+  Future<void> removeFromPlaylist(String playlistId, String musicId, {MusicProvider? musicProvider}) async {
     await _dbService.removeFromPlaylist(playlistId, musicId);
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
-  Future<void> addToHistory(Music music, int maxLimit) async {
+  Future<void> addToHistory(Music music, int maxLimit, {MusicProvider? musicProvider}) async {
     await _dbService.addMusicToHistory(music.id, maxLimit);
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
-  Future<void> clearHistory() async {
+  Future<void> clearHistory({MusicProvider? musicProvider}) async {
     await _dbService.clearHistory();
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
-  Future<void> toggleMusicFavorite(Music music) async {
+  Future<void> toggleMusicFavorite(Music music, {MusicProvider? musicProvider}) async {
     await _dbService.toggleMusicFavorite(music.id);
-    await refreshFromDb();
+    await refreshFromDb(musicProvider: musicProvider);
   }
 
   // ─────────────────────────────────────────────
@@ -213,19 +231,27 @@ class PlaylistProvider extends ChangeNotifier {
     return _filteredPlaylists.firstWhereOrNull((p) => p.id == id);
   }
 
-  List<Music> getPlaylistSongs(String playlistId, List<Music> globalLibrary) {
+  List<Music> getPlaylistSongs(String playlistId, List<Music> globalLibrary, {MusicProvider? musicProvider}) {
     final playlist = getPlaylistById(playlistId);
     if (playlist == null) return [];
 
     return playlist.songIds
-        .map((id) => globalLibrary.firstWhereOrNull((m) => m.id == id))
+        .map((id) {
+          final local = globalLibrary.firstWhereOrNull((m) => m.id == id);
+          if (local != null) return local;
+          return musicProvider?.getSongById(id);
+        })
         .whereType<Music>()
         .toList();
   }
 
-  List<Music> getHistorySongs(List<Music> globalLibrary) {
+  List<Music> getHistorySongs(List<Music> globalLibrary, {MusicProvider? musicProvider}) {
     return _filteredHistoryIds
-        .map((id) => globalLibrary.firstWhereOrNull((m) => m.id == id))
+        .map((id) {
+          final local = globalLibrary.firstWhereOrNull((m) => m.id == id);
+          if (local != null) return local;
+          return musicProvider?.getSongById(id);
+        })
         .whereType<Music>()
         .toList();
   }

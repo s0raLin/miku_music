@@ -188,14 +188,21 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     final entries = songs.map((song) {
       final isCurrent = musicProvider.currentMusic?.id == song.id;
       final isFav = playlistProvider
-          .getPlaylistSongs(PlaylistProvider.favoritesPlaylistId, musicProvider.library)
+          .getPlaylistSongs(PlaylistProvider.favoritesPlaylistId, musicProvider.library, musicProvider: musicProvider)
           .any((m) => m.id == song.id);
+      final isNetwork = song.source == MusicSource.network;
+      final coverUrl = isNetwork ? musicProvider.getCoverUrl(song.id) : null;
 
       return M3SongEntry(
         id: song.id,
         title: song.title,
         subtitle: song.artist,
         coverBytes: song.coverBytes,
+        coverUrl: coverUrl,
+        coverHeaders: isNetwork && coverUrl != null && coverUrl.contains('music.126.net')
+            ? {'Referer': 'https://music.163.com/'}
+            : null,
+        isNetworkSource: isNetwork,
         isHighlighted: isCurrent,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -203,7 +210,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             IconButton(
               icon: Icon(isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 20),
               color: isFav ? colorScheme.primary : null,
-              onPressed: () => playlistProvider.toggleMusicFavorite(song),
+              onPressed: () => playlistProvider.toggleMusicFavorite(song, musicProvider: musicProvider),
             ),
             AdaptiveMenu.buildAnchor(
               context,
@@ -239,7 +246,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final rawSongs = playlistProvider.getPlaylistSongs(widget.playlistId, musicProvider.library);
+    final rawSongs = playlistProvider.getPlaylistSongs(widget.playlistId, musicProvider.library, musicProvider: musicProvider);
 
     List<Music> filteredSongs = rawSongs.where((song) {
       final query = _searchQuery.toLowerCase();

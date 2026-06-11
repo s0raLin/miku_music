@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+enum MusicSource { local, network }
+
 class Music {
   final String id;
   final String title; // 标题
@@ -9,6 +11,7 @@ class Music {
   Uint8List? coverBytes; // 封面
   String? lyrics; // 歌词
   final String? album;
+  final MusicSource source;
 
   Music({
     required this.id,
@@ -18,6 +21,7 @@ class Music {
     required this.coverBytes,
     required this.lyrics,
     this.album,
+    this.source = MusicSource.local,
   });
 
   /// 核心实现：copyWith 方法
@@ -29,6 +33,7 @@ class Music {
     Uint8List? coverBytes, // 允许传入新的封面或保持原样
     String? lyrics, // 允许传入新的歌词或保持原样
     String? album,
+    MusicSource? source,
   }) {
     return Music(
       id: id ?? this.id,
@@ -39,6 +44,7 @@ class Music {
       coverBytes: coverBytes ?? this.coverBytes,
       lyrics: lyrics ?? this.lyrics,
       album: album ?? this.album,
+      source: source ?? this.source,
     );
   }
 
@@ -52,6 +58,7 @@ class Music {
       'cover': coverBytes != null ? base64Encode(coverBytes!) : null,
       'lyrics': lyrics,
       'album': album,
+      'source': source.name,
     };
   }
 }

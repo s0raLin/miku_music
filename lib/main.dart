@@ -42,7 +42,7 @@ Future<void> main() async {
             // 拿到当前内存中真实存在的本地歌曲 ID 集合
             final localSongIds = musicProvider.library.map((s) => s.id).toSet();
             // 反应式通知：本地乐库一变，歌单展示数量立刻计算并刷新
-            return playlistProvider..updateActivePlaylists(localSongIds);
+            return playlistProvider..updateActivePlaylists(localSongIds, musicProvider: musicProvider);
           },
         ),
         ChangeNotifierProvider(create: (_) => UserProvider()),

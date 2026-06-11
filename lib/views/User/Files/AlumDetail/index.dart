@@ -81,7 +81,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
       final isCurrent = musicProvider.currentMusic?.id == song.id;
       final isFav = playlistProvider
           .getPlaylistSongs(PlaylistProvider.favoritesPlaylistId,
-              musicProvider.library)
+              musicProvider.library, musicProvider: musicProvider)
           .any((m) => m.id == song.id);
 
       return M3SongEntry(
@@ -100,7 +100,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                       : Icons.favorite_border_rounded,
                   size: 20),
               color: isFav ? colorScheme.primary : null,
-              onPressed: () => playlistProvider.toggleMusicFavorite(song),
+              onPressed: () => playlistProvider.toggleMusicFavorite(song, musicProvider: musicProvider),
             ),
             AdaptiveMenu.buildAnchor(
               context,

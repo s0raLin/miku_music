@@ -55,7 +55,7 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
               title: Text(p.name),
               trailing: alreadyIn ? Icon(Icons.check_circle, color: Theme.of(ctx).colorScheme.secondary) : null,
               onTap: () async {
-                await playlistProvider.addToPlaylist(p.id, song);
+                await playlistProvider.addToPlaylist(p.id, song, musicProvider: context.read<MusicProvider>());
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
                   AppToast.success(ctx, message: '已添加到「${p.name}」');
@@ -77,14 +77,20 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
     final entries = songs.map((song) {
       final isCurrent = musicProvider.currentMusic?.id == song.id;
       final isFav = playlistProvider
-          .getPlaylistSongs(PlaylistProvider.favoritesPlaylistId, musicProvider.library)
+          .getPlaylistSongs(PlaylistProvider.favoritesPlaylistId, musicProvider.library, musicProvider: musicProvider)
           .any((m) => m.id == song.id);
+      final isNetwork = song.source == MusicSource.network;
+      final coverUrl = isNetwork ? musicProvider.getCoverUrl(song.id) : null;
 
       return M3SongEntry(
         id: song.id,
         title: song.title,
         subtitle: song.artist,
         coverBytes: song.coverBytes,
+        coverUrl: coverUrl,
+        coverHeaders: isNetwork && coverUrl != null && coverUrl.contains('music.126.net')
+            ? {'Referer': 'https://music.163.com/'}
+            : null,
         isHighlighted: isCurrent,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -92,7 +98,7 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
             IconButton(
               icon: Icon(isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 20),
               color: isFav ? colorScheme.primary : null,
-              onPressed: () => playlistProvider.toggleMusicFavorite(song),
+              onPressed: () => playlistProvider.toggleMusicFavorite(song, musicProvider: musicProvider),
             ),
             AdaptiveMenu.buildAnchor(
               context,
@@ -118,7 +124,7 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
     final playlistProvider = context.watch<PlaylistProvider>();
     final musicProvider = context.watch<MusicProvider>();
 
-    final rawSongs = playlistProvider.getHistorySongs(musicProvider.library);
+    final rawSongs = playlistProvider.getHistorySongs(musicProvider.library, musicProvider: musicProvider);
 
     List<Music> filteredSongs = rawSongs.where((song) {
       final query = _searchQuery.toLowerCase();
@@ -219,7 +225,7 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
                 ),
               ),
               actions: [
-                IconButton(onPressed: () async => await playlistProvider.clearHistory(), icon: const Icon(Icons.auto_delete_rounded)),
+                IconButton(onPressed: () async => await playlistProvider.clearHistory(musicProvider: musicProvider), icon: const Icon(Icons.auto_delete_rounded)),
                 const Padding(padding: EdgeInsets.only(right: 8)),
               ],
             ),

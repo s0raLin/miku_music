@@ -20,6 +20,7 @@ class M3SongEntry {
   final Map<String, String>? coverHeaders;
   final IconData fallbackIcon;
   final bool isHighlighted;
+  final bool isNetworkSource;
   final Widget? trailing;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
@@ -34,6 +35,7 @@ class M3SongEntry {
     this.coverHeaders,
     this.fallbackIcon = Icons.music_note_rounded,
     this.isHighlighted = false,
+    this.isNetworkSource = false,
     this.trailing,
     this.onTap,
     this.onDoubleTap,
@@ -307,7 +309,33 @@ class _M3SongRow extends StatelessWidget {
                 child: SizedBox(
                   width: 48,
                   height: 48,
-                  child: _buildCoverImage(colorScheme),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _buildCoverImage(colorScheme),
+                      // Network source badge
+                      if (entry.isNetworkSource)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.9),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.cloud_rounded,
+                              size: 12,
+                              color: colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 12),

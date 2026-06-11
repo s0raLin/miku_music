@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.45.0](https://github.com/s0raLin/miku_music/compare/v1.44.0...v1.45.0) (2026-06-11)
+
+
+### Features
+
+* **music:** integrate persisted network metadata into song retrieval ([ac63b7f](https://github.com/s0raLin/miku_music/commit/ac63b7f67020f6863baf8ac3a692b093a2797a51))
+* **ui:** add search functionality to toplist detail view ([0fae67e](https://github.com/s0raLin/miku_music/commit/0fae67e519cd8e593f63fee1b4bd83706a544aa3))
+* **ui:** add update dialog with skip option ([1928aa5](https://github.com/s0raLin/miku_music/commit/1928aa5a2809833b5cb5fee6bdbd8a8f75d9dc6d))
+
+
+### Bug Fixes
+
+* **media:** use cached_network_image to bypass CDN anti-leeching ([0cf38ce](https://github.com/s0raLin/miku_music/commit/0cf38cedda3abc9d563bd350284637d67b6b69de))
+
 ## [1.44.0](https://github.com/s0raLin/miku_music/compare/v1.43.0...v1.44.0) (2026-06-11)
 
 

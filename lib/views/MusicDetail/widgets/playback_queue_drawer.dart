@@ -6,6 +6,18 @@ import 'package:provider/provider.dart';
 class PlaybackQueueDrawer extends StatelessWidget {
   const PlaybackQueueDrawer({super.key});
 
+  IconData modeIcon(PlayMode mode) => switch (mode) {
+    PlayMode.sequence => Icons.repeat_rounded,
+    PlayMode.shuffle => Icons.shuffle_rounded,
+    PlayMode.repeat => Icons.repeat_one_rounded,
+  };
+
+  String modeTooltip(PlayMode mode) => switch (mode) {
+    PlayMode.sequence => "顺序播放",
+    PlayMode.shuffle => "随机播放",
+    PlayMode.repeat => "单曲循环",
+  };
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -59,10 +71,19 @@ class PlaybackQueueDrawer extends StatelessWidget {
                           ],
                         ),
                         if (songs.isNotEmpty)
-                          IconButton(
-                            tooltip: '清空队列',
-                            icon: const Icon(Icons.delete_outline_rounded),
-                            onPressed: () => mp.clearQueue(),
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: mp.togglePlayMode,
+                                tooltip: modeTooltip(mp.playMode),
+                                icon: Icon(modeIcon(mp.playMode)),
+                              ),
+                              IconButton(
+                                tooltip: '清空队列',
+                                icon: const Icon(Icons.delete_outline_rounded),
+                                onPressed: () => mp.clearQueue(),
+                              ),
+                            ],
                           ),
                       ],
                     ),

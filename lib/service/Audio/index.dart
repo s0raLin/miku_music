@@ -1,6 +1,7 @@
 
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/material.dart';
 
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/model/Music/index.dart';
@@ -49,34 +50,46 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   /// Play music from a network URL
+  // 在你的 MyAudioHandler 类中：
   Future<void> playFromUrl(
     String url, {
-    String id = '',
-    String title = '未知歌曲',
-    String artist = '未知歌手',
+    required String id,
+    required String title,
+    required String artist,
     String? coverUrl,
     bool autoPlay = true,
+    bool updateAudioSource = true, // 新增控制参数：是否需要重新加载音频源
   }) async {
-    await _player.setAudioSource(AudioSource.uri(Uri.parse(url)), preload: true);
-    final item = MediaItem(
-      id: id.isNotEmpty ? id : url,
+    // 1. 动态组装通知栏媒体信息
+    final mediaItem = MediaItem(
+      id: id,
+      album: "网络歌曲",
       title: title,
       artist: artist,
       artUri: coverUrl != null ? Uri.parse(coverUrl) : null,
     );
+    this.mediaItem.add(mediaItem);
 
-    mediaItem.add(item);
-
-    try {
-      if (autoPlay) {
-        await play();
-      } else {
-        await pause();
+    // 2. 只有当明确要求更新音频，或者切了新歌时，才去触发 player 的网络加载
+    if (updateAudioSource) {
+      try {
+        final duration = await player.setUrl(
+          url,
+          headers: url.contains('music.126.net')
+              ? const {
+                  'User-Agent':
+                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                }
+              : null,
+        );
+        this.mediaItem.add(mediaItem.copyWith(duration: duration));
+      } catch (e) {
+        debugPrint('just_audio 加载音频流失败: $e');
       }
-    } catch (e) {
-      playbackState.add(
-        playbackState.value.copyWith(errorMessage: e.toString()),
-      );
+    }
+
+    if (autoPlay && updateAudioSource) {
+      player.play();
     }
   }
 

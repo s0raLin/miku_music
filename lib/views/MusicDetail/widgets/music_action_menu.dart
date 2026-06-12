@@ -62,7 +62,7 @@ class MusicActionMenu {
     );
   }
 
-  /// 弹出「添加到歌单」底部面板，供歌曲详情页复用
+  /// 弹出「添加到歌单」左侧面板
   static void showAddToPlaylistSheet(BuildContext context, Music song) {
     final playlistProvider = context.read<PlaylistProvider>();
     final userPlaylists = playlistProvider.userPlaylists;
@@ -72,36 +72,113 @@ class MusicActionMenu {
       return;
     }
 
-    showModalBottomSheet(
+    // 改用 showGeneralDialog 实现自定义的左侧滑出面板
+    showGeneralDialog(
       context: context,
-      useSafeArea: true,
-      builder: (ctx) => SafeArea(
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: userPlaylists.length,
-          itemBuilder: (ctx, index) {
-            final p = userPlaylists[index];
-            final alreadyIn = p.songIds.contains(song.id);
-            return ListTile(
-              enabled: !alreadyIn,
-              leading: const Icon(Icons.playlist_add_rounded),
-              title: Text(p.name),
-              trailing: alreadyIn
-                  ? Icon(Icons.check_circle,
-                      color: Theme.of(ctx).colorScheme.secondary)
-                  : null,
-              onTap: () async {
-                final musicProvider = context.read<MusicProvider>();
-                await playlistProvider.addToPlaylist(p.id, song, musicProvider: musicProvider);
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  AppToast.success(ctx, message: '已添加到「${p.name}」');
-                }
-              },
-            );
-          },
-        ),
-      ),
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54, // 遮罩层颜色
+      transitionDuration: const Duration(milliseconds: 280),
+      // 控制从左侧滑出的动画
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position:
+              Tween<Offset>(
+                begin: const Offset(-1.0, 0.0), // 从屏幕左侧外开始
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
+          child: child,
+        );
+      },
+      pageBuilder: (animationContext, animation, secondaryAnimation) {
+        final cs = Theme.of(animationContext).colorScheme;
+
+        return Align(
+          alignment: Alignment.centerLeft, // 固定在左侧
+          child: Material(
+            elevation: 16,
+            color: cs.surface,
+            // 右侧圆角切边，符合 Material 3 抽屉美学
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+            child: SafeArea(
+              child: Container(
+                // 核心改动：使用 Constraints 适配全平台设备
+                constraints: const BoxConstraints(
+                  minWidth: 280, // 确保在极小设备上也有良好的可读性
+                  maxWidth: 320, // 跨平台黄金通用宽度（手机、平板、桌面端均适用）
+                ),
+                // 让宽度在 minWidth 和 maxWidth 之间根据屏幕大小自动弹性伸缩
+                width: MediaQuery.of(animationContext).size.width * 0.75,
+                height: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 面板头部标题
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20.0,
+                        horizontal: 16.0,
+                      ),
+                      child: Text(
+                        "添加到歌单",
+                        style: Theme.of(animationContext).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    // 歌单列表
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: userPlaylists.length,
+                        itemBuilder: (ctx, index) {
+                          final p = userPlaylists[index];
+                          final alreadyIn = p.songIds.contains(song.id);
+                          return ListTile(
+                            enabled: !alreadyIn,
+                            leading: const Icon(Icons.playlist_add_rounded),
+                            title: Text(
+                              p.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: alreadyIn
+                                ? Icon(Icons.check_circle, color: cs.secondary)
+                                : null,
+                            onTap: () async {
+                              final musicProvider = context
+                                  .read<MusicProvider>();
+                              await playlistProvider.addToPlaylist(
+                                p.id,
+                                song,
+                                musicProvider: musicProvider,
+                              );
+                              if (animationContext.mounted) {
+                                Navigator.pop(animationContext);
+                                AppToast.success(
+                                  context,
+                                  message: '已添加到「${p.name}」',
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

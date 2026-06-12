@@ -22,6 +22,22 @@ function cleanSongData(song, source = 'netease') {
   };
 }
 
+// 公共辅助函数：统一清洗网易云等平台的歌单简要数据结构（用于搜索结果）
+function cleanPlaylistData(playlist, source = 'netease') {
+  return {
+    id: String(playlist.id),
+    title: playlist.name || '未知歌单',
+    // 歌单创建者
+    creator: playlist.creator?.nickname || '未知创建者',
+    // 歌单封面图（部分平台搜索结果里叫 coverImgUrl 或 picUrl）
+    pic: playlist.coverImgUrl || playlist.picUrl || '',
+    // 歌曲总数
+    playCount: playlist.playCount || 0,
+    trackCount: playlist.trackCount || 0,
+    source: source
+  };
+}
+
 // 公共辅助函数：安全解析 Meting 返回的各类（Buffer/String/Object）原始数据
 function parseRawData(rawData) {
   if (!rawData) return null;
@@ -120,6 +136,39 @@ app.get('/api/search', async (req, res) => {
   } catch (err) {
     console.error('❌ 搜索失败:', err.message);
     res.status(500).json({ error: '搜索失败' });
+  }
+});
+
+// ✨ 新增：7. 搜索歌单接口
+app.get('/api/search/playlist', async (req, res) => {
+  const { keyword, source = 'netease' } = req.query;
+  if (!keyword) return res.status(400).json({ error: '请输入搜索歌单的关键词' });
+
+  try {
+    const meting = new Meting(source);
+    meting.format(false);
+
+    // 💡 关键点：Meting 的 search 方法第二个参数传入配置对象
+    // type: 1000 代表搜索歌单 (Meting/MetingJS 的统一规范)
+    const rawData = await meting.search(keyword, {
+      type: 1000,
+      limit: 20 // 默认返回20条，可根据需要调整
+    });
+
+    const parsedRaw = parseRawData(rawData);
+
+    // 网易云搜索歌单结果包裹在 parsedRaw.result.playlists 中
+    const rawPlaylists = parsedRaw?.result?.playlists || parsedRaw?.playlists || parsedRaw?.data || [];
+    const cleanedPlaylists = rawPlaylists.map(playlist => cleanPlaylistData(playlist, source));
+
+    res.json({
+      code: 200,
+      count: cleanedPlaylists.length,
+      data: cleanedPlaylists
+    });
+  } catch (err) {
+    console.error(`❌ 搜索 [${source}] 歌单失败:`, err.message);
+    res.status(500).json({ error: '搜索歌单失败' });
   }
 });
 

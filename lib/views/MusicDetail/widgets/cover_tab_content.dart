@@ -9,7 +9,6 @@ import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/views/MusicDetail/widgets/music_action_menu.dart';
 import 'package:provider/provider.dart';
 
-
 class CoverTabContent extends StatelessWidget {
   final Music music;
   const CoverTabContent({super.key, required this.music});
@@ -19,27 +18,42 @@ class CoverTabContent extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
     final useWave = themeProvider.sliderStyle == SliderStyle.wave;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // 1. 封面
-        _AlbumArt(music: music),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          // 确保内容不满一屏时，也能撑开到最大高度
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                // 核心：让所有子组件在垂直方向上均匀居中分布
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 1. 封面
+                  _AlbumArt(music: music),
 
-        const SizedBox(height: 16),
+                  // 如果空间足够，可以换成 Spacer() 或者弹性间距，空间不够时用固定的
+                  const SizedBox(height: 24),
 
-        // 2. 快捷操作栏
-        _ActionBar(music: music),
+                  // 2. 快捷操作栏
+                  _ActionBar(music: music),
 
-        const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-        // 3. 进度条 + 时间
-        _ProgressSection(music: music, useWave: useWave),
+                  // 3. 进度条 + 时间
+                  _ProgressSection(music: music, useWave: useWave),
 
-        const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-        // 4. 底部控制
-        _BottomPlaybackControls(),
-      ],
+                  // 4. 底部控制
+                  _BottomPlaybackControls(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -202,17 +216,16 @@ class _ActionBar extends StatelessWidget {
                 music,
                 musicProvider: musicProvider,
               );
-              AppToast.neutral(
-                context,
-                message: wasLiked ? '已取消收藏' : '已添加到喜欢',
-              );
+              AppToast.neutral(context, message: wasLiked ? '已取消收藏' : '已添加到喜欢');
             },
             icon: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               transitionBuilder: (child, animation) =>
                   ScaleTransition(scale: animation, child: child),
               child: Icon(
-                isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                isLiked
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
                 key: ValueKey<bool>(isLiked),
                 color: isLiked ? Colors.redAccent : cs.onSurface,
                 size: 28,
@@ -220,7 +233,8 @@ class _ActionBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () => MusicActionMenu.showAddToPlaylistSheet(context, music),
+            onPressed: () =>
+                MusicActionMenu.showAddToPlaylistSheet(context, music),
             icon: Icon(Icons.add_rounded, color: cs.onSurface),
             tooltip: '添加到歌单',
           ),
@@ -234,10 +248,7 @@ class _ActionBar extends StatelessWidget {
 class _ProgressSection extends StatefulWidget {
   final Music music;
   final bool useWave;
-  const _ProgressSection({
-    required this.music,
-    required this.useWave,
-  });
+  const _ProgressSection({required this.music, required this.useWave});
 
   @override
   State<_ProgressSection> createState() => _ProgressSectionState();
@@ -260,9 +271,14 @@ class _ProgressSectionState extends State<_ProgressSection> {
     return StreamBuilder<PositionData>(
       stream: musicProvider.positionDataStream,
       builder: (context, snapshot) {
-        final data = snapshot.data ?? PositionData(Duration.zero, Duration.zero, Duration.zero);
+        final data =
+            snapshot.data ??
+            PositionData(Duration.zero, Duration.zero, Duration.zero);
         final totalMs = data.duration.inMilliseconds.toDouble();
-        final currentMs = data.position.inMilliseconds.toDouble().clamp(0.0, totalMs);
+        final currentMs = data.position.inMilliseconds.toDouble().clamp(
+          0.0,
+          totalMs,
+        );
         final safeTotal = totalMs > 0 ? totalMs : 1.0;
 
         final sliderValue = _draggingValue ?? currentMs;
@@ -279,7 +295,9 @@ class _ProgressSectionState extends State<_ProgressSection> {
                       isWaving: isWaving,
                       onChanged: (v) => setState(() => _draggingValue = v),
                       onChangeEnd: (v) async {
-                        await musicProvider.player.seek(Duration(milliseconds: v.toInt()));
+                        await musicProvider.player.seek(
+                          Duration(milliseconds: v.toInt()),
+                        );
                         setState(() => _draggingValue = null);
                       },
                     )
@@ -288,7 +306,9 @@ class _ProgressSectionState extends State<_ProgressSection> {
                       max: safeTotal,
                       onChanged: (v) => setState(() => _draggingValue = v),
                       onChangeEnd: (v) async {
-                        await musicProvider.player.seek(Duration(milliseconds: v.toInt()));
+                        await musicProvider.player.seek(
+                          Duration(milliseconds: v.toInt()),
+                        );
                         setState(() => _draggingValue = null);
                       },
                     ),
@@ -300,7 +320,9 @@ class _ProgressSectionState extends State<_ProgressSection> {
                 children: [
                   Text(
                     _draggingValue != null
-                        ? _formatDuration(Duration(milliseconds: _draggingValue!.toInt()))
+                        ? _formatDuration(
+                            Duration(milliseconds: _draggingValue!.toInt()),
+                          )
                         : _formatDuration(data.position),
                     style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                   ),
@@ -331,7 +353,9 @@ class _BottomPlaybackControls extends StatelessWidget {
       stream: mp.player.processingStateStream,
       builder: (context, snapshot) {
         final state = snapshot.data ?? ProcessingState.idle;
-        final isLoading = state == ProcessingState.loading || state == ProcessingState.buffering;
+        final isLoading =
+            state == ProcessingState.loading ||
+            state == ProcessingState.buffering;
         final playing = mp.player.playing;
 
         return Row(
@@ -339,7 +363,11 @@ class _BottomPlaybackControls extends StatelessWidget {
           children: [
             IconButton(
               onPressed: mp.playPrev,
-              icon: Icon(Icons.skip_previous_rounded, size: 36, color: cs.onSurface),
+              icon: Icon(
+                Icons.skip_previous_rounded,
+                size: 36,
+                color: cs.onSurface,
+              ),
             ),
             const SizedBox(width: 20),
             SizedBox(
@@ -354,7 +382,9 @@ class _BottomPlaybackControls extends StatelessWidget {
                     icon: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 180),
                       child: Icon(
-                        playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        playing
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
                         key: ValueKey(playing),
                         color: cs.onSurface,
                       ),
@@ -368,7 +398,11 @@ class _BottomPlaybackControls extends StatelessWidget {
             const SizedBox(width: 20),
             IconButton(
               onPressed: mp.playNext,
-              icon: Icon(Icons.skip_next_rounded, size: 36, color: cs.onSurface),
+              icon: Icon(
+                Icons.skip_next_rounded,
+                size: 36,
+                color: cs.onSurface,
+              ),
             ),
           ],
         );

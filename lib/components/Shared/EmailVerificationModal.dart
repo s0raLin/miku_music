@@ -64,7 +64,7 @@ class _EmailVerificationDialogState extends State<_EmailVerificationDialog> {
   final _codeController = TextEditingController();
   final _codeFocusNode = FocusNode();
   bool _isSending = false;
-  bool _isVerifying = false;
+  final bool _isVerifying = false;
   bool _codeSent = false;
   int _countdown = 0;
   Timer? _timer;

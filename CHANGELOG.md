@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.46.0](https://github.com/s0raLin/miku_music/compare/v1.45.0...v1.46.0) (2026-06-12)
+
+
+### Features
+
+* **music:** enhance playback and queue management ([fab539b](https://github.com/s0raLin/miku_music/commit/fab539bb57bf59a1b74d580a9919b9284e8f2842))
+
 ## [1.45.0](https://github.com/s0raLin/miku_music/compare/v1.44.0...v1.45.0) (2026-06-11)
 
 

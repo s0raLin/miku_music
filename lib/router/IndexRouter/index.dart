@@ -28,6 +28,7 @@ import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
 import 'package:myapp/views/ToplistDetail/index.dart';
 import 'package:myapp/views/UpdateDownload/index.dart';
+import 'package:myapp/views/User/DownloadManagement/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:provider/provider.dart';
 
@@ -137,6 +138,11 @@ final List<AppNavItem> navItems = [
         name: "edit-profile",
         path: "/edit-profile",
         builder: (context, state) => const EditProfilePage(),
+      ),
+      GoRoute(
+        name: "downloads",
+        path: "/downloads",
+        builder: (context, state) => const DownloadManagementPage(),
       ),
       GoRoute(
         name: "profile",

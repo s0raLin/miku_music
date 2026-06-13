@@ -25,6 +25,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     final quickCards = [
       _PlaylistQuickCard(
+        onTap: () => context.push("/user/downloads"),
+        title: "下载",
+        icon: Icons.download_rounded,
+      ),
+      _PlaylistQuickCard(
         onTap: () => context.push("/user/playlist/favorites"),
         title: "喜欢",
         icon: Icons.favorite_rounded,

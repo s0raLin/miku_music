@@ -56,7 +56,10 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
           setState(() {});
         }
       },
-      onDone: () {
+      onDone: () async {
+        if (!mounted) return;
+        // Load cover images eagerly from cover.jpg in each song's folder
+        await _loadCovers();
         if (!mounted) return;
         setState(() => _isScanning = false);
       },
@@ -65,6 +68,28 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
         setState(() => _isScanning = false);
       },
     );
+  }
+
+  /// Load cover.jpg from each song's parent folder and attach to song.coverBytes
+  Future<void> _loadCovers() async {
+    for (int i = 0; i < _songs.length; i++) {
+      final song = _songs[i];
+      // Only load if no cover bytes yet
+      if (song.coverBytes != null && song.coverBytes!.isNotEmpty) continue;
+
+      try {
+        final parentDir = p.dirname(song.id);
+        final coverFile = File(p.join(parentDir, 'cover.jpg'));
+        if (await coverFile.exists()) {
+          final bytes = await coverFile.readAsBytes();
+          if (bytes.isNotEmpty) {
+            _songs[i] = song.copyWith(coverBytes: bytes);
+          }
+        }
+      } catch (_) {
+        // ignore per-file errors
+      }
+    }
   }
 
   @override
@@ -224,7 +249,6 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
               songs: entries,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               isScrollable: true,
-              coverLoader: musicProvider,
             ),
           ),
         ],

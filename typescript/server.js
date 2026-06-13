@@ -4,105 +4,188 @@ import Meting from '@meting/core';
 
 const app = express();
 
-// ✨ 优化：替换掉原有的手动 Header 跨域，一劳永逸支持所有请求类型（如 OPTIONS/POST）
+// 一劳永逸支持所有请求类型跨域
 app.use(cors());
 
-// 公共辅助函数：统一清洗网易云等平台的歌曲数据结构
+// ==================== 🛠️ 数据清洗辅助函数 ====================
+
+// 1. 清洗单曲数据结构
 function cleanSongData(song, source = 'netease') {
   return {
     id: String(song.id),
     title: song.name || '未知歌名',
-    // 兼容 ar (网易云新版) 或 artists (旧版/QQ音乐)
     author: song.ar?.map(artist => artist.name).join(', ') || song.artists?.map(a => a.name).join(', ') || '未知歌手',
-    // 兼容 al.picUrl (网易云新版) 或 album.picUrl (旧版/QQ音乐)
     pic: song.al?.picUrl || song.album?.picUrl || '',
-    // ✨ 优化建议：不要在列表中写死外链，让前端动态请求 /api/url 获取最新、最高音质的 CDN
     url: `/api/url?id=${song.id}&source=${source}`,
     source: source
   };
 }
 
-// 公共辅助函数：统一清洗网易云等平台的歌单简要数据结构（用于搜索结果）
+// 2. 清洗歌单简要数据结构
 function cleanPlaylistData(playlist, source = 'netease') {
   return {
     id: String(playlist.id),
     title: playlist.name || '未知歌单',
-    // 歌单创建者
     creator: playlist.creator?.nickname || '未知创建者',
-    // 歌单封面图（部分平台搜索结果里叫 coverImgUrl 或 picUrl）
     pic: playlist.coverImgUrl || playlist.picUrl || '',
-    // 歌曲总数
     playCount: playlist.playCount || 0,
     trackCount: playlist.trackCount || 0,
     source: source
   };
 }
 
-// 公共辅助函数：安全解析 Meting 返回的各类（Buffer/String/Object）原始数据
+// ✨ 新增 3. 清洗专辑简要数据结构
+function cleanAlbumData(album, source = 'netease') {
+  return {
+    id: String(album.id),
+    title: album.name || '未知专辑',
+    author: album.artist?.name || album.artists?.map(a => a.name).join(', ') || '未知歌手',
+    pic: album.picUrl || album.blurPicUrl || '',
+    publishTime: album.publishTime || null,
+    size: album.size || 0, // 专辑内歌曲数量
+    source: source
+  };
+}
+
+// ✨ 新增 4. 清洗歌手简要数据结构
+function cleanArtistData(artist, source = 'netease') {
+  return {
+    id: String(artist.id),
+    name: artist.name || '未知歌手',
+    pic: artist.picUrl || artist.img1v1Url || '',
+    albumSize: artist.albumSize || 0,
+    musicSize: artist.musicSize || 0,
+    source: source
+  };
+}
+
+// 安全解析 Meting 返回的各类原始数据
 function parseRawData(rawData) {
   if (!rawData) return null;
   try {
     const rawString = rawData.toString();
     return JSON.parse(rawString);
   } catch (e) {
-    return rawData; // 如果本来就是个对象或者解析失败，直接返回原数据
+    return rawData;
   }
 }
 
-// ✨ 新增：排行榜 ID 映射配置（以网易云音乐为例）
+// 排行榜 ID 映射配置
 const TOP_LISTS = {
   netease: {
-    hot: '3778678',      // 热歌榜
-    new: '3779629',      // 新歌榜
-    soaring: '19723756',  // 飙升榜
-    original: '2884035'   // 原创榜
+    hot: '3778678',
+    new: '3779629',
+    soaring: '19723756',
+    original: '2884035'
   },
-  // 如果未来扩展 QQ 音乐，可以在这里追加其对应的排行榜 ID
   tencent: {
     hot: '26',
     new: '27'
   }
 };
 
-// ✨ 新增：6. 排行榜接口
-app.get('/api/toplist', async (req, res) => {
-  // type 可选值: hot(热歌), new(新歌), soaring(飙升), original(原创)
-  const { type = 'hot', source = 'netease', limit } = req.query;
+// ==================== 🛣️ 路由接口 ====================
 
-  // 1. 安全校验：检查该平台下是否存在该类型的排行榜
-  const platformLists = TOP_LISTS[source];
-  if (!platformLists) {
-    return res.status(400).json({ error: `暂不支持平台: ${source}` });
-  }
+// ✨ 完美重构：多功能万能搜索接口（支持单曲、歌手、专辑、歌单）
+app.get('/api/search', async (req, res) => {
+  // type 可选值: song(单曲), artist(歌手), album(专辑), playlist(歌单)
+  const { keyword, type = 'song', source = 'netease', limit = 20 } = req.query;
 
-  const playlistId = platformLists[type];
-  if (!playlistId) {
-    return res.status(400).json({ error: `未找到该类型的排行榜: ${type}。可选值: hot, new, soaring, original` });
+  if (!keyword) return res.status(400).json({ error: '请输入搜索关键词' });
+
+  // 映射前端易读的 type 到 Meting 内部的数字 type
+  const typeMapping = {
+    song: 1,
+    album: 10,
+    artist: 100,
+    playlist: 1000
+  };
+
+  const metingType = typeMapping[type];
+  if (!metingType) {
+    return res.status(400).json({ error: `不支持的搜索类型: ${type}。可选值: song, artist, album, playlist` });
   }
 
   try {
     const meting = new Meting(source);
     meting.format(false);
 
-    // 2. 排行榜本质就是官方歌单，直接调用 meting.playlist()
+    // 调用 Meting 进行搜索，传入类型和数量限制
+    const rawData = await meting.search(keyword, {
+      type: metingType,
+      limit: parseInt(limit) || 20
+    });
+
+    const parsedRaw = parseRawData(rawData);
+    const resultObj = parsedRaw?.result || parsedRaw; // 兼容不同平台的返回外层
+
+    let cleanedData = [];
+
+    // 根据不同类型，提取各自的字段并调用对应的清洗函数
+    switch (type) {
+      case 'song':
+        const songs = resultObj?.songs || resultObj?.data || [];
+        cleanedData = songs.map(item => cleanSongData(item, source));
+        break;
+      case 'album':
+        const albums = resultObj?.albums || resultObj?.data || [];
+        cleanedData = albums.map(item => cleanAlbumData(item, source));
+        break;
+      case 'artist':
+        const artists = resultObj?.artists || resultObj?.data || [];
+        cleanedData = artists.map(item => cleanArtistData(item, source));
+        break;
+      case 'playlist':
+        const playlists = resultObj?.playlists || resultObj?.data || [];
+        cleanedData = playlists.map(item => cleanPlaylistData(item, source));
+        break;
+    }
+
+    res.json({
+      code: 200,
+      type: type,
+      count: cleanedData.length,
+      data: cleanedData
+    });
+  } catch (err) {
+    console.error(`❌ 搜索 [${source}] ${type} 失败:`, err.message);
+    res.status(500).json({ error: '搜索失败' });
+  }
+});
+
+// 保留的原有独立搜索歌单接口（为了向下兼容你之前的前端调用，内部直接复用新逻辑）
+app.get('/api/search/playlist', (req, res) => {
+  req.query.type = 'playlist';
+  app._router.handle(req, res);
+});
+
+// 排行榜接口
+app.get('/api/toplist', async (req, res) => {
+  const { type = 'hot', source = 'netease', limit } = req.query;
+  const platformLists = TOP_LISTS[source];
+  if (!platformLists) return res.status(400).json({ error: `暂不支持平台: ${source}` });
+
+  const playlistId = platformLists[type];
+  if (!playlistId) return res.status(400).json({ error: `未找到该类型的排行榜: ${type}` });
+
+  try {
+    const meting = new Meting(source);
+    meting.format(false);
+
     const playlistRaw = await meting.playlist(playlistId);
     const parsedRaw = parseRawData(playlistRaw);
-
-    // 3. 复用你原有的歌单歌曲提取与清洗逻辑
     const rawSongs = parsedRaw?.playlist?.tracks || parsedRaw?.tracks || parsedRaw?.data || [];
     let cleanedSongs = rawSongs.map(song => cleanSongData(song, source));
 
-    // ✨ 优化：支持前端通过 limit 参数控制返回的歌曲数量（例如：只要前10首做首页推荐）
     if (limit && !isNaN(limit)) {
       cleanedSongs = cleanedSongs.slice(0, parseInt(limit));
     }
 
-    // 4. 返回规范的数据
     res.json({
       code: 200,
       title: parsedRaw?.playlist?.name || '未知排行榜',
       description: parsedRaw?.playlist?.description || '',
-      cover: parsedRaw?.playlist?.coverImgUrl || '', // 排行榜封面图
+      cover: parsedRaw?.playlist?.coverImgUrl || '',
       count: cleanedSongs.length,
       data: cleanedSongs
     });
@@ -112,67 +195,7 @@ app.get('/api/toplist', async (req, res) => {
   }
 });
 
-// 1. 搜索接口
-app.get('/api/search', async (req, res) => {
-  const { keyword } = req.query;
-  if (!keyword) return res.status(400).json({ error: '请输入搜索关键词' });
-
-  try {
-    const neteaseMeting = new Meting('netease');
-    neteaseMeting.format(false);
-
-    const neteaseRaw = await neteaseMeting.search(keyword);
-    const parsedRaw = parseRawData(neteaseRaw);
-
-    // 完美匹配你发来的数据结构：parsedRaw?.result?.songs 或 parsedRaw?.songs
-    const neteaseSongs = parsedRaw?.result?.songs || parsedRaw?.songs || [];
-    const cleanedNetease = neteaseSongs.map(song => cleanSongData(song, 'netease'));
-
-    res.json({
-      code: 200,
-      count: cleanedNetease.length,
-      data: cleanedNetease
-    });
-  } catch (err) {
-    console.error('❌ 搜索失败:', err.message);
-    res.status(500).json({ error: '搜索失败' });
-  }
-});
-
-// ✨ 新增：7. 搜索歌单接口
-app.get('/api/search/playlist', async (req, res) => {
-  const { keyword, source = 'netease' } = req.query;
-  if (!keyword) return res.status(400).json({ error: '请输入搜索歌单的关键词' });
-
-  try {
-    const meting = new Meting(source);
-    meting.format(false);
-
-    // 💡 关键点：Meting 的 search 方法第二个参数传入配置对象
-    // type: 1000 代表搜索歌单 (Meting/MetingJS 的统一规范)
-    const rawData = await meting.search(keyword, {
-      type: 1000,
-      limit: 20 // 默认返回20条，可根据需要调整
-    });
-
-    const parsedRaw = parseRawData(rawData);
-
-    // 网易云搜索歌单结果包裹在 parsedRaw.result.playlists 中
-    const rawPlaylists = parsedRaw?.result?.playlists || parsedRaw?.playlists || parsedRaw?.data || [];
-    const cleanedPlaylists = rawPlaylists.map(playlist => cleanPlaylistData(playlist, source));
-
-    res.json({
-      code: 200,
-      count: cleanedPlaylists.length,
-      data: cleanedPlaylists
-    });
-  } catch (err) {
-    console.error(`❌ 搜索 [${source}] 歌单失败:`, err.message);
-    res.status(500).json({ error: '搜索歌单失败' });
-  }
-});
-
-// ✨ 新增：2. 歌曲详情接口 (专门处理你提供的那段数据)
+// 歌曲详情接口
 app.get('/api/song', async (req, res) => {
   const { id, source = 'netease' } = req.query;
   if (!id) return res.status(400).json({ error: '缺少歌曲 ID' });
@@ -183,28 +206,18 @@ app.get('/api/song', async (req, res) => {
 
     const songRaw = await meting.song(id);
     const parsedRaw = parseRawData(songRaw);
-
-    // 匹配你发来的结构：如果是单个或多个歌曲详情，网易云外层是 parsedRaw.songs 数组
     const songs = parsedRaw?.songs || parsedRaw?.data || [];
 
-    if (songs.length === 0) {
-      return res.status(404).json({ code: 404, message: '未找到该歌曲详情' });
-    }
+    if (songs.length === 0) return res.status(404).json({ code: 404, message: '未找到该歌曲详情' });
 
-    // 清洗单首歌曲数据
-    const cleanedSong = cleanSongData(songs[0], source);
-
-    res.json({
-      code: 200,
-      data: cleanedSong
-    });
+    res.json({ code: 200, data: cleanSongData(songs[0], source) });
   } catch (err) {
     console.error(`❌ 获取歌曲 [${id}] 详情失败:`, err.message);
     res.status(500).json({ error: '获取歌曲详情失败' });
   }
 });
 
-// ✨ 新增：3. 歌单详情接口 (批量拉取整个歌单的歌曲)
+// 歌单详情接口
 app.get('/api/playlist', async (req, res) => {
   const { id, source = 'netease' } = req.query;
   if (!id) return res.status(400).json({ error: '缺少歌单 ID' });
@@ -215,8 +228,6 @@ app.get('/api/playlist', async (req, res) => {
 
     const playlistRaw = await meting.playlist(id);
     const parsedRaw = parseRawData(playlistRaw);
-
-    // 网易云歌单内的歌曲通常包裹在 playlist.tracks 中
     const rawSongs = parsedRaw?.playlist?.tracks || parsedRaw?.tracks || parsedRaw?.data || [];
     const cleanedSongs = rawSongs.map(song => cleanSongData(song, source));
 
@@ -232,7 +243,7 @@ app.get('/api/playlist', async (req, res) => {
   }
 });
 
-// 4. 获取播放链接接口
+// 获取播放链接接口
 app.get('/api/url', async (req, res) => {
   const { id, source = 'netease' } = req.query;
   if (!id) return res.status(400).json({ error: '缺少歌曲 ID' });
@@ -243,16 +254,10 @@ app.get('/api/url', async (req, res) => {
 
     const urlRaw = await meting.url(id);
     const parsedUrlData = parseRawData(urlRaw);
-
     let realUrl = parsedUrlData?.data?.[0]?.url || parsedUrlData?.url || '';
 
-    if (realUrl && realUrl.startsWith('//')) {
-      realUrl = `https:${realUrl}`;
-    }
-
-    if (!realUrl) {
-      return res.status(404).json({ code: 404, message: '无法获取有效的播放地址' });
-    }
+    if (realUrl && realUrl.startsWith('//')) realUrl = `https:${realUrl}`;
+    if (!realUrl) return res.status(404).json({ code: 404, message: '无法获取有效的播放地址' });
 
     res.json({ code: 200, url: realUrl });
   } catch (err) {
@@ -261,7 +266,7 @@ app.get('/api/url', async (req, res) => {
   }
 });
 
-// 5. 歌词接口
+// 歌词接口
 app.get('/api/lyric', async (req, res) => {
   const { id, source = 'netease' } = req.query;
   if (!id) return res.status(400).json({ error: '缺少歌曲 ID' });
@@ -272,13 +277,10 @@ app.get('/api/lyric', async (req, res) => {
 
     const lyricRaw = await meting.lyric(id);
     const parsedLyricData = parseRawData(lyricRaw);
-
     let lyric = parsedLyricData?.lrc?.lyric || parsedLyricData?.lyric || '';
     let tlyric = parsedLyricData?.tlyric?.lyric || '';
 
-    if (!lyric) {
-      return res.status(404).json({ code: 404, message: '未找到该歌曲的歌词' });
-    }
+    if (!lyric) return res.status(404).json({ code: 404, message: '未找到该歌曲的歌词' });
 
     res.json({ code: 200, lyric, tlyric });
   } catch (err) {

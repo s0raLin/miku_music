@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.47.0](https://github.com/s0raLin/miku_music/compare/v1.46.0...v1.47.0) (2026-06-13)
+
+
+### Features
+
+* **api:** add playlist search endpoint ([19cc0d5](https://github.com/s0raLin/miku_music/commit/19cc0d5f1ad89fd7a73578b8b1ba927bb5cc16b1))
+* **api:** implement versatile search endpoint and data cleaning utilities ([14bfbb6](https://github.com/s0raLin/miku_music/commit/14bfbb6cbd12d3d19ed988af4c13806ee1c202ae))
+* **user:** implement download management ([3d60498](https://github.com/s0raLin/miku_music/commit/3d604982a4fbc736f2a9dcfbe2e2bcbd0e5758d0))
+
 ## [1.46.0](https://github.com/s0raLin/miku_music/compare/v1.45.0...v1.46.0) (2026-06-12)
 
 

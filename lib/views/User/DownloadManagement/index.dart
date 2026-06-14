@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:myapp/views/MusicDetail/widgets/music_action_menu.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
@@ -196,22 +198,55 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
               icon: const Icon(Icons.more_vert_rounded, size: 20),
               onSelected: (v) {
                 switch (v) {
+                  case 'add_to_playlist':
+                    MusicActionMenu.showAddToPlaylistSheet(context, song);
+                    break;
+                  case 'toggle_favorite':
+                    _toggleFavorite(song);
+                    break;
                   case 'delete':
                     _deleteSong(song);
+                    break;
                 }
               },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'delete',
-                  child: ListTile(
-                    leading: Icon(Icons.delete_outline_rounded,
-                        color: Colors.red),
-                    title: Text('删除文件'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+              itemBuilder: (ctx) {
+                final isFav = _isFavorited(ctx, song);
+                return [
+                  PopupMenuItem(
+                    value: 'add_to_playlist',
+                    child: const ListTile(
+                      leading: Icon(Icons.playlist_add_rounded),
+                      title: Text('添加到歌单'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
-                ),
-              ],
+                  PopupMenuItem(
+                    value: 'toggle_favorite',
+                    child: ListTile(
+                      leading: Icon(
+                        isFav
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: isFav ? null : null,
+                      ),
+                      title: Text(isFav ? '取消收藏' : '添加到收藏'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline_rounded,
+                          color: Colors.red),
+                      title: Text('删除文件'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ];
+              },
             ),
           ],
         ),
@@ -252,6 +287,43 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Check if a song is currently favorited
+  bool _isFavorited(BuildContext ctx, Music song) {
+    final playlistProvider = ctx.read<PlaylistProvider>();
+    final musicProvider = ctx.read<MusicProvider>();
+    return playlistProvider
+        .getPlaylistSongs(
+          PlaylistProvider.favoritesPlaylistId,
+          musicProvider.library,
+          musicProvider: musicProvider,
+        )
+        .any((m) => m.id == song.id);
+  }
+
+  /// Toggle favorite status for a song
+  Future<void> _toggleFavorite(Music song) async {
+    final musicProvider = context.read<MusicProvider>();
+    final playlistProvider = context.read<PlaylistProvider>();
+
+    final wasFav = playlistProvider
+        .getPlaylistSongs(
+          PlaylistProvider.favoritesPlaylistId,
+          musicProvider.library,
+          musicProvider: musicProvider,
+        )
+        .any((m) => m.id == song.id);
+
+    await playlistProvider.toggleMusicFavorite(song, musicProvider: musicProvider);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(wasFav ? '已取消收藏「${song.title}」' : '已收藏「${song.title}」'),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

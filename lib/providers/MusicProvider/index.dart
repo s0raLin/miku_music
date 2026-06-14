@@ -89,6 +89,10 @@ class MusicProvider extends ChangeNotifier {
   Timer? _persistTimer;
 
   MusicProvider({required this.audioHandler}) {
+    // Wire notification prev/next buttons to MusicProvider's play logic
+    audioHandler.onSkipToNext = () => playNext();
+    audioHandler.onSkipToPrevious = () => playPrev();
+
     _stateSubscription = player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) _playNext();
     });

@@ -22,39 +22,39 @@ class NowPlayingBar extends StatelessWidget {
       color: cs.surfaceContainer,
 
       child: InkWell(
-          onTap: () => context.push("/music-detail"),
-          child: SizedBox(
-            height: 72 ,
-            child: Stack(
-              children: [
-                // 1. 全端统一：顶部的迷你触控进度条（吸附在容器上边缘）
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: _MiniProgressBar(),
-                ),
+        onTap: () => context.push("/music-detail"),
+        child: SizedBox(
+          height: 72,
+          child: Stack(
+            children: [
+              // 1. 全端统一：顶部的迷你触控进度条（吸附在容器上边缘）
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _MiniProgressBar(),
+              ),
 
-                // 2. 主体内容行：弹性自适应，不再用 width 判断宽度
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    child: Row(
-                      children: [
-                        // 左侧：歌曲信息（自动占据剩余空间的最左侧）
-                        Expanded(child: _TrackInfoTile(music: music)),
-                        const SizedBox(width: 16),
+              // 2. 主体内容行：弹性自适应，不再用 width 判断宽度
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Row(
+                    children: [
+                      // 左侧：歌曲信息（自动占据剩余空间的最左侧）
+                      Expanded(child: _TrackInfoTile(music: music)),
+                      const SizedBox(width: 16),
 
-                        // 右侧：M3 精致控制按钮组合（在手机上紧凑，在桌面上自然靠右）
-                        const _PlaybackControlsSection(),
-                      ],
-                    ),
+                      // 右侧：M3 精致控制按钮组合（在手机上紧凑，在桌面上自然靠右）
+                      const _PlaybackControlsSection(),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }
@@ -76,7 +76,6 @@ class _TrackInfoTile extends StatelessWidget {
     final coverUrl = mp.getCoverUrl(music.id);
 
     if (coverUrl != null && coverUrl.isNotEmpty) {
-
       return CachedNetworkImage(
         imageUrl: coverUrl,
         fit: BoxFit.cover,
@@ -284,6 +283,18 @@ class _MiniProgressBar extends StatelessWidget {
 class _QueueSheet extends StatelessWidget {
   const _QueueSheet();
 
+  IconData modeIcon(PlayMode mode) => switch (mode) {
+    PlayMode.sequence => Icons.repeat_rounded,
+    PlayMode.shuffle => Icons.shuffle_rounded,
+    PlayMode.repeat => Icons.repeat_one_rounded,
+  };
+
+  String modeTooltip(PlayMode mode) => switch (mode) {
+    PlayMode.sequence => "顺序播放",
+    PlayMode.shuffle => "随机播放",
+    PlayMode.repeat => "单曲循环",
+  };
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -318,13 +329,19 @@ class _QueueSheet extends StatelessWidget {
               children: [
                 Text('播放队列 (${songs.length})', style: tt.titleMedium),
                 if (songs.isNotEmpty)
-                  IconButton(
-                    tooltip: '清空队列',
-                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    onPressed: () {
-                      mp.clearQueue();
-                      Navigator.pop(context); // 清空后关闭 sheet
-                    },
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: mp.togglePlayMode,
+                        tooltip: modeTooltip(mp.playMode),
+                        icon: Icon(modeIcon(mp.playMode)),
+                      ),
+                      IconButton(
+                        tooltip: '清空队列',
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        onPressed: () => mp.clearQueue(),
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -361,10 +378,16 @@ class _QueueSheet extends StatelessWidget {
                       leading: ReorderableDragStartListener(
                         index: index,
                         child: isCurrent
-                            ? Icon(Icons.volume_up_rounded,
-                                size: 20, color: cs.primary)
-                            : Icon(Icons.drag_handle_rounded,
-                                size: 20, color: cs.onSurfaceVariant),
+                            ? Icon(
+                                Icons.volume_up_rounded,
+                                size: 20,
+                                color: cs.primary,
+                              )
+                            : Icon(
+                                Icons.drag_handle_rounded,
+                                size: 20,
+                                color: cs.onSurfaceVariant,
+                              ),
                       ),
                       title: Text(
                         m.title,
@@ -372,16 +395,18 @@ class _QueueSheet extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: tt.bodyLarge?.copyWith(
                           color: isCurrent ? cs.primary : null,
-                          fontWeight:
-                              isCurrent ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight: isCurrent
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                       subtitle: Text(
                         m.artist,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: tt.bodyMedium
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.close_rounded, size: 16),

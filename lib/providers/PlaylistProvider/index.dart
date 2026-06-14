@@ -53,11 +53,12 @@ class PlaylistProvider extends ChangeNotifier {
     final validIds = <String>{};
     validIds.addAll(localSongIds);
     if (musicProvider != null) {
-      // Add network song IDs from queue that have _networkMeta entries
+      // Add ALL song IDs currently in the queue (both local and network).
+      // This is critical for songs from "下载管理" (Download Management) page
+      // whose IDs are file paths and are NOT in MusicProvider.library.
+      // Without this, those songs get filtered out from favorites/history/playlists.
       for (final song in musicProvider.queue) {
-        if (song.source == MusicSource.network) {
-          validIds.add(song.id);
-        }
+        validIds.add(song.id);
       }
       // Also add all known network song IDs from persisted metadata
       // (critical for cold-start: queue is empty but _networkMeta is loaded)

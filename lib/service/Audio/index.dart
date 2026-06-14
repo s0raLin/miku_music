@@ -11,9 +11,24 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   final AudioPlayer _player = AudioPlayer();
   AudioPlayer get player => _player;
 
+  /// Callbacks for notification media control buttons.
+  /// Set externally (e.g. from MusicProvider) to wire prev/next.
+  VoidCallback? onSkipToNext;
+  VoidCallback? onSkipToPrevious;
+
   MyAudioHandler() {
     // 转发播放器事件到 audio_service 的状态流中
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+  }
+
+  @override
+  Future<void> skipToNext() async {
+    onSkipToNext?.call();
+  }
+
+  @override
+  Future<void> skipToPrevious() async {
+    onSkipToPrevious?.call();
   }
 
   /// 供 Provider 调用：切换歌曲并播放
@@ -60,12 +75,16 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     bool autoPlay = true,
     bool updateAudioSource = true, // 新增控制参数：是否需要重新加载音频源
   }) async {
+    // Preserve duration from previous mediaItem for hot-update calls
+    final previousDuration = this.mediaItem.valueOrNull?.duration;
+
     // 1. 动态组装通知栏媒体信息
     final mediaItem = MediaItem(
       id: id,
       album: "网络歌曲",
       title: title,
       artist: artist,
+      duration: previousDuration, // Preserve duration across hot-updates
       artUri: coverUrl != null ? Uri.parse(coverUrl) : null,
     );
     this.mediaItem.add(mediaItem);
@@ -84,7 +103,7 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         );
         this.mediaItem.add(mediaItem.copyWith(duration: duration));
       } catch (e) {
-        debugPrint('just_audio 加载音频流失败: $e');
+        debugPrint('just_audico 加载音频流失败: $e');
       }
     }
 

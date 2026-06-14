@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.48.0](https://github.com/s0raLin/miku_music/compare/v1.47.0...v1.48.0) (2026-06-14)
+
+
+### Features
+
+* **music:** enhance playback controls and download management ([146deab](https://github.com/s0raLin/miku_music/commit/146deabd90dc3323a84f0e711327bb991e7c34eb))
+
 ## [1.47.0](https://github.com/s0raLin/miku_music/compare/v1.46.0...v1.47.0) (2026-06-13)
 
 

@@ -123,8 +123,19 @@ class InitializationService {
     void Function(StartupScanProgress progress)? onProgress,
   }) async {
     final List<Music> fetchedLibrary = [];
-    final paths = await FileService.loadPathsWithDefault();
+    var paths = await FileService.loadPathsWithDefault();
     final isAndroid = !kIsWeb && Platform.isAndroid;
+
+    // 桌面端首次启动时，自动把默认 M3Music 目录加入扫描列表
+    if (!isAndroid && paths.isEmpty) {
+      try {
+        final defaultPath = await FileService.getM3MusicPath();
+        paths = [defaultPath];
+      } catch (_) {
+        // 无法获取默认路径则放弃
+      }
+    }
+
     final hasSelectedPaths = paths.isNotEmpty;
 
     onProgress?.call(
@@ -138,7 +149,7 @@ class InitializationService {
       ),
     );
 
-    if (!isAndroid && paths.isEmpty) return [];
+    if (paths.isEmpty) return [];
 
     // 使用 await for 等待扫描流完成（这可能会让启动页停留稍久，但能保证数据完整）
     var scannedCount = 0;

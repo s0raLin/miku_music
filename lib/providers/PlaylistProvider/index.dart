@@ -94,8 +94,17 @@ class PlaylistProvider extends ChangeNotifier {
     _rawPlaylists = await _dbService.getAllRustPlaylists();
     _rawHistoryIds = await _dbService.getHistoryIds();
 
-    final localSongIds = currentLibrary.map((s) => s.id).toSet();
-    updateActivePlaylists(localSongIds, musicProvider: musicProvider);
+    // 构建有效 ID 集合：本地库 + 网络歌曲
+    final combinedIds = <String>{
+      ...currentLibrary.map((s) => s.id),
+    };
+    if (musicProvider != null) {
+      combinedIds.addAll(musicProvider.networkSongIds);
+      for (final song in musicProvider.queue) {
+        combinedIds.add(song.id);
+      }
+    }
+    updateActivePlaylists(combinedIds, musicProvider: musicProvider);
 
     // 从原始数据中定位收藏歌单（避免 filtered 为空导致无法加载）
     final favPlaylist = _rawPlaylists.firstWhereOrNull(

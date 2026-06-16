@@ -80,9 +80,6 @@ class _SplashPageState extends State<SplashPage>
 
       // Load persisted network songs so history/favorites survive restarts
       await musicProvider.loadPersistedNetworkSongs();
-      // Notify PlaylistProvider with musicProvider to retain network IDs
-      final localSongIds = musicProvider.library.map((s) => s.id).toSet();
-      playlistProvider.updateActivePlaylists(localSongIds, musicProvider: musicProvider);
 
       await startupProvider.run(
         themeProvider: themeProvider,

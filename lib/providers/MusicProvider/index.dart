@@ -12,13 +12,13 @@ import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:rxdart/rxdart.dart';
 
-import 'library_service.dart';
+import 'music_library.dart';
+import 'music_queue.dart';
 import 'music_repository.dart';
-import 'playback_queue.dart';
 
 // ── Re-export for existing callers (no import changes needed) ──
-export 'library_service.dart' show SongSortType, AlbumSortType;
-export 'playback_queue.dart' show PlayMode, PlayTrigger;
+export 'music_library.dart' show SongSortType, AlbumSortType;
+export 'music_queue.dart' show PlayMode, PlayTrigger;
 
 class PositionData {
   final Duration position;
@@ -35,8 +35,8 @@ class MusicProvider extends ChangeNotifier {
   StreamSubscription? _stateSubscription2;
 
   // ── delegates ──
-  final PlaybackQueue _playbackQueue = PlaybackQueue();
-  final LibraryService _libraryService = LibraryService();
+  final MusicQueue _playbackQueue = MusicQueue();
+  final MusicLibrary _libraryService = MusicLibrary();
   final MusicRepository _repository = MusicRepository();
 
   // ── library ──
@@ -323,9 +323,7 @@ class MusicProvider extends ChangeNotifier {
                 currentPlayingId) {
           final currentCover = getCoverUrl(currentPlayingId);
           if (currentCover == safeCoverUrl) return;
-          debugPrint(
-            '--- [MusicProvider] 安全封面热更新: $safeCoverUrl ---',
-          );
+          debugPrint('--- [MusicProvider] 安全封面热更新: $safeCoverUrl ---');
           audioHandler.playFromUrl(
             safePlayUrl,
             id: currentPlayingId,
@@ -504,9 +502,7 @@ class MusicProvider extends ChangeNotifier {
       if (safeCoverUrl != null &&
           _playbackQueue.currentIndex >= 0 &&
           _playbackQueue.queue[_playbackQueue.currentIndex].id == musicId) {
-        debugPrint(
-          '--- [MusicProvider] 后台封面预缓存成功，动态热更新通知栏 ---',
-        );
+        debugPrint('--- [MusicProvider] 后台封面预缓存成功，动态热更新通知栏 ---');
         audioHandler.playFromUrl(
           url,
           id: musicId,

@@ -4,7 +4,7 @@ enum SongSortType { auto, nameAsc, nameDesc, artistAsc }
 
 enum AlbumSortType { nameAsc, nameDesc, songCountDesc }
 
-class LibraryService {
+class MusicLibrary {
   List<Music> getSortedLibrary(
     List<Music> library, {
     SongSortType sortType = SongSortType.auto,

@@ -7,7 +7,7 @@ enum PlayMode { sequence, shuffle, repeat }
 
 enum PlayTrigger { user, auto }
 
-class PlaybackQueue {
+class MusicQueue {
   final List<Music> _queue = [];
   Map<String, int> _queueIndexMap = {};
   int _currentIndex = -1;

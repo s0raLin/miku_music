@@ -7,6 +7,8 @@ use lofty::{
     tag::Accessor,
 };
 
+use quick_xml::events::Event;
+use quick_xml::Reader;
 use regex::Regex;
 
 /// 从音频文件中读取到的完整元数据
@@ -18,13 +20,52 @@ pub struct AudioInfo {
     pub duration_seconds: u32,
     /// 封面图片的原始字节（JPEG / PNG），若无则为 None
     pub cover_art: Option<Vec<u8>>,
-    /// 从 metadata.json 的 lyric_path 中读取的 LRC 歌词内容（如有）
-    pub lrc_content: Option<String>,
+    /// 从 metadata.json 的 lyric_path 中读取的歌词原始文本内容（如有）
+    pub lyric_raw_content: Option<String>,
 }
 
+/// 逐词高亮所需的单个词信息
+#[derive(Debug, Clone)]
+pub struct LyricWord {
+    pub text: String,
+    pub start_ms: i32,
+    pub end_ms: i32,
+}
+
+/// 一行歌词（支持逐词时间戳）
+#[derive(Debug, Clone)]
 pub struct LyricLine {
     pub time_ms: i32,
+    /// 整行持续时长（ms），TTML 可提供，LRC 填 0
+    pub duration_ms: i32,
     pub text: String,
+    /// 逐词信息，仅 TTML 格式提供；LRC 格式为空
+    pub words: Vec<LyricWord>,
+}
+
+/// 歌词格式枚举
+#[derive(Debug, Clone, PartialEq)]
+pub enum LyricFormat {
+    Lrc,
+    Ttml,
+    Unknown,
+}
+
+/// 根据内容自动检测歌词格式
+pub fn detect_lyric_format(content: &str) -> LyricFormat {
+    let trimmed = content.trim();
+    // TTML 以 XML 声明或 <tt 开头
+    if trimmed.starts_with("<?xml") || trimmed.starts_with("<tt") {
+        return LyricFormat::Ttml;
+    }
+    // LRC 以 [mm:ss 时间标签开头
+    if Regex::new(r"^\[\d+:\d+")
+        .map(|re| re.is_match(trimmed))
+        .unwrap_or(false)
+    {
+        return LyricFormat::Lrc;
+    }
+    LyricFormat::Unknown
 }
 
 /// 尝试读取音频文件同级目录下的 metadata.json，作为元数据的备选来源
@@ -111,8 +152,8 @@ pub fn get_audio_info(path: &str) -> Result<AudioInfo, String> {
         .or_else(|| metadata_json.as_ref().map(|m| m.source.clone()))
         .unwrap_or_else(|| "未知专辑".to_string());
 
-    // 11. 读取 LRC 歌词：优先从 metadata.json 的 lyric_path 读取
-    let lrc_content = metadata_json
+    // 11. 读取歌词原始文本：优先从 metadata.json 的 lyric_path 读取
+    let lyric_raw_content = metadata_json
         .as_ref()
         .and_then(|m| m.lyric_path.as_ref())
         .and_then(|lp| fs::read_to_string(lp).ok());
@@ -123,7 +164,7 @@ pub fn get_audio_info(path: &str) -> Result<AudioInfo, String> {
         album,
         duration_seconds,
         cover_art,
-        lrc_content,
+        lyric_raw_content,
     })
 }
 
@@ -170,14 +211,28 @@ pub fn get_external_cover(audio_path: &str) -> Option<Vec<u8>> {
 
 // 声明一个全局只编译一次的正则表达式对象
 static LRC_REGEX: OnceLock<Regex> = OnceLock::new();
+
 impl AudioInfo {
-    pub fn parse_lrc(lrc_content: Option<String>) -> Vec<LyricLine> {
-        let content = match lrc_content {
-            Some(value) => value,
-            None => return Vec::new(),
+    /// 根据原始歌词内容自动检测格式（LRC 或 TTML）并解析。
+    /// 返回解析后的 `Vec<LyricLine>`，TTML 格式会携带逐词信息。
+    pub fn parse_lyrics(lyric_raw_content: Option<String>) -> Vec<LyricLine> {
+        let content = match lyric_raw_content {
+            Some(value) if !value.trim().is_empty() => value,
+            _ => return Vec::new(),
         };
 
-        // 使用命名捕获组：?<min> 分钟，?<sec> 秒，?<ms> 毫秒，?<text> 歌词文本
+        match detect_lyric_format(&content) {
+            LyricFormat::Ttml => Self::parse_ttml(&content),
+            LyricFormat::Lrc => Self::parse_lrc_inner(&content),
+            LyricFormat::Unknown => {
+                // fallback: try LRC anyway
+                Self::parse_lrc_inner(&content)
+            }
+        }
+    }
+
+    /// 解析 LRC 格式歌词（内部方法）
+    fn parse_lrc_inner(content: &str) -> Vec<LyricLine> {
         let re = LRC_REGEX.get_or_init(|| {
             Regex::new(r"\[(?P<min>\d+):(?P<sec>\d+)(?:[.:](?P<ms>\d+))?\](?P<text>.*)").unwrap()
         });
@@ -185,7 +240,6 @@ impl AudioInfo {
         let mut lyrics = Vec::new();
         for line in content.lines() {
             if let Some(caps) = re.captures(line) {
-                // 1. 安全提取分钟和秒
                 let min: i32 = caps
                     .name("min")
                     .map(|m| m.as_str().parse().unwrap_or(0))
@@ -195,12 +249,10 @@ impl AudioInfo {
                     .map(|m| m.as_str().parse().unwrap_or(0))
                     .unwrap_or(0);
 
-                // 2. 提取并计算毫秒
                 let mut ms: i32 = 0;
                 if let Some(ms_match) = caps.name("ms") {
                     let ms_str = ms_match.as_str();
                     if let Ok(raw_ms) = ms_str.parse::<i32>() {
-                        // 适配 .83 -> 830ms, .5 -> 500ms 等不同长度的写法
                         match ms_str.len() {
                             1 => ms = raw_ms * 100,
                             2 => ms = raw_ms * 10,
@@ -209,31 +261,208 @@ impl AudioInfo {
                     }
                 }
 
-                // 3. 通过名字精确拿到歌词文本，绝不会错位！
                 let text = caps
                     .name("text")
                     .map(|m| m.as_str().trim().to_string())
                     .unwrap_or_default();
 
-                // 4. 计算总时间
                 let time_ms = (min * 60_000) + (sec * 1000) + ms;
 
-                lyrics.push(LyricLine { time_ms, text });
+                lyrics.push(LyricLine {
+                    time_ms,
+                    duration_ms: 0,
+                    text,
+                    words: Vec::new(),
+                });
             }
         }
 
         lyrics.sort_by_key(|line| line.time_ms);
         lyrics
     }
+
+    /// 解析 TTML (IMSC) 格式歌词（逐词高亮支持）
+    fn parse_ttml(content: &str) -> Vec<LyricLine> {
+        let mut reader = Reader::from_str(content);
+        reader.config_mut().trim_text(true);
+
+        let mut lyrics: Vec<LyricLine> = Vec::new();
+        let mut current_line: Option<LyricLine> = None;
+
+        let mut buf = Vec::new();
+
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(Event::Start(ref e)) => {
+                    let tag_name = String::from_utf8_lossy(e.name().as_ref()).to_string();
+
+                    match tag_name.as_str() {
+                        "p" => {
+                            // <p begin="..." end="..."> → 一行歌词
+                            let begin_str = extract_attr(e, b"begin");
+                            let end_str = extract_attr(e, b"end");
+                            let time_ms = parse_ttml_time(&begin_str);
+                            let end_ms = parse_ttml_time(&end_str);
+                            let duration_ms = if end_ms > time_ms {
+                                end_ms - time_ms
+                            } else {
+                                0
+                            };
+
+                            current_line = Some(LyricLine {
+                                time_ms,
+                                duration_ms,
+                                text: String::new(),
+                                words: Vec::new(),
+                            });
+                        }
+                        "span" => {
+                            // <span begin="..." end="...">word</span>
+                            if let Some(ref mut line) = current_line {
+                                let word_begin = extract_attr(e, b"begin");
+                                let word_end = extract_attr(e, b"end");
+                                let start_ms = parse_ttml_time(&word_begin);
+                                let end_ms = parse_ttml_time(&word_end);
+
+                                // 读取 span 内的文本
+                                let text = reader
+                                    .read_text(e.name().clone())
+                                    .ok()
+                                    .map(|bt| {
+                                        String::from_utf8_lossy(bt.as_ref())
+                                            .trim()
+                                            .to_string()
+                                    })
+                                    .unwrap_or_default();
+
+                                if !text.is_empty() {
+                                    line.words.push(LyricWord {
+                                        text: text.clone(),
+                                        start_ms,
+                                        end_ms,
+                                    });
+                                    line.text.push_str(&text);
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(Event::Text(ref e)) => {
+                    // 处理 <p> 标签内的纯文本（非 span 包裹的文本）
+                    let text = String::from_utf8_lossy(e.as_ref())
+                        .trim()
+                        .to_string();
+                    if text.is_empty() {
+                        buf.clear();
+                        continue;
+                    }
+
+                    if let Some(ref mut line) = current_line {
+                        // 如果该行还没有 words，说明没有 span 标签，使用整行作为一个词
+                        if line.words.is_empty() {
+                            line.text = text.clone();
+                            line.words.push(LyricWord {
+                                text: text,
+                                start_ms: line.time_ms,
+                                end_ms: line.time_ms + line.duration_ms,
+                            });
+                        }
+                        // 否则已在 span 中处理，不需要额外处理
+                    }
+                }
+                Ok(Event::End(ref e)) => {
+                    let tag_name = String::from_utf8_lossy(e.name().as_ref()).to_string();
+                    if tag_name == "p" {
+                        if let Some(line) = current_line.take() {
+                            if !line.text.trim().is_empty() {
+                                lyrics.push(line);
+                            }
+                        }
+                    }
+                }
+                Ok(Event::Eof) => break,
+                Err(e) => {
+                    eprintln!("[ttml] XML parse error: {}", e);
+                    break;
+                }
+                _ => {}
+            }
+            buf.clear();
+        }
+
+        // 按开始时间排序
+        lyrics.sort_by_key(|line| line.time_ms);
+        lyrics
+    }
 }
 
-/// 读取歌词文件内容，用于 Dart 端获取 metadata.json 中 lyric_path 指向的完整 LRC 文本。
+/// 从 XML 属性中提取值
+fn extract_attr(e: &quick_xml::events::BytesStart, attr_name: &[u8]) -> String {
+    e.attributes()
+        .filter_map(|a| a.ok())
+        .find(|a| a.key.as_ref() == attr_name)
+        .map(|a| String::from_utf8_lossy(&a.value).to_string())
+        .unwrap_or_default()
+}
+
+/// 解析 TTML 时间格式，如 "00:01:23.456" 或 "01:23.456" → 毫秒
+fn parse_ttml_time(time_str: &str) -> i32 {
+    if time_str.is_empty() {
+        return 0;
+    }
+
+    // 格式: hh:mm:ss.ms 或 mm:ss.ms
+    let parts: Vec<&str> = time_str.split(':').collect();
+    match parts.len() {
+        3 => {
+            // hh:mm:ss.ms
+            let h: i32 = parts[0].parse().unwrap_or(0);
+            let m: i32 = parts[1].parse().unwrap_or(0);
+            let s_parts: Vec<&str> = parts[2].split('.').collect();
+            let s: i32 = s_parts.get(0).and_then(|v| v.parse().ok()).unwrap_or(0);
+            let ms: i32 = if s_parts.len() > 1 {
+                let ms_str = s_parts[1];
+                let raw: i32 = ms_str.parse().unwrap_or(0);
+                match ms_str.len() {
+                    1 => raw * 100,
+                    2 => raw * 10,
+                    _ => raw,
+                }
+            } else {
+                0
+            };
+            h * 3_600_000 + m * 60_000 + s * 1000 + ms
+        }
+        2 => {
+            // mm:ss.ms
+            let m: i32 = parts[0].parse().unwrap_or(0);
+            let s_parts: Vec<&str> = parts[1].split('.').collect();
+            let s: i32 = s_parts.get(0).and_then(|v| v.parse().ok()).unwrap_or(0);
+            let ms: i32 = if s_parts.len() > 1 {
+                let ms_str = s_parts[1];
+                let raw: i32 = ms_str.parse().unwrap_or(0);
+                match ms_str.len() {
+                    1 => raw * 100,
+                    2 => raw * 10,
+                    _ => raw,
+                }
+            } else {
+                0
+            };
+            m * 60_000 + s * 1000 + ms
+        }
+        _ => 0,
+    }
+}
+
+/// 读取歌词文件内容，用于 Dart 端获取 metadata.json 中 lyric_path 指向的完整歌词文本。
 ///
 /// # Arguments
-/// * `lyric_path` - LRC 文件的完整路径
+/// * `lyric_path` - 歌词文件的完整路径（支持 .lrc / .ttml / .xml）
 ///
 /// # Returns
-/// * `Ok(Some(String))` - 读取到的 LRC 文本内容
+/// * `Ok(Some(String))` - 读取到的歌词文本内容
 /// * `Ok(None)` - 文件不存在或读取失败
 /// * `Err(String)` - 路径参数为空
 pub fn read_lrc_file(lyric_path: String) -> Result<Option<String>, String> {

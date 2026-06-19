@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1551382896;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1563920506;
 
 // Section: executor
 
@@ -1076,7 +1076,7 @@ fn wire__crate__api__audio_db__DbManager_update_playlist_impl(
         },
     )
 }
-fn wire__crate__api__audio_info__audio_info_parse_lrc_impl(
+fn wire__crate__api__audio_info__audio_info_parse_lyrics_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -1084,7 +1084,7 @@ fn wire__crate__api__audio_info__audio_info_parse_lrc_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "audio_info_parse_lrc",
+            debug_name: "audio_info_parse_lyrics",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -1098,12 +1098,47 @@ fn wire__crate__api__audio_info__audio_info_parse_lrc_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_lrc_content = <Option<String>>::sse_decode(&mut deserializer);
+            let api_lyric_raw_content = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
                     let output_ok = Result::<_, ()>::Ok(
-                        crate::api::audio_info::AudioInfo::parse_lrc(api_lrc_content),
+                        crate::api::audio_info::AudioInfo::parse_lyrics(api_lyric_raw_content),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__audio_info__detect_lyric_format_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "detect_lyric_format",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_content = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::audio_info::detect_lyric_format(&api_content),
                     )?;
                     Ok(output_ok)
                 })())
@@ -1458,14 +1493,14 @@ impl SseDecode for crate::api::audio_info::AudioInfo {
         let mut var_album = <String>::sse_decode(deserializer);
         let mut var_durationSeconds = <u32>::sse_decode(deserializer);
         let mut var_coverArt = <Option<Vec<u8>>>::sse_decode(deserializer);
-        let mut var_lrcContent = <Option<String>>::sse_decode(deserializer);
+        let mut var_lyricRawContent = <Option<String>>::sse_decode(deserializer);
         return crate::api::audio_info::AudioInfo {
             title: var_title,
             artist: var_artist,
             album: var_album,
             duration_seconds: var_durationSeconds,
             cover_art: var_coverArt,
-            lrc_content: var_lrcContent,
+            lyric_raw_content: var_lyricRawContent,
         };
     }
 }
@@ -1535,6 +1570,20 @@ impl SseDecode for Vec<crate::api::audio_info::LyricLine> {
     }
 }
 
+impl SseDecode for Vec<crate::api::audio_info::LyricWord> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::audio_info::LyricWord>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::audio_db::MusicInfo> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1573,14 +1622,45 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for crate::api::audio_info::LyricFormat {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::audio_info::LyricFormat::Lrc,
+            1 => crate::api::audio_info::LyricFormat::Ttml,
+            2 => crate::api::audio_info::LyricFormat::Unknown,
+            _ => unreachable!("Invalid variant for LyricFormat: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::api::audio_info::LyricLine {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_timeMs = <i32>::sse_decode(deserializer);
+        let mut var_durationMs = <i32>::sse_decode(deserializer);
         let mut var_text = <String>::sse_decode(deserializer);
+        let mut var_words = <Vec<crate::api::audio_info::LyricWord>>::sse_decode(deserializer);
         return crate::api::audio_info::LyricLine {
             time_ms: var_timeMs,
+            duration_ms: var_durationMs,
             text: var_text,
+            words: var_words,
+        };
+    }
+}
+
+impl SseDecode for crate::api::audio_info::LyricWord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_text = <String>::sse_decode(deserializer);
+        let mut var_startMs = <i32>::sse_decode(deserializer);
+        let mut var_endMs = <i32>::sse_decode(deserializer);
+        return crate::api::audio_info::LyricWord {
+            text: var_text,
+            start_ms: var_startMs,
+            end_ms: var_endMs,
         };
     }
 }
@@ -1829,22 +1909,28 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        20 => wire__crate__api__audio_info__audio_info_parse_lrc_impl(
+        20 => wire__crate__api__audio_info__audio_info_parse_lyrics_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        21 => wire__crate__api__audio_info__get_audio_info_impl(port, ptr, rust_vec_len, data_len),
-        22 => {
+        21 => wire__crate__api__audio_info__detect_lyric_format_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        22 => wire__crate__api__audio_info__get_audio_info_impl(port, ptr, rust_vec_len, data_len),
+        23 => {
             wire__crate__api__audio_info__get_external_cover_impl(port, ptr, rust_vec_len, data_len)
         }
-        23 => wire__crate__api__simple__greet_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__hotkey__init_native_hotkeys_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__audio_info__read_lrc_file_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__metadata__read_metadata_impl(port, ptr, rust_vec_len, data_len),
-        28 => wire__crate__api__scanner__scan_directory_parallel_impl(
+        24 => wire__crate__api__simple__greet_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__hotkey__init_native_hotkeys_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__audio_info__read_lrc_file_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__metadata__read_metadata_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__scanner__scan_directory_parallel_impl(
             port,
             ptr,
             rust_vec_len,
@@ -1892,7 +1978,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::audio_info::AudioInfo {
             self.album.into_into_dart().into_dart(),
             self.duration_seconds.into_into_dart().into_dart(),
             self.cover_art.into_into_dart().into_dart(),
-            self.lrc_content.into_into_dart().into_dart(),
+            self.lyric_raw_content.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1933,11 +2019,35 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::scanner::AudioMetadata>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::audio_info::LyricFormat {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Lrc => 0.into_dart(),
+            Self::Ttml => 1.into_dart(),
+            Self::Unknown => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::audio_info::LyricFormat
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::audio_info::LyricFormat>
+    for crate::api::audio_info::LyricFormat
+{
+    fn into_into_dart(self) -> crate::api::audio_info::LyricFormat {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::audio_info::LyricLine {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.time_ms.into_into_dart().into_dart(),
+            self.duration_ms.into_into_dart().into_dart(),
             self.text.into_into_dart().into_dart(),
+            self.words.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1950,6 +2060,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::audio_info::LyricLine>
     for crate::api::audio_info::LyricLine
 {
     fn into_into_dart(self) -> crate::api::audio_info::LyricLine {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::audio_info::LyricWord {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.text.into_into_dart().into_dart(),
+            self.start_ms.into_into_dart().into_dart(),
+            self.end_ms.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::audio_info::LyricWord
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::audio_info::LyricWord>
+    for crate::api::audio_info::LyricWord
+{
+    fn into_into_dart(self) -> crate::api::audio_info::LyricWord {
         self
     }
 }
@@ -2090,7 +2222,7 @@ impl SseEncode for crate::api::audio_info::AudioInfo {
         <String>::sse_encode(self.album, serializer);
         <u32>::sse_encode(self.duration_seconds, serializer);
         <Option<Vec<u8>>>::sse_encode(self.cover_art, serializer);
-        <Option<String>>::sse_encode(self.lrc_content, serializer);
+        <Option<String>>::sse_encode(self.lyric_raw_content, serializer);
     }
 }
 
@@ -2146,6 +2278,16 @@ impl SseEncode for Vec<crate::api::audio_info::LyricLine> {
     }
 }
 
+impl SseEncode for Vec<crate::api::audio_info::LyricWord> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::audio_info::LyricWord>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::audio_db::MusicInfo> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2176,11 +2318,39 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for crate::api::audio_info::LyricFormat {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::audio_info::LyricFormat::Lrc => 0,
+                crate::api::audio_info::LyricFormat::Ttml => 1,
+                crate::api::audio_info::LyricFormat::Unknown => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::api::audio_info::LyricLine {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i32>::sse_encode(self.time_ms, serializer);
+        <i32>::sse_encode(self.duration_ms, serializer);
         <String>::sse_encode(self.text, serializer);
+        <Vec<crate::api::audio_info::LyricWord>>::sse_encode(self.words, serializer);
+    }
+}
+
+impl SseEncode for crate::api::audio_info::LyricWord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.text, serializer);
+        <i32>::sse_encode(self.start_ms, serializer);
+        <i32>::sse_encode(self.end_ms, serializer);
     }
 }
 

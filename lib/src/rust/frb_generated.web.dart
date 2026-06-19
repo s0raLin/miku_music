@@ -86,6 +86,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<LyricLine> dco_decode_list_lyric_line(dynamic raw);
 
   @protected
+  List<LyricWord> dco_decode_list_lyric_word(dynamic raw);
+
+  @protected
   List<MusicInfo> dco_decode_list_music_info(dynamic raw);
 
   @protected
@@ -95,7 +98,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  LyricFormat dco_decode_lyric_format(dynamic raw);
+
+  @protected
   LyricLine dco_decode_lyric_line(dynamic raw);
+
+  @protected
+  LyricWord dco_decode_lyric_word(dynamic raw);
 
   @protected
   MusicInfo dco_decode_music_info(dynamic raw);
@@ -186,6 +195,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<LyricLine> sse_decode_list_lyric_line(SseDeserializer deserializer);
 
   @protected
+  List<LyricWord> sse_decode_list_lyric_word(SseDeserializer deserializer);
+
+  @protected
   List<MusicInfo> sse_decode_list_music_info(SseDeserializer deserializer);
 
   @protected
@@ -197,7 +209,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  LyricFormat sse_decode_lyric_format(SseDeserializer deserializer);
+
+  @protected
   LyricLine sse_decode_lyric_line(SseDeserializer deserializer);
+
+  @protected
+  LyricWord sse_decode_lyric_word(SseDeserializer deserializer);
 
   @protected
   MusicInfo sse_decode_music_info(SseDeserializer deserializer);
@@ -304,6 +322,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_lyric_word(
+    List<LyricWord> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_music_info(
     List<MusicInfo> self,
     SseSerializer serializer,
@@ -322,7 +346,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_lyric_format(LyricFormat self, SseSerializer serializer);
+
+  @protected
   void sse_encode_lyric_line(LyricLine self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_lyric_word(LyricWord self, SseSerializer serializer);
 
   @protected
   void sse_encode_music_info(MusicInfo self, SseSerializer serializer);

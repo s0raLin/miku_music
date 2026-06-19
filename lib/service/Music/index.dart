@@ -47,14 +47,16 @@ class MusicService {
       "封面: ${coverBytes != null ? '${coverBytes.length} bytes' : 'null'} → $path",
     );
 
-    // 2. 手动寻找并读取外部 .lrc 文件
+    // 2. 手动寻找并读取外部 .lrc / .ttml 歌词文件
     String lyrics = "";
     final baseName = p.withoutExtension(path);
-    final lrcPath = "$baseName.lrc";
-    final file = File(lrcPath);
-
-    if (await file.exists()) {
-      lyrics = await file.readAsString();
+    // 优先 .ttml（逐词高亮），其次 .lrc
+    for (final ext in ['.ttml', '.lrc']) {
+      final lyricFile = File("$baseName$ext");
+      if (await lyricFile.exists()) {
+        lyrics = await lyricFile.readAsString();
+        break;
+      }
     }
 
     return Music(
@@ -83,12 +85,15 @@ class MusicService {
         yield ScanProgress(currentPath: rustMeta.path);
 
         try {
-          // 3. 补全 Dart 端的业务逻辑：查找外部歌词
+          // 3. 补全 Dart 端的业务逻辑：查找外部歌词（优先 .ttml，其次 .lrc）
           String lyrics = "";
           final baseName = p.withoutExtension(rustMeta.path);
-          final lrcFile = File("$baseName.lrc");
-          if (await lrcFile.exists()) {
-            lyrics = await lrcFile.readAsString();
+          for (final ext in ['.ttml', '.lrc']) {
+            final lyricFile = File("$baseName$ext");
+            if (await lyricFile.exists()) {
+              lyrics = await lyricFile.readAsString();
+              break;
+            }
           }
 
           // 4. 组装成前端需要的 Music
@@ -111,8 +116,8 @@ class MusicService {
     }
   }
 
-  static Future<List<LyricLine>> parseLyrics(String? lrcContent) async {
-    return await AudioInfo.parseLrc(lrcContent: lrcContent);
+  static Future<List<LyricLine>> parseLyrics(String? lyricRawContent) async {
+    return await AudioInfo.parseLyrics(lyricRawContent: lyricRawContent);
   }
 
   //保存歌词

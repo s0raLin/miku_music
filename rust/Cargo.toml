@@ -18,8 +18,9 @@ lofty = "0.24.0"
 once_cell = "1.21.4"
 rayon = "1.12.0"
 regex = "1.12.3"
+quick-xml = "0.40.1"
 rusqlite = { version = "0.39.0", features = ["bundled"] }
-uuid = {version = "1.23.1", features = ["v4"]}
+uuid = { version = "1.23.1", features = ["v4"] }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

@@ -6,8 +6,12 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `try_read_metadata_json`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
+// These functions are ignored because they are not marked as `pub`: `extract_attr`, `parse_lrc_inner`, `parse_ttml_time`, `parse_ttml`, `try_read_metadata_json`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`
+
+/// 根据内容自动检测歌词格式
+Future<LyricFormat> detectLyricFormat({required String content}) =>
+    RustLib.instance.api.crateApiAudioInfoDetectLyricFormat(content: content);
 
 /// 读取任意受支持音频格式（MP3 / FLAC / M4A / OGG …）的完整元数据。
 /// 当音频内嵌标签缺失时，优先使用同级目录下的 `metadata.json` 作为备选。
@@ -22,13 +26,13 @@ Future<Uint8List?> getExternalCover({required String audioPath}) => RustLib
     .api
     .crateApiAudioInfoGetExternalCover(audioPath: audioPath);
 
-/// 读取歌词文件内容，用于 Dart 端获取 metadata.json 中 lyric_path 指向的完整 LRC 文本。
+/// 读取歌词文件内容，用于 Dart 端获取 metadata.json 中 lyric_path 指向的完整歌词文本。
 ///
 /// # Arguments
-/// * `lyric_path` - LRC 文件的完整路径
+/// * `lyric_path` - 歌词文件的完整路径（支持 .lrc / .ttml / .xml）
 ///
 /// # Returns
-/// * `Ok(Some(String))` - 读取到的 LRC 文本内容
+/// * `Ok(Some(String))` - 读取到的歌词文本内容
 /// * `Ok(None)` - 文件不存在或读取失败
 /// * `Err(String)` - 路径参数为空
 Future<String?> readLrcFile({required String lyricPath}) =>
@@ -44,8 +48,8 @@ class AudioInfo {
   /// 封面图片的原始字节（JPEG / PNG），若无则为 None
   final Uint8List? coverArt;
 
-  /// 从 metadata.json 的 lyric_path 中读取的 LRC 歌词内容（如有）
-  final String? lrcContent;
+  /// 从 metadata.json 的 lyric_path 中读取的歌词原始文本内容（如有）
+  final String? lyricRawContent;
 
   const AudioInfo({
     required this.title,
@@ -53,13 +57,15 @@ class AudioInfo {
     required this.album,
     required this.durationSeconds,
     this.coverArt,
-    this.lrcContent,
+    this.lyricRawContent,
   });
 
-  static Future<List<LyricLine>> parseLrc({String? lrcContent}) => RustLib
-      .instance
-      .api
-      .crateApiAudioInfoAudioInfoParseLrc(lrcContent: lrcContent);
+  /// 根据原始歌词内容自动检测格式（LRC 或 TTML）并解析。
+  /// 返回解析后的 `Vec<LyricLine>`，TTML 格式会携带逐词信息。
+  static Future<List<LyricLine>> parseLyrics({String? lyricRawContent}) =>
+      RustLib.instance.api.crateApiAudioInfoAudioInfoParseLyrics(
+        lyricRawContent: lyricRawContent,
+      );
 
   @override
   int get hashCode =>
@@ -68,7 +74,7 @@ class AudioInfo {
       album.hashCode ^
       durationSeconds.hashCode ^
       coverArt.hashCode ^
-      lrcContent.hashCode;
+      lyricRawContent.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -80,17 +86,33 @@ class AudioInfo {
           album == other.album &&
           durationSeconds == other.durationSeconds &&
           coverArt == other.coverArt &&
-          lrcContent == other.lrcContent;
+          lyricRawContent == other.lyricRawContent;
 }
 
+/// 歌词格式枚举
+enum LyricFormat { lrc, ttml, unknown }
+
+/// 一行歌词（支持逐词时间戳）
 class LyricLine {
   final int timeMs;
+
+  /// 整行持续时长（ms），TTML 可提供，LRC 填 0
+  final int durationMs;
   final String text;
 
-  const LyricLine({required this.timeMs, required this.text});
+  /// 逐词信息，仅 TTML 格式提供；LRC 格式为空
+  final List<LyricWord> words;
+
+  const LyricLine({
+    required this.timeMs,
+    required this.durationMs,
+    required this.text,
+    required this.words,
+  });
 
   @override
-  int get hashCode => timeMs.hashCode ^ text.hashCode;
+  int get hashCode =>
+      timeMs.hashCode ^ durationMs.hashCode ^ text.hashCode ^ words.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -98,5 +120,32 @@ class LyricLine {
       other is LyricLine &&
           runtimeType == other.runtimeType &&
           timeMs == other.timeMs &&
-          text == other.text;
+          durationMs == other.durationMs &&
+          text == other.text &&
+          words == other.words;
+}
+
+/// 逐词高亮所需的单个词信息
+class LyricWord {
+  final String text;
+  final int startMs;
+  final int endMs;
+
+  const LyricWord({
+    required this.text,
+    required this.startMs,
+    required this.endMs,
+  });
+
+  @override
+  int get hashCode => text.hashCode ^ startMs.hashCode ^ endMs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LyricWord &&
+          runtimeType == other.runtimeType &&
+          text == other.text &&
+          startMs == other.startMs &&
+          endMs == other.endMs;
 }

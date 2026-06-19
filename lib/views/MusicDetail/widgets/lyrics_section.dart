@@ -10,13 +10,20 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 /// 合并了原始歌词和翻译歌词的内部数据结构
 class _LyricGroup {
   final int timeMs;
+  final int durationMs;
   final String text;
   final String? translation;
+  /// 逐词信息（仅 TTML 格式包含）
+  final List<LyricWord> words;
+  /// 是否包含逐词时间戳（用于决定渲染方式）
+  bool get hasWordTiming => words.length > 1;
 
   const _LyricGroup({
     required this.timeMs,
+    this.durationMs = 0,
     required this.text,
     this.translation,
+    this.words = const [],
   });
 
   bool get hasTranslation =>
@@ -66,8 +73,10 @@ class _LyricsSectionState extends State<LyricsSection>
       merged.add(
         _LyricGroup(
           timeMs: current.timeMs,
+          durationMs: current.durationMs,
           text: current.text,
           translation: translation,
+          words: current.words,
         ),
       );
     }
@@ -178,11 +187,10 @@ class _LyricsSectionState extends State<LyricsSection>
 
         return Stack(
           children: [
-            // 使用 LayoutBuilder 动态获取容器高度，以实现精准的居中 Padding
             LayoutBuilder(
               builder: (context, constraints) {
                 final halfHeight = constraints.maxHeight / 2;
-                return _buildLyricsList(currentIndex, cs, halfHeight);
+                return _buildLyricsList(currentIndex, positionMs, cs, halfHeight);
               },
             ),
             if (_isUserInteracting && _focusedIndex >= 0)
@@ -245,7 +253,7 @@ class _LyricsSectionState extends State<LyricsSection>
       if (!mounted) return;
       _scrollController.scrollTo(
         index: currentIndex,
-        alignment: 0.5, // 始终保持正中心对齐
+        alignment: 0.5,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
       );
@@ -254,6 +262,7 @@ class _LyricsSectionState extends State<LyricsSection>
 
   Widget _buildLyricsList(
     int currentIndex,
+    int positionMs,
     ColorScheme cs,
     double verticalPadding,
   ) {
@@ -273,11 +282,10 @@ class _LyricsSectionState extends State<LyricsSection>
         child: ScrollablePositionedList.builder(
           itemScrollController: _scrollController,
           itemPositionsListener: _positionsListener,
-          // 核心改动：动态设置上下 Padding 为视图的一半高度，使首尾行可达正中间
           padding: EdgeInsets.symmetric(vertical: verticalPadding),
           itemCount: groups.length,
           itemBuilder: (context, index) =>
-              _buildLyricItem(groups[index], index, currentIndex, cs),
+              _buildLyricItem(groups[index], index, currentIndex, positionMs, cs),
         ),
       ),
     );
@@ -287,6 +295,7 @@ class _LyricsSectionState extends State<LyricsSection>
     _LyricGroup group,
     int index,
     int currentIndex,
+    int positionMs,
     ColorScheme cs,
   ) {
     final isActive = _isUserInteracting
@@ -296,7 +305,7 @@ class _LyricsSectionState extends State<LyricsSection>
         ? (index - _focusedIndex).abs() == 1
         : (index - currentIndex).abs() == 1;
 
-    // 1. 如果是空白行（间奏/纯音乐部分）的特殊渲染
+    // 空白行（间奏/纯音乐部分）
     if (group.isEmpty) {
       return InkWell(
         onTap: () {
@@ -306,13 +315,11 @@ class _LyricsSectionState extends State<LyricsSection>
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          // 给空白行一个固定的高度，确保滚动到这里时能完美居中停顿
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 24),
           alignment: Alignment.center,
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 180),
-            // 如果正在播放这一行，就让间奏标识变亮，否则淡化
             opacity: isActive ? 1.0 : (isNear ? 0.5 : 0.2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -339,8 +346,8 @@ class _LyricsSectionState extends State<LyricsSection>
       );
     }
 
-    // 2. 以下是正常有歌词行的渲染（保持原有逻辑，仅微调间距）
-    final TextStyle originalStyle = isActive
+    // 正常歌词行
+    final TextStyle baseStyle = isActive
         ? TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
@@ -382,6 +389,17 @@ class _LyricsSectionState extends State<LyricsSection>
             height: 1.3,
           );
 
+    // 根据是否有逐词时间戳选择不同的渲染方式
+    final Widget textWidget = group.hasWordTiming && isActive
+        ? _buildWordHighlightedText(group, positionMs, cs, baseStyle)
+        : Text(
+            group.text,
+            style: baseStyle,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          );
+
     return InkWell(
       onTap: () {
         context.read<MusicProvider>().player.seek(
@@ -398,13 +416,8 @@ class _LyricsSectionState extends State<LyricsSection>
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
-              style: originalStyle,
-              child: Text(
-                group.text,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              style: baseStyle,
+              child: textWidget,
             ),
             if (group.hasTranslation) ...[
               const SizedBox(height: 2),
@@ -422,6 +435,34 @@ class _LyricsSectionState extends State<LyricsSection>
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// 构建逐词高亮的文本行 —— 在一行内根据播放位置渐变高亮每个词
+  Widget _buildWordHighlightedText(
+    _LyricGroup group,
+    int positionMs,
+    ColorScheme cs,
+    TextStyle baseStyle,
+  ) {
+    final inactiveColor = cs.onSurface.withValues(alpha: 0.35);
+
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        children: group.words.map((word) {
+          // 词在当前播放位置范围内 → 高亮
+          final isWordActive =
+              positionMs >= word.startMs && positionMs < word.endMs;
+
+          return TextSpan(
+            text: word.text,
+            style: baseStyle.copyWith(
+              color: isWordActive ? cs.primary : inactiveColor,
+            ),
+          );
+        }).toList(),
       ),
     );
   }

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -401,25 +403,159 @@ class _LyricsSectionState extends State<LyricsSection>
       _lyricGroups = _mergeLyrics(lyrics);
     }
 
-    if (_lyricGroups.isEmpty) {
-      return _buildEmptyState(mp, context);
-    }
-
+    final currentLyricsEmpty = _lyricGroups.isEmpty;
     final currentIndex = _isUserInteracting ? _focusedIndex : _currentIndex;
 
     return Stack(
       children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final halfHeight = constraints.maxHeight / 2;
-            return _buildLyricsList(currentIndex, cs, halfHeight);
-          },
-        ),
+        // 主内容区
+        if (currentLyricsEmpty)
+          _buildEmptyState(mp, context)
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final halfHeight = constraints.maxHeight / 2;
+              return _buildLyricsList(currentIndex, cs, halfHeight);
+            },
+          ),
+        // 歌词来源切换按钮 (始终显示在右上角)
+        _buildLyricSourceButton(mp, context),
         if (_isUserInteracting && _focusedIndex >= 0)
           _buildCenterInteractionBar(cs),
-        _buildFadeGradient(Alignment.topCenter, cs),
-        _buildFadeGradient(Alignment.bottomCenter, cs),
+        if (!currentLyricsEmpty) ...[
+          _buildFadeGradient(Alignment.topCenter, cs),
+          _buildFadeGradient(Alignment.bottomCenter, cs),
+        ],
       ],
+    );
+  }
+
+  /// 歌词来源切换按钮
+  Widget _buildLyricSourceButton(MusicProvider mp, BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Positioned(
+      top: 4,
+      right: 8,
+      child: Material(
+        color: cs.surface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(20),
+        elevation: 2,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _showLyricSourceDialog(mp, context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lyrics_rounded, size: 16, color: cs.primary),
+                const SizedBox(width: 6),
+                Text(
+                  '歌词',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: cs.primary,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(Icons.arrow_drop_down_rounded, size: 16, color: cs.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 弹出歌词来源选择弹窗
+  void _showLyricSourceDialog(MusicProvider mp, BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 拖拽指示条
+                Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lyrics_rounded, color: cs.primary, size: 22),
+                      const SizedBox(width: 10),
+                      Text(
+                        '歌词来源',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(sheetContext),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                // 选择本地歌词文件
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: cs.primaryContainer,
+                    child: Icon(
+                      Icons.folder_open_rounded,
+                      color: cs.onPrimaryContainer,
+                    ),
+                  ),
+                  title: const Text('选择本地歌词文件'),
+                  subtitle: const Text('从设备中选择 .lrc / .ttml 文件'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _pickLocalLyricFile(mp, context);
+                  },
+                ),
+                // 在线搜索歌词
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: cs.secondaryContainer,
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: cs.onSecondaryContainer,
+                    ),
+                  ),
+                  title: const Text('在线搜索歌词'),
+                  subtitle: const Text('通过网络匹配当前歌曲的歌词'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _searchLyrics(mp, context);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -427,13 +563,29 @@ class _LyricsSectionState extends State<LyricsSection>
     return AppEmptyState(
       icon: Icons.music_note_rounded,
       title: "暂无歌词",
-      subtitle: "点击下方按钮查找",
-      action: FilledButton.icon(
-        onPressed: () => _searchLyrics(mp, context),
-        label: const Text("下载歌词"),
-        icon: const Icon(Icons.download_rounded),
-      ),
+      subtitle: "点击右上角「歌词」按钮选择来源",
     );
+  }
+
+  Future<void> _pickLocalLyricFile(MusicProvider mp, BuildContext context) async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['lrc', 'ttml', 'txt'],
+        dialogTitle: '选择歌词文件',
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      if (file.path == null) return;
+
+      final content = await File(file.path!).readAsString();
+      if (!context.mounted) return;
+      mp.setCurrentLrc(content);
+      AppToast.success(context, message: "本地歌词加载成功");
+    } catch (e) {
+      if (!context.mounted) return;
+      AppToast.error(context, message: "歌词文件读取失败");
+    }
   }
 
   Future<void> _searchLyrics(MusicProvider mp, BuildContext context) async {

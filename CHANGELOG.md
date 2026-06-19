@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.49.0](https://github.com/s0raLin/miku_music/compare/v1.48.0...v1.49.0) (2026-06-19)
+
+
+### Features
+
+* **music:** enhance music initialization and network song integration ([dc9a304](https://github.com/s0raLin/miku_music/commit/dc9a304dd6ae15b5299dced6c9f2a69ee4d2bad1))
+* **music:** support TTML lyrics and word-level highlighting ([17c47eb](https://github.com/s0raLin/miku_music/commit/17c47eb3c252777a1aa8d1bacc05f227343f3433))
+
+
+### Performance Improvements
+
+* **lyrics:** enhance lyric highlighting smoothness ([f806c02](https://github.com/s0raLin/miku_music/commit/f806c0229c981f3b1905b3d6356c884a77f6e5ba))
+
 ## [1.48.0](https://github.com/s0raLin/miku_music/compare/v1.47.0...v1.48.0) (2026-06-14)
 
 

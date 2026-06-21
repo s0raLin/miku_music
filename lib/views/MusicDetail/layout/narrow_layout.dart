@@ -54,7 +54,7 @@ class _NarrowLayoutState extends State<NarrowLayout> {
               },
               children: [
                 CoverTabContent(music: widget.music),
-                const LyricsSection(showSourceButton: false),
+                const LyricsSection(),
               ],
             ),
             // 顶部沉浸式操作栏

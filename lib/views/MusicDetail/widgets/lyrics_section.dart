@@ -1,8 +1,5 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/src/rust/api/audio_info.dart';
@@ -210,8 +207,7 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
 }
 
 class LyricsSection extends StatefulWidget {
-  final bool showSourceButton;
-  const LyricsSection({super.key, this.showSourceButton = true});
+  const LyricsSection({super.key});
 
   @override
   State<LyricsSection> createState() => _LyricsSectionState();
@@ -419,8 +415,6 @@ class _LyricsSectionState extends State<LyricsSection>
               return _buildLyricsList(currentIndex, cs, halfHeight);
             },
           ),
-        // 歌词来源切换按钮 (由 showSourceButton 控制是否显示)
-        if (widget.showSourceButton) _buildLyricSourceButton(mp, context),
         if (_isUserInteracting && _focusedIndex >= 0)
           _buildCenterInteractionBar(cs),
         if (!currentLyricsEmpty) ...[
@@ -431,155 +425,13 @@ class _LyricsSectionState extends State<LyricsSection>
     );
   }
 
-  /// 歌词来源切换按钮
-  Widget _buildLyricSourceButton(MusicProvider mp, BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Positioned(
-      top: 4,
-      right: 8,
-      child: IconButton(
-        onPressed: () => _showLyricSourceDialog(mp, context),
-        tooltip: '歌词来源',
-        icon: Icon(Icons.lyrics_rounded, color: cs.primary),
-      ),
-    );
-  }
-
-  /// 弹出歌词来源选择弹窗
-  void _showLyricSourceDialog(MusicProvider mp, BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 拖拽指示条
-                Container(
-                  width: 32,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Icon(Icons.lyrics_rounded, color: cs.primary, size: 22),
-                      const SizedBox(width: 10),
-                      Text(
-                        '歌词来源',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurface,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.pop(sheetContext),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                const SizedBox(height: 8),
-                // 选择本地歌词文件
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: cs.primaryContainer,
-                    child: Icon(
-                      Icons.folder_open_rounded,
-                      color: cs.onPrimaryContainer,
-                    ),
-                  ),
-                  title: const Text('选择本地歌词文件'),
-                  subtitle: const Text('从设备中选择 .lrc / .ttml 文件'),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _pickLocalLyricFile(mp, context);
-                  },
-                ),
-                // 在线搜索歌词
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: cs.secondaryContainer,
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: cs.onSecondaryContainer,
-                    ),
-                  ),
-                  title: const Text('在线搜索歌词'),
-                  subtitle: const Text('通过网络匹配当前歌曲的歌词'),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _searchLyrics(mp, context);
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildEmptyState(MusicProvider mp, BuildContext context) {
     return AppEmptyState(
       icon: Icons.music_note_rounded,
       title: "暂无歌词",
-      subtitle: "点击右上角「歌词」按钮选择来源",
+      subtitle: "点击标题栏「歌词」图标切换来源",
     );
-  }
-
-  Future<void> _pickLocalLyricFile(MusicProvider mp, BuildContext context) async {
-    try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['lrc', 'ttml', 'txt'],
-        dialogTitle: '选择歌词文件',
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.single;
-      if (file.path == null) return;
-
-      final content = await File(file.path!).readAsString();
-      if (!context.mounted) return;
-      mp.setCurrentLrc(content);
-      AppToast.success(context, message: "本地歌词加载成功");
-    } catch (e) {
-      if (!context.mounted) return;
-      AppToast.error(context, message: "歌词文件读取失败");
-    }
-  }
-
-  Future<void> _searchLyrics(MusicProvider mp, BuildContext context) async {
-    AppToast.neutral(context, message: "正在查找中...");
-    try {
-      final music = mp.currentMusic;
-      final result = await MusicApi.searchLyrics(music?.artist, music?.title);
-      if (!context.mounted) return;
-      if (!result.$2) {
-        AppToast.neutral(context, message: "暂未找到歌词");
-        return;
-      }
-      mp.setCurrentLrc(result.$1);
-      AppToast.neutral(context, message: "歌词获取成功");
-    } catch (e) {
-      AppToast.error(context, message: "歌词获取失败");
-    }
   }
 
   Widget _buildLyricsList(

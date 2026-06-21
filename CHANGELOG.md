@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.50.0](https://github.com/s0raLin/miku_music/compare/v1.49.0...v1.50.0) (2026-06-19)
+
+
+### Features
+
+* **ui:** add lyric source selection ([5a01e01](https://github.com/s0raLin/miku_music/commit/5a01e01e2a093749ca6069cde0b367702cdba253))
+
 ## [1.49.0](https://github.com/s0raLin/miku_music/compare/v1.48.0...v1.49.0) (2026-06-19)
 
 

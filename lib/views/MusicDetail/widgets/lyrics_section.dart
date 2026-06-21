@@ -210,7 +210,8 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
 }
 
 class LyricsSection extends StatefulWidget {
-  const LyricsSection({super.key});
+  final bool showSourceButton;
+  const LyricsSection({super.key, this.showSourceButton = true});
 
   @override
   State<LyricsSection> createState() => _LyricsSectionState();
@@ -418,8 +419,8 @@ class _LyricsSectionState extends State<LyricsSection>
               return _buildLyricsList(currentIndex, cs, halfHeight);
             },
           ),
-        // 歌词来源切换按钮 (始终显示在右上角)
-        _buildLyricSourceButton(mp, context),
+        // 歌词来源切换按钮 (由 showSourceButton 控制是否显示)
+        if (widget.showSourceButton) _buildLyricSourceButton(mp, context),
         if (_isUserInteracting && _focusedIndex >= 0)
           _buildCenterInteractionBar(cs),
         if (!currentLyricsEmpty) ...[
@@ -436,34 +437,10 @@ class _LyricsSectionState extends State<LyricsSection>
     return Positioned(
       top: 4,
       right: 8,
-      child: Material(
-        color: cs.surface.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(20),
-        elevation: 2,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => _showLyricSourceDialog(mp, context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.lyrics_rounded, size: 16, color: cs.primary),
-                const SizedBox(width: 6),
-                Text(
-                  '歌词',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: cs.primary,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                Icon(Icons.arrow_drop_down_rounded, size: 16, color: cs.primary),
-              ],
-            ),
-          ),
-        ),
+      child: IconButton(
+        onPressed: () => _showLyricSourceDialog(mp, context),
+        tooltip: '歌词来源',
+        icon: Icon(Icons.lyrics_rounded, color: cs.primary),
       ),
     );
   }

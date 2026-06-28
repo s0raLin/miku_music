@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myapp/api/Model/NeteaseSong/index.dart';
+import 'package:myapp/api/Model/NeteasePlaylist/index.dart';
 
 class NeteaseApi {
   static final Dio _dio = Dio(
@@ -19,7 +20,7 @@ class NeteaseApi {
 
     final response = await _dio.get(
       '/api/search',
-      queryParameters: {'keyword': keyword},
+      queryParameters: {'keyword': keyword, 'limit': 50},
     );
 
     if (response.statusCode == 200 && response.data['code'] == 200) {
@@ -191,5 +192,72 @@ class NeteaseApi {
       debugPrint('下载失败: $e');
       return null;
     }
+  }
+
+  /// Search playlists from Netease Cloud Music via local proxy server
+  /// Calls /api/search?keyword=xxx&type=playlist
+  static Future<List<NeteasePlaylistItem>> searchPlaylists(
+    String keyword,
+  ) async {
+    if (keyword.trim().isEmpty) return [];
+
+    // 使用独立 Dio 实例，避免与歌曲搜索共用实例时参数互相干扰
+    final dio = Dio(BaseOptions(
+      baseUrl: dotenv.get("JS_BACKEND_URL", fallback: 'http://localhost:3000'),
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+    ));
+
+    final response = await dio.get(
+      '/api/search',
+      queryParameters: {'keyword': keyword, 'type': 'playlist', 'limit': 50},
+    );
+
+    if (response.statusCode == 200 && response.data['code'] == 200) {
+      final List<dynamic> data = response.data['data'] ?? [];
+      return data
+          .map((item) => NeteasePlaylistItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('歌单搜索失败: ${response.statusMessage}');
+  }
+
+  /// Fetch playlist detail (song list) by playlist id
+  /// Calls /api/playlist?id=xxx
+  ///
+  /// 注意：后端返回的 url 字段是相对路径（如 /api/url?id=xxx&source=netease），
+  /// 这里直接存储 id，播放时再通过 getRealUrl 获取真实可用链接。
+  static Future<NeteasePlaylistDetail> getPlaylistDetail(String id) async {
+    final response = await _dio.get(
+      '/api/playlist',
+      queryParameters: {'id': id},
+    );
+
+    if (response.statusCode == 200 && response.data['code'] == 200) {
+      final List<dynamic> data = response.data['data'] ?? [];
+      final baseUrl = dotenv.get("JS_BACKEND_URL", fallback: 'http://localhost:3000');
+      final songs = data.map((item) {
+        final map = item as Map<String, dynamic>;
+        // 修复相对路径 url：拼接 base URL 变成完整可访问地址
+        String rawUrl = map['url'] as String? ?? '';
+        if (rawUrl.startsWith('/')) {
+          rawUrl = '$baseUrl$rawUrl';
+        }
+        return NeteasePlaylistSong(
+          id: map['id'] as String? ?? '',
+          title: map['title'] as String? ?? '未知歌名',
+          author: map['author'] as String? ?? '未知歌手',
+          pic: (map['pic'] as String? ?? '').replaceFirst('http://', 'https://'),
+          url: rawUrl,
+          source: map['source'] as String? ?? 'netease',
+        );
+      }).toList();
+      return NeteasePlaylistDetail(
+        playlistName: response.data['playlistName'] as String? ?? '未知歌单',
+        count: (response.data['count'] as num?)?.toInt() ?? songs.length,
+        songs: songs,
+      );
+    }
+    throw Exception('获取歌单详情失败: ${response.statusMessage}');
   }
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.51.0](https://github.com/s0raLin/miku_music/compare/v1.50.0...v1.51.0) (2026-06-28)
+
+
+### Features
+
+* **netease:** add playlist search and detail support ([710661b](https://github.com/s0raLin/miku_music/commit/710661bf42f5a344713d3ccf8779288e1cff07f9))
+* **ui:** implement immersive layout for music detail ([4b2a3fa](https://github.com/s0raLin/miku_music/commit/4b2a3fa2fdf28157ccfc09c4887afacf25ea573c))
+
 ## [1.50.0](https://github.com/s0raLin/miku_music/compare/v1.49.0...v1.50.0) (2026-06-19)
 
 

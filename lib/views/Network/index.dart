@@ -53,19 +53,7 @@ class _NetworkSongPageState extends State<NetworkSongPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── 页面标题 ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Text(
-                '在线音乐',
-                style: tt.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
+            SizedBox(height: 16),
             // ── MD3 Secondary TabBar ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

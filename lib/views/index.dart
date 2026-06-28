@@ -71,6 +71,8 @@ class _MainPageState extends State<MainPage> with WindowListener {
     final currentIndex = nav.shell?.currentIndex ?? 0;
     final mp = context.watch<MusicProvider>();
     final isMiniMode = mp.isMiniMode;
+    final hasMusic = mp.currentMusic != null;
+
     return Scaffold(
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
@@ -79,12 +81,21 @@ class _MainPageState extends State<MainPage> with WindowListener {
           SideBar(currentIndex: currentIndex, onTap: onTabChanged),
           const VerticalDivider(thickness: 1, width: 1),
 
-          // 主内容区
+          // 主内容区 — 胶囊悬浮在内容之上
           Expanded(
-            child: Column(
+            child: Stack(
               children: [
-                Expanded(child: widget.navigationShell),
-                if (!isMiniMode) NowPlayingBar(),
+                // 内容页，底部留出胶囊高度避免被遮挡
+                Positioned.fill(
+                  bottom: (!isMiniMode && hasMusic) ? 80 : 0,
+                  child: widget.navigationShell,
+                ),
+                // 悬浮胶囊
+                if (!isMiniMode)
+                  const Positioned(
+                    left: 0, right: 0, bottom: 0,
+                    child: NowPlayingBar(),
+                  ),
               ],
             ),
           ),
@@ -99,6 +110,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
     final nav = context.watch<NavProvider>();
     final currentIndex = nav.shell?.currentIndex ?? 0;
     final isMiniMode = mp.isMiniMode;
+    final hasMusic = mp.currentMusic != null;
 
     final isRoot = _isRootBranch;
 
@@ -107,24 +119,31 @@ class _MainPageState extends State<MainPage> with WindowListener {
     final double totalBottomBarHeight =
         kBottomNavigationBarHeight + bottomPadding + 8;
 
+    // 胶囊高度 = 64(胶囊体) + 8(上边距) + 8(下边距) = 80
+    const double capsuleHeight = 80.0;
+
     return Scaffold(
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(child: widget.navigationShell),
-          if (!isMiniMode) ...[
-            NowPlayingBar(),
-            // 当导航栏显示时，这里高度为 0；当导航栏隐藏时，这里平滑地垫起系统全面屏手势栏的高度
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.fastOutSlowIn,
-              height: isRoot ? 0.0 : bottomPadding,
-              color: Theme.of(
-                context,
-              ).colorScheme.surfaceContainer, // 颜色与 NowPlayingBar 保持一致，视觉一体
+          // 内容页，底部留出胶囊 + 导航栏的空间
+          Positioned.fill(
+            bottom: (!isMiniMode && hasMusic)
+                ? (isRoot
+                    ? capsuleHeight + totalBottomBarHeight - bottomPadding
+                    : capsuleHeight)
+                : 0,
+            child: widget.navigationShell,
+          ),
+          // 悬浮胶囊，紧贴导航栏顶部
+          if (!isMiniMode)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: isRoot ? totalBottomBarHeight - bottomPadding : 0,
+              child: const NowPlayingBar(),
             ),
-          ],
         ],
       ),
       floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,
@@ -132,12 +151,9 @@ class _MainPageState extends State<MainPage> with WindowListener {
       bottomNavigationBar: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.fastOutSlowIn,
-        // 核心：如果是根路由则为全高，非根路由则必须为 0
         height: isRoot ? totalBottomBarHeight : 0.0,
         child: ClipRect(
-          // ClipRect 会把超出当前 Container 高度范围的所有子内容无情裁剪掉
           child: OverflowBox(
-            // OverflowBox 允许子组件打破父级的 0 高度限制，强行按照设定的最大高度去渲染
             alignment: Alignment.bottomCenter,
             minHeight: totalBottomBarHeight,
             maxHeight: totalBottomBarHeight,

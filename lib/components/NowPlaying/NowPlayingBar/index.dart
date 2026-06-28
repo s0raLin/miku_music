@@ -1,57 +1,87 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
+
+// ════════════════════════════════════════════════════════════════
+//  NowPlayingBar — MD3 胶囊岛形式，悬浮在底部内容之上
+//  使用方式：在外部 Stack 中用 Positioned 定位，底部留出导航栏高度
+// ════════════════════════════════════════════════════════════════
 
 class NowPlayingBar extends StatelessWidget {
   const NowPlayingBar({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final music = context.select<MusicProvider, Music?>((p) => p.currentMusic);
-
-    // 如果没有播放歌曲，彻底隐藏
     if (music == null) return const SizedBox.shrink();
 
-    return Material(
-      // 采用 M3 规范的 surfaceContainer 颜色
-      color: cs.surfaceContainer,
+    return _CapsuleBar(music: music);
+  }
+}
 
-      child: InkWell(
-        onTap: () => context.push("/music-detail"),
-        child: SizedBox(
-          height: 72,
-          child: Stack(
-            children: [
-              // 1. 全端统一：顶部的迷你触控进度条（吸附在容器上边缘）
-              const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: _MiniProgressBar(),
-              ),
+class _CapsuleBar extends StatelessWidget {
+  final Music music;
+  const _CapsuleBar({required this.music});
 
-              // 2. 主体内容行：弹性自适应，不再用 width 判断宽度
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: Row(
-                    children: [
-                      // 左侧：歌曲信息（自动占据剩余空间的最左侧）
-                      Expanded(child: _TrackInfoTile(music: music)),
-                      const SizedBox(width: 16),
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
 
-                      // 右侧：M3 精致控制按钮组合（在手机上紧凑，在桌面上自然靠右）
-                      const _PlaybackControlsSection(),
-                    ],
-                  ),
-                ),
+    return Padding(
+      // 胶囊距离左右和底部的外边距
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainer,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withValues(alpha: 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
+          ),
+          // 进度条嵌在胶囊底部
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: Stack(
+              children: [
+                // ── 进度条（贴底）──
+                Positioned(
+                  left: 0, right: 0, bottom: 0,
+                  child: _CapsuleProgressBar(),
+                ),
+                // ── 主体内容 ──
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(32),
+                    onTap: () => context.push('/music-detail'),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(6, 6, 8, 8),
+                      child: Row(
+                        children: [
+                          // 封面
+                          _CapsuleCover(music: music),
+                          const SizedBox(width: 10),
+                          // 标题+歌手
+                          Expanded(child: _CapsuleTrackInfo(music: music)),
+                          // 控制按钮
+                          _CapsuleControls(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -59,158 +89,138 @@ class NowPlayingBar extends StatelessWidget {
   }
 }
 
-// ============================================================
-// 歌曲信息块（支持响应式挤压缩略）
-// ============================================================
-class _TrackInfoTile extends StatelessWidget {
+// ── 封面 ──
+class _CapsuleCover extends StatelessWidget {
   final Music music;
-  const _TrackInfoTile({required this.music});
+  const _CapsuleCover({required this.music});
 
-  Widget _buildAlbumArt(ColorScheme cs, MusicProvider mp, double size) {
-    // 1. 优先使用内存中的 coverBytes
-    if (music.coverBytes?.isNotEmpty == true) {
-      return Image.memory(music.coverBytes!, fit: BoxFit.cover);
-    }
-
-    // 2. 网络歌曲：通过 MusicProvider 获取 coverUrl
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final mp = context.read<MusicProvider>();
     final coverUrl = mp.getCoverUrl(music.id);
 
-    if (coverUrl != null && coverUrl.isNotEmpty) {
-      return CachedNetworkImage(
+    Widget image;
+    if (music.coverBytes?.isNotEmpty == true) {
+      image = Image.memory(music.coverBytes!, fit: BoxFit.cover);
+    } else if (coverUrl != null && coverUrl.isNotEmpty) {
+      image = CachedNetworkImage(
         imageUrl: coverUrl,
         fit: BoxFit.cover,
         httpHeaders: coverUrl.contains('music.126.net')
-            ? {'Referer': 'https://music.163.com/'}
-            : {},
+            ? const {'Referer': 'https://music.163.com/'}
+            : const {},
         placeholder: (_, __) => Container(color: cs.surfaceContainerHighest),
-        errorWidget: (_, __, ___) => Container(
-          color: cs.surfaceContainerHighest,
-          child: Icon(
-            Icons.music_note_rounded,
-            size: size * 0.3,
-            color: cs.primary.withValues(alpha: 0.5),
-          ),
-        ),
+        errorWidget: (_, __, ___) => _fallback(cs),
       );
+    } else {
+      image = _fallback(cs);
     }
 
-    // 3. 兜底图标
-    return Container(
-      color: cs.surfaceContainerHighest,
-      child: Icon(
-        Icons.music_note_rounded,
-        size: size * 0.3,
-        color: cs.primary.withValues(alpha: 0.5),
+    return Hero(
+      tag: 'music_cover_${music.id}',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(width: 48, height: 48, child: image),
       ),
     );
   }
+
+  Widget _fallback(ColorScheme cs) => Container(
+        color: cs.primaryContainer,
+        child: Icon(Icons.music_note_rounded,
+            size: 22, color: cs.onPrimaryContainer),
+      );
+}
+
+// ── 标题 + 歌手 ──
+class _CapsuleTrackInfo extends StatelessWidget {
+  final Music music;
+  const _CapsuleTrackInfo({required this.music});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-
-    final mp = context.read<MusicProvider>();
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Hero(
-          tag: 'music_cover_${music.id}',
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.inner),
-            child: SizedBox(
-              width: 48,
-              height: 48,
-              child: _buildAlbumArt(cs, mp, 48),
-            ),
-          ),
+        Text(
+          music.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
-        const SizedBox(width: 12),
-        // Flexible 防止文本过长撑爆 Row 导致溢出报错
-        Flexible(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                music.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                music.artist,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-              ),
-            ],
-          ),
+        const SizedBox(height: 1),
+        Text(
+          music.artist,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
         ),
       ],
     );
   }
 }
 
-// ============================================================
-// 统一的控制按钮区域
-// ============================================================
-class _PlaybackControlsSection extends StatelessWidget {
-  const _PlaybackControlsSection();
+// ── 控制按钮 ──
+class _CapsuleControls extends StatelessWidget {
+  const _CapsuleControls();
 
   @override
   Widget build(BuildContext context) {
-    final mp = context.read<MusicProvider>();
-    final isPlaying = context.select<MusicProvider, bool>(
-      (p) => p.player.playing,
-    );
     final cs = Theme.of(context).colorScheme;
+    final mp = context.read<MusicProvider>();
+    final isPlaying =
+        context.select<MusicProvider, bool>((p) => p.player.playing);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 上一首 (在大屏/桌面端更舒适，窄屏下也会优雅贴合)
+        // 上一首
         IconButton(
           icon: const Icon(Icons.skip_previous_rounded),
-          iconSize: 24,
-          tooltip: '上一首',
+          iconSize: 22,
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.all(4),
           onPressed: mp.playPrev,
+          color: cs.onSurface,
         ),
-        const SizedBox(width: 4),
-
-        // 核心播放按钮：采用 M3 FilledIconButton 规范（44x44dp）
-        IconButton.filled(
-          onPressed: () => mp.togglePlay(),
-          style: IconButton.styleFrom(
-            backgroundColor: cs.primaryContainer,
-            foregroundColor: cs.onPrimaryContainer,
-            minimumSize: const Size(44, 44),
-            maximumSize: const Size(44, 44),
-          ),
-          tooltip: isPlaying ? '暂停' : '播放',
-          icon: Icon(
-            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-            size: 26,
+        // 播放/暂停 — 填充圆形按钮
+        GestureDetector(
+          onTap: mp.togglePlay,
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: cs.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              size: 22,
+              color: cs.onPrimary,
+            ),
           ),
         ),
-        const SizedBox(width: 4),
-
         // 下一首
         IconButton(
           icon: const Icon(Icons.skip_next_rounded),
-          iconSize: 24,
-          tooltip: '下一首',
+          iconSize: 22,
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.all(4),
           onPressed: mp.playNext,
+          color: cs.onSurface,
         ),
-        const SizedBox(width: 4),
-
-        // 队列按钮
+        // 队列
         IconButton(
           icon: const Icon(Icons.queue_music_rounded),
-          iconSize: 22,
-          tooltip: '播放队列',
+          iconSize: 20,
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.all(4),
           onPressed: () => _showQueue(context),
+          color: cs.onSurfaceVariant,
         ),
       ],
     );
@@ -227,11 +237,9 @@ class _PlaybackControlsSection extends StatelessWidget {
   }
 }
 
-// ============================================================
-// 顶部触控迷你进度条
-// ============================================================
-class _MiniProgressBar extends StatelessWidget {
-  const _MiniProgressBar();
+// ── 胶囊进度条（贴底 3px）──
+class _CapsuleProgressBar extends StatelessWidget {
+  const _CapsuleProgressBar();
 
   @override
   Widget build(BuildContext context) {
@@ -241,14 +249,11 @@ class _MiniProgressBar extends StatelessWidget {
     return StreamBuilder<PositionData>(
       stream: mp.positionDataStream,
       builder: (context, snap) {
-        final pos =
-            snap.data ??
+        final pos = snap.data ??
             PositionData(Duration.zero, Duration.zero, Duration.zero);
         final value = pos.duration.inMilliseconds > 0
-            ? (pos.position.inMilliseconds / pos.duration.inMilliseconds).clamp(
-                0.0,
-                1.0,
-              )
+            ? (pos.position.inMilliseconds / pos.duration.inMilliseconds)
+                .clamp(0.0, 1.0)
             : 0.0;
 
         return GestureDetector(
@@ -258,18 +263,17 @@ class _MiniProgressBar extends StatelessWidget {
             final dx = details.localPosition.dx / box.size.width;
             mp.player.seek(
               Duration(
-                milliseconds: (pos.duration.inMilliseconds * dx).toInt(),
-              ),
+                  milliseconds:
+                      (pos.duration.inMilliseconds * dx).toInt()),
             );
           },
-          child: SizedBox(
-            height: 4,
-            child: LinearProgressIndicator(
-              value: value,
-              backgroundColor: cs.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation(cs.primary),
-              minHeight: 4,
-            ),
+          child: LinearProgressIndicator(
+            value: value,
+            minHeight: 3,
+            backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+            valueColor: AlwaysStoppedAnimation(
+                cs.primary.withValues(alpha: 0.8)),
+            borderRadius: BorderRadius.zero,
           ),
         );
       },
@@ -277,23 +281,23 @@ class _MiniProgressBar extends StatelessWidget {
   }
 }
 
-// ============================================================
-// 播放队列 Bottom Sheet（支持拖拽排序 / 删除 / 清空）
-// ============================================================
+// ════════════════════════════════════════════════════════════════
+//  播放队列 Bottom Sheet
+// ════════════════════════════════════════════════════════════════
 class _QueueSheet extends StatelessWidget {
   const _QueueSheet();
 
   IconData modeIcon(PlayMode mode) => switch (mode) {
-    PlayMode.sequence => Icons.repeat_rounded,
-    PlayMode.shuffle => Icons.shuffle_rounded,
-    PlayMode.repeat => Icons.repeat_one_rounded,
-  };
+        PlayMode.sequence => Icons.repeat_rounded,
+        PlayMode.shuffle => Icons.shuffle_rounded,
+        PlayMode.repeat => Icons.repeat_one_rounded,
+      };
 
   String modeTooltip(PlayMode mode) => switch (mode) {
-    PlayMode.sequence => "顺序播放",
-    PlayMode.shuffle => "随机播放",
-    PlayMode.repeat => "单曲循环",
-  };
+        PlayMode.sequence => '顺序播放',
+        PlayMode.shuffle => '随机播放',
+        PlayMode.repeat => '单曲循环',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -307,13 +311,11 @@ class _QueueSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 4),
             child: Center(
               child: Container(
-                width: 32,
-                height: 4,
+                width: 32, height: 4,
                 decoration: BoxDecoration(
                   color: cs.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
@@ -321,7 +323,6 @@ class _QueueSheet extends StatelessWidget {
               ),
             ),
           ),
-          // Header with count + clear button
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
             child: Row(
@@ -329,30 +330,26 @@ class _QueueSheet extends StatelessWidget {
               children: [
                 Text('播放队列 (${songs.length})', style: tt.titleMedium),
                 if (songs.isNotEmpty)
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: mp.togglePlayMode,
-                        tooltip: modeTooltip(mp.playMode),
-                        icon: Icon(modeIcon(mp.playMode)),
-                      ),
-                      IconButton(
-                        tooltip: '清空队列',
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        onPressed: () => mp.clearQueue(),
-                      ),
-                    ],
-                  ),
+                  Row(children: [
+                    IconButton(
+                      onPressed: mp.togglePlayMode,
+                      tooltip: modeTooltip(mp.playMode),
+                      icon: Icon(modeIcon(mp.playMode)),
+                    ),
+                    IconButton(
+                      tooltip: '清空队列',
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      onPressed: mp.clearQueue,
+                    ),
+                  ]),
               ],
             ),
           ),
           if (songs.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 32),
-              child: Text(
-                '播放队列为空',
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-              ),
+              child: Text('播放队列为空',
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
             ),
           const Divider(height: 1),
           if (songs.isNotEmpty)
@@ -365,49 +362,35 @@ class _QueueSheet extends StatelessWidget {
                   shrinkWrap: true,
                   padding: const EdgeInsets.only(bottom: 16),
                   itemCount: songs.length,
-                  onReorderItem: (int oldIndex, int newIndex) {
-                    mp.reorderQueue(oldIndex, newIndex);
-                  },
+                  onReorderItem: mp.reorderQueue,
                   buildDefaultDragHandles: false,
                   itemBuilder: (context, index) {
                     final m = songs[index];
                     final isCurrent = currentMusic?.id == m.id;
-
                     return ListTile(
                       key: ValueKey('queue_${m.id}_$index'),
                       leading: ReorderableDragStartListener(
                         index: index,
                         child: isCurrent
-                            ? Icon(
-                                Icons.volume_up_rounded,
-                                size: 20,
-                                color: cs.primary,
-                              )
-                            : Icon(
-                                Icons.drag_handle_rounded,
-                                size: 20,
-                                color: cs.onSurfaceVariant,
-                              ),
+                            ? Icon(Icons.volume_up_rounded,
+                                size: 20, color: cs.primary)
+                            : Icon(Icons.drag_handle_rounded,
+                                size: 20, color: cs.onSurfaceVariant),
                       ),
-                      title: Text(
-                        m.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodyLarge?.copyWith(
-                          color: isCurrent ? cs.primary : null,
-                          fontWeight: isCurrent
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      subtitle: Text(
-                        m.artist,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodyMedium?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
+                      title: Text(m.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tt.bodyLarge?.copyWith(
+                            color: isCurrent ? cs.primary : null,
+                            fontWeight: isCurrent
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          )),
+                      subtitle: Text(m.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tt.bodyMedium
+                              ?.copyWith(color: cs.onSurfaceVariant)),
                       trailing: IconButton(
                         icon: const Icon(Icons.close_rounded, size: 16),
                         onPressed: () => mp.removeFromQueue(index),

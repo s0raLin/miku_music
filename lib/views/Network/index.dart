@@ -800,7 +800,6 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
                 detailError: isOpen ? _detailError : null,
                 currentMusic: context.watch<MusicProvider>().currentMusic,
                 onTap: () => _openPlaylist(item),
-                onPlayAll: () => _playPlaylistFrom(0),
                 onPlaySong: (song) => _playPlaylistFrom(_detail!.songs.indexOf(song)),
                 onOpenDetail: _openDetailPage,
               ),
@@ -824,7 +823,6 @@ class _PlaylistCard extends StatelessWidget {
   final String? detailError;
   final dynamic currentMusic;
   final VoidCallback onTap;
-  final VoidCallback onPlayAll;
   final void Function(NeteasePlaylistSong) onPlaySong;
   final void Function(NeteasePlaylistSong) onOpenDetail;
 
@@ -836,7 +834,6 @@ class _PlaylistCard extends StatelessWidget {
     required this.detailError,
     required this.currentMusic,
     required this.onTap,
-    required this.onPlayAll,
     required this.onPlaySong,
     required this.onOpenDetail,
   });
@@ -969,7 +966,6 @@ class _PlaylistCard extends StatelessWidget {
                         _PlaylistDetailPanel(
                           detail: detail!,
                           currentMusic: currentMusic,
-                          onPlayAll: onPlayAll,
                           onPlaySong: onPlaySong,
                           onOpenDetail: onOpenDetail,
                         ),
@@ -1054,14 +1050,12 @@ class _StatChip extends StatelessWidget {
 class _PlaylistDetailPanel extends StatefulWidget {
   final NeteasePlaylistDetail detail;
   final dynamic currentMusic;
-  final VoidCallback onPlayAll;
   final void Function(NeteasePlaylistSong) onPlaySong;
   final void Function(NeteasePlaylistSong) onOpenDetail;
 
   const _PlaylistDetailPanel({
     required this.detail,
     required this.currentMusic,
-    required this.onPlayAll,
     required this.onPlaySong,
     required this.onOpenDetail,
   });
@@ -1094,32 +1088,6 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 操作栏
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-          child: Row(children: [
-            Expanded(
-              child: Text(
-                widget.detail.playlistName,
-                style: tt.labelMedium?.copyWith(
-                    color: cs.onSurfaceVariant, fontWeight: FontWeight.w500),
-                maxLines: 1, overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.icon(
-              onPressed: widget.onPlayAll,
-              icon: const Icon(Icons.play_arrow_rounded, size: 16),
-              label: const Text('播放全部'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ]),
-        ),
         Divider(height: 1, indent: 14, endIndent: 14,
             color: cs.outlineVariant.withValues(alpha: 0.3)),
         // 已显示的歌曲行

@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 //  NowPlayingBar — MD3 胶囊岛形式，悬浮在底部内容之上
 //  使用方式：在外部 Stack 中用 Positioned 定位，底部留出导航栏高度
 // ════════════════════════════════════════════════════════════════
-
 class NowPlayingBar extends StatelessWidget {
   const NowPlayingBar({super.key});
 
@@ -18,7 +17,10 @@ class NowPlayingBar extends StatelessWidget {
     final music = context.select<MusicProvider, Music?>((p) => p.currentMusic);
     if (music == null) return const SizedBox.shrink();
 
-    return _CapsuleBar(music: music);
+    return Padding(
+      padding: EdgeInsetsGeometry.only(left: 8, right: 8, bottom: 8),
+      child: _CapsuleBar(music: music),
+    );
   }
 }
 
@@ -29,59 +31,59 @@ class _CapsuleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
 
-    return Padding(
-      // 胶囊距离左右和底部的外边距
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          height: 64,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: cs.shadow.withValues(alpha: 0.15),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.18),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: Stack(
+            children: [
+              // 进度条
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _CapsuleProgressBar(),
               ),
-            ],
-          ),
-          // 进度条嵌在胶囊底部
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: Stack(
-              children: [
-                // ── 进度条（贴底）──
-                Positioned(
-                  left: 0, right: 0, bottom: 0,
-                  child: _CapsuleProgressBar(),
-                ),
-                // ── 主体内容 ──
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(32),
-                    onTap: () => context.push('/music-detail'),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 6, 8, 8),
-                      child: Row(
-                        children: [
-                          // 封面
-                          _CapsuleCover(music: music),
-                          const SizedBox(width: 10),
-                          // 标题+歌手
-                          Expanded(child: _CapsuleTrackInfo(music: music)),
-                          // 控制按钮
-                          _CapsuleControls(),
-                        ],
-                      ),
+              // 内容
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(32),
+                  onTap: () => context.push('/music-detail'),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      6,
+                      6,
+                      8,
+                      8 + bottomInset,
+                    ), // 只保留必要的底部
+                    child: Row(
+                      children: [
+                        _CapsuleCover(music: music),
+                        const SizedBox(width: 10),
+                        Expanded(child: _CapsuleTrackInfo(music: music)),
+                        const _CapsuleControls(),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -127,10 +129,13 @@ class _CapsuleCover extends StatelessWidget {
   }
 
   Widget _fallback(ColorScheme cs) => Container(
-        color: cs.primaryContainer,
-        child: Icon(Icons.music_note_rounded,
-            size: 22, color: cs.onPrimaryContainer),
-      );
+    color: cs.primaryContainer,
+    child: Icon(
+      Icons.music_note_rounded,
+      size: 22,
+      color: cs.onPrimaryContainer,
+    ),
+  );
 }
 
 // ── 标题 + 歌手 ──
@@ -172,8 +177,9 @@ class _CapsuleControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final mp = context.read<MusicProvider>();
-    final isPlaying =
-        context.select<MusicProvider, bool>((p) => p.player.playing);
+    final isPlaying = context.select<MusicProvider, bool>(
+      (p) => p.player.playing,
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -249,11 +255,14 @@ class _CapsuleProgressBar extends StatelessWidget {
     return StreamBuilder<PositionData>(
       stream: mp.positionDataStream,
       builder: (context, snap) {
-        final pos = snap.data ??
+        final pos =
+            snap.data ??
             PositionData(Duration.zero, Duration.zero, Duration.zero);
         final value = pos.duration.inMilliseconds > 0
-            ? (pos.position.inMilliseconds / pos.duration.inMilliseconds)
-                .clamp(0.0, 1.0)
+            ? (pos.position.inMilliseconds / pos.duration.inMilliseconds).clamp(
+                0.0,
+                1.0,
+              )
             : 0.0;
 
         return GestureDetector(
@@ -263,8 +272,8 @@ class _CapsuleProgressBar extends StatelessWidget {
             final dx = details.localPosition.dx / box.size.width;
             mp.player.seek(
               Duration(
-                  milliseconds:
-                      (pos.duration.inMilliseconds * dx).toInt()),
+                milliseconds: (pos.duration.inMilliseconds * dx).toInt(),
+              ),
             );
           },
           child: LinearProgressIndicator(
@@ -272,7 +281,8 @@ class _CapsuleProgressBar extends StatelessWidget {
             minHeight: 3,
             backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.6),
             valueColor: AlwaysStoppedAnimation(
-                cs.primary.withValues(alpha: 0.8)),
+              cs.primary.withValues(alpha: 0.8),
+            ),
             borderRadius: BorderRadius.zero,
           ),
         );
@@ -288,16 +298,16 @@ class _QueueSheet extends StatelessWidget {
   const _QueueSheet();
 
   IconData modeIcon(PlayMode mode) => switch (mode) {
-        PlayMode.sequence => Icons.repeat_rounded,
-        PlayMode.shuffle => Icons.shuffle_rounded,
-        PlayMode.repeat => Icons.repeat_one_rounded,
-      };
+    PlayMode.sequence => Icons.repeat_rounded,
+    PlayMode.shuffle => Icons.shuffle_rounded,
+    PlayMode.repeat => Icons.repeat_one_rounded,
+  };
 
   String modeTooltip(PlayMode mode) => switch (mode) {
-        PlayMode.sequence => '顺序播放',
-        PlayMode.shuffle => '随机播放',
-        PlayMode.repeat => '单曲循环',
-      };
+    PlayMode.sequence => '顺序播放',
+    PlayMode.shuffle => '随机播放',
+    PlayMode.repeat => '单曲循环',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +325,8 @@ class _QueueSheet extends StatelessWidget {
             padding: const EdgeInsets.only(top: 12, bottom: 4),
             child: Center(
               child: Container(
-                width: 32, height: 4,
+                width: 32,
+                height: 4,
                 decoration: BoxDecoration(
                   color: cs.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
@@ -330,26 +341,30 @@ class _QueueSheet extends StatelessWidget {
               children: [
                 Text('播放队列 (${songs.length})', style: tt.titleMedium),
                 if (songs.isNotEmpty)
-                  Row(children: [
-                    IconButton(
-                      onPressed: mp.togglePlayMode,
-                      tooltip: modeTooltip(mp.playMode),
-                      icon: Icon(modeIcon(mp.playMode)),
-                    ),
-                    IconButton(
-                      tooltip: '清空队列',
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      onPressed: mp.clearQueue,
-                    ),
-                  ]),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: mp.togglePlayMode,
+                        tooltip: modeTooltip(mp.playMode),
+                        icon: Icon(modeIcon(mp.playMode)),
+                      ),
+                      IconButton(
+                        tooltip: '清空队列',
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        onPressed: mp.clearQueue,
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
           if (songs.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 32),
-              child: Text('播放队列为空',
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+              child: Text(
+                '播放队列为空',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
             ),
           const Divider(height: 1),
           if (songs.isNotEmpty)
@@ -372,25 +387,36 @@ class _QueueSheet extends StatelessWidget {
                       leading: ReorderableDragStartListener(
                         index: index,
                         child: isCurrent
-                            ? Icon(Icons.volume_up_rounded,
-                                size: 20, color: cs.primary)
-                            : Icon(Icons.drag_handle_rounded,
-                                size: 20, color: cs.onSurfaceVariant),
+                            ? Icon(
+                                Icons.volume_up_rounded,
+                                size: 20,
+                                color: cs.primary,
+                              )
+                            : Icon(
+                                Icons.drag_handle_rounded,
+                                size: 20,
+                                color: cs.onSurfaceVariant,
+                              ),
                       ),
-                      title: Text(m.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.bodyLarge?.copyWith(
-                            color: isCurrent ? cs.primary : null,
-                            fontWeight: isCurrent
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          )),
-                      subtitle: Text(m.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.bodyMedium
-                              ?.copyWith(color: cs.onSurfaceVariant)),
+                      title: Text(
+                        m.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyLarge?.copyWith(
+                          color: isCurrent ? cs.primary : null,
+                          fontWeight: isCurrent
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      subtitle: Text(
+                        m.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.close_rounded, size: 16),
                         onPressed: () => mp.removeFromQueue(index),

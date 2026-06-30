@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.52.0](https://github.com/s0raLin/miku_music/compare/v1.51.0...v1.52.0) (2026-06-30)
+
+
+### Features
+
+* **ui:** implement atomic component architecture and settings provider ([437edb9](https://github.com/s0raLin/miku_music/commit/437edb9b288a5f70f76f984f3b6188af953d399f))
+* **ui:** implement floating capsule-style player bar ([bed89f1](https://github.com/s0raLin/miku_music/commit/bed89f1065cf7fe267a63e86536619b9a2a3f376))
+
 ## [1.51.0](https://github.com/s0raLin/miku_music/compare/v1.50.0...v1.51.0) (2026-06-28)
 
 

@@ -5,12 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/service/AppIcon/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
+import 'package:myapp/providers/SettingsProvider/index.dart';
 import 'package:myapp/providers/StartupProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:myapp/router/Extensions/router.dart';
+import 'package:myapp/service/AppIcon/index.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,10 +65,11 @@ class _SplashPageState extends State<SplashPage>
     var startupSucceeded = false;
     final startupProvider = context.read<StartupProvider>();
     final themeProvider = context.read<ThemeProvider>();
+    final settingsProvider = context.read<SettingsProvider>();
     final musicProvider = context.read<MusicProvider>();
     final playlistProvider = context.read<PlaylistProvider>();
     musicProvider.onMusicPlayed = (song) {
-      playlistProvider.addToHistory(song, themeProvider.maxHistoryCount, musicProvider: musicProvider);
+      playlistProvider.addToHistory(song, settingsProvider.maxHistoryCount, musicProvider: musicProvider);
     };
 
     final pfs = await SharedPreferences.getInstance();
@@ -83,6 +85,7 @@ class _SplashPageState extends State<SplashPage>
 
       await startupProvider.run(
         themeProvider: themeProvider,
+        settingsProvider: settingsProvider,
         musicProvider: musicProvider,
         playlistProvider: playlistProvider,
       );

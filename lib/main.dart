@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
+import 'package:myapp/providers/SettingsProvider/index.dart';
 import 'package:myapp/providers/StartupProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
@@ -47,6 +48,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => NavProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => StartupProvider()),
       ],
       child: const IndexRouter(),

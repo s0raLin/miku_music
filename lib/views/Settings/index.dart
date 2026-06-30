@@ -8,6 +8,7 @@ import 'package:myapp/constants/Assets/index.dart';
 import 'package:myapp/constants/Theme/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/SettingsProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
@@ -75,6 +76,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    final settingsProvider = context.watch<SettingsProvider>();
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final version = context.select<MusicProvider, String>((p) => p.appVersion);
@@ -233,13 +235,13 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       title: const Text("应用图标"),
                       subtitle: Text(
-                        _getIconFileName(themeProvider.appIconPath),
+                        _getIconFileName(settingsProvider.appIconPath),
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.outline,
                         ),
                       ),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _showAppIconPicker(context, themeProvider),
+                      onTap: () => _showAppIconPicker(context, settingsProvider),
                     ),
                   ],
                 ),
@@ -265,8 +267,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: colorScheme.outline,
                         ),
                       ),
-                      value: themeProvider.autoPlayOnStart,
-                      onChanged: (v) => themeProvider.setAutoPlayOnStart(v),
+                      value: settingsProvider.autoPlayOnStart,
+                      onChanged: (v) => settingsProvider.setAutoPlayOnStart(v),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
 
@@ -284,8 +286,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: colorScheme.outline,
                         ),
                       ),
-                      value: themeProvider.doubleTapToPlay,
-                      onChanged: (v) => themeProvider.setDoubleTapToPlay(v),
+                      value: settingsProvider.doubleTapToPlay,
+                      onChanged: (v) => settingsProvider.setDoubleTapToPlay(v),
                     ),
                   ],
                 ),
@@ -311,8 +313,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: colorScheme.outline,
                         ),
                       ),
-                      value: themeProvider.showLyricCover,
-                      onChanged: (v) => themeProvider.setShowLyricCover(v),
+                      value: settingsProvider.showLyricCover,
+                      onChanged: (v) => settingsProvider.setShowLyricCover(v),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
 
@@ -330,9 +332,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: colorScheme.outline,
                         ),
                       ),
-                      value: themeProvider.showNotificationDetail,
+                      value: settingsProvider.showNotificationDetail,
                       onChanged: (v) =>
-                          themeProvider.setShowNotificationDetail(v),
+                          settingsProvider.setShowNotificationDetail(v),
                     ),
                   ],
                 ),
@@ -357,13 +359,13 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       title: const Text("历史记录上限"),
                       subtitle: Text(
-                        "最多保留 ${themeProvider.maxHistoryCount} 条",
+                        "最多保留 ${settingsProvider.maxHistoryCount} 条",
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.outline,
                         ),
                       ),
                       trailing: DropdownButton<int>(
-                        value: themeProvider.maxHistoryCount,
+                        value: settingsProvider.maxHistoryCount,
                         items: const [
                           DropdownMenuItem(value: 50, child: Text("50")),
                           DropdownMenuItem(value: 100, child: Text("100")),
@@ -371,7 +373,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           DropdownMenuItem(value: 500, child: Text("500")),
                         ],
                         onChanged: (v) {
-                          if (v != null) themeProvider.setMaxHistoryCount(v);
+                          if (v != null) settingsProvider.setMaxHistoryCount(v);
                         },
                         underline: Container(),
                       ),
@@ -631,7 +633,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return name.replaceAll('app_icon', '风格 ').trim();
   }
 
-  void _showAppIconPicker(BuildContext context, ThemeProvider themeProvider) {
+  void _showAppIconPicker(BuildContext context, SettingsProvider settingsProvider) {
     final List<String> iconPaths = [
       MyAssets.app_icon,
       MyAssets.app_icon1,
@@ -652,9 +654,9 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (sheetContext) {
         return _AppIconPickerSheet(
           iconPaths: iconPaths,
-          currentIconPath: themeProvider.appIconPath,
+          currentIconPath: settingsProvider.appIconPath,
           onConfirm: (selectedPath) {
-            themeProvider.setAppIconPath(selectedPath);
+            settingsProvider.setAppIconPath(selectedPath);
             Navigator.of(sheetContext).pop();
           },
           onCancel: () => Navigator.of(sheetContext).pop(),

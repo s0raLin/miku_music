@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
+import 'package:myapp/providers/SettingsProvider/index.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/service/AppIcon/index.dart';
 import 'package:myapp/service/Initialization/index.dart';
@@ -29,6 +30,7 @@ class StartupProvider extends ChangeNotifier {
 
   Future<void> run({
     required ThemeProvider themeProvider,
+    required SettingsProvider settingsProvider,
     required MusicProvider musicProvider,
     required PlaylistProvider playlistProvider,
   }) async {
@@ -45,7 +47,8 @@ class StartupProvider extends ChangeNotifier {
     try {
       final settings = await InitializationService.loadInitialSettings();
       themeProvider.updateFromMap(settings);
-      await AppIconService.switchAppIcon(themeProvider.appIconPath);
+      settingsProvider.updateFromMap(settings);
+      await AppIconService.switchAppIcon(settingsProvider.appIconPath);
 
       _finishStep('加载界面设置', '主题设置已应用');
 

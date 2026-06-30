@@ -52,8 +52,10 @@ class _MainPageState extends State<MainPage> with WindowListener {
     showNavigationDrawer = MediaQuery.of(context).size.width >= 450;
   }
 
+  // _stableIsRoot 延迟一帧更新，防止 tab 切换时短暂闪变导致 BottomBar 抖动
+  bool _stableIsRoot = true;
+
   bool get _isRootBranch {
-    // 当前激活分支的导航器，栈深度为 1 说明在根路由
     return widget.navigationShell.shellRouteContext.navigatorKey.currentState
             ?.canPop() ==
         false;
@@ -100,7 +102,14 @@ class _MainPageState extends State<MainPage> with WindowListener {
     final currentIndex = nav.shell?.currentIndex ?? 0;
     final isMiniMode = mp.isMiniMode;
 
-    final isRoot = _isRootBranch;
+    // 如果实际值与稳定值不同，延迟一帧后再更新，避免 tab 切换时的瞬时抖动
+    final actualIsRoot = _isRootBranch;
+    if (actualIsRoot != _stableIsRoot) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _stableIsRoot = actualIsRoot);
+      });
+    }
+    final isRoot = _stableIsRoot;
 
     // 计算底部栏完整的设计高度
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -115,33 +124,22 @@ class _MainPageState extends State<MainPage> with WindowListener {
           Expanded(child: widget.navigationShell),
           if (!isMiniMode) ...[
             NowPlayingBar(),
-            // 当导航栏显示时，这里高度为 0；当导航栏隐藏时，这里平滑地垫起系统全面屏手势栏的高度
+            // 当导航栏隐藏时，填入底部安全区高度，将胶囊栏托举在安全区上方
             AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.fastOutSlowIn,
               height: isRoot ? 0.0 : bottomPadding,
-              color: Colors.transparent,
             ),
           ],
         ],
       ),
       floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,
-      // ── 底部导航栏裁剪收缩动画 ──
+      // ── 底部导航栏高度动画（不使用 AnimatedSlide，因为后者不释放布局空间） ──
       bottomNavigationBar: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.fastOutSlowIn,
-        // 核心：如果是根路由则为全高，非根路由则必须为 0
         height: isRoot ? totalBottomBarHeight : 0.0,
-        child: ClipRect(
-          // ClipRect 会把超出当前 Container 高度范围的所有子内容无情裁剪掉
-          child: OverflowBox(
-            // OverflowBox 允许子组件打破父级的 0 高度限制，强行按照设定的最大高度去渲染
-            alignment: Alignment.bottomCenter,
-            minHeight: totalBottomBarHeight,
-            maxHeight: totalBottomBarHeight,
-            child: BottomBar(currentIndex: currentIndex, onTap: onTabChanged),
-          ),
-        ),
+        child: BottomBar(currentIndex: currentIndex, onTap: onTabChanged),
       ),
     );
   }

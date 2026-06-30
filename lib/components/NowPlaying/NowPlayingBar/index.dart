@@ -18,7 +18,7 @@ class NowPlayingBar extends StatelessWidget {
     if (music == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: EdgeInsetsGeometry.only(left: 8, right: 8, bottom: 8),
+      padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
       child: _CapsuleBar(music: music),
     );
   }

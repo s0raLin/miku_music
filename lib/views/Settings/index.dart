@@ -63,7 +63,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             children: [
               // ── 外观 ──────────────────────────────────────────────────────
               AppSectionHeader(title: "外观"),
@@ -124,7 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ]),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               // ── 播放 ──────────────────────────────────────────────────────
               AppSectionHeader(title: "播放"),
               Card.filled(
@@ -139,7 +139,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ]),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               // ── 显示 ──────────────────────────────────────────────────────
               AppSectionHeader(title: "显示"),
               Card.filled(
@@ -154,7 +154,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ]),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               // ── 数据 ──────────────────────────────────────────────────────
               AppSectionHeader(title: "数据"),
               Card.filled(
@@ -163,6 +163,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     scanPaths: _scanPaths,
                     isLoading: _isPathsLoading,
                     onPickDialog: _showPickDialog,
+                    onPathRemoved: () => _initPaths(),
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
                   ListTile(
@@ -194,7 +195,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ]),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               // ── 关于 ──────────────────────────────────────────────────────
               AppSectionHeader(title: "关于"),
               Card.filled(
@@ -215,7 +216,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ]),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
             ],
           ),
         ),

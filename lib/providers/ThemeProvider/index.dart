@@ -190,19 +190,20 @@ class ThemeProvider extends ChangeNotifier {
           )
           .apply(bodyColor: softOnSurface, displayColor: softOnSurface),
 
-      // AppBar
+      // AppBar (compact)
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
+        toolbarHeight: 52,
         backgroundColor: finalSurface,
         foregroundColor: softOnSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        titleSpacing: 24,
+        titleSpacing: 16,
         titleTextStyle: GoogleFonts.notoSansSc(
-          fontSize: 20,
+          fontSize: 17,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.5,
+          letterSpacing: -0.3,
           color: softOnSurface,
         ),
       ),
@@ -214,34 +215,34 @@ class ThemeProvider extends ChangeNotifier {
         surfaceTintColor: Colors.transparent,
         shape: cardShape,
         clipBehavior: Clip.antiAlias,
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
       ),
 
-      // NavigationBar
+      // NavigationBar (compact)
       navigationBarTheme: NavigationBarThemeData(
-        height: 76,
+        height: 64,
         backgroundColor: finalSurface,
         indicatorColor: s.secondaryContainer,
         indicatorShape: pill,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           return states.contains(WidgetState.selected)
-              ? IconThemeData(color: s.onSecondaryContainer, size: 24)
-              : IconThemeData(color: softOnSurfaceVariant, size: 24);
+              ? IconThemeData(color: s.onSecondaryContainer, size: 22)
+              : IconThemeData(color: softOnSurfaceVariant, size: 22);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           return states.contains(WidgetState.selected)
-              ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)
-              : const TextStyle(fontSize: 12);
+              ? const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)
+              : const TextStyle(fontSize: 11);
         }),
       ),
 
-      // Buttons
+      // Buttons (compact)
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           foregroundColor: s.onPrimary,
           backgroundColor: s.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
           shape: pill,
         ),
       ),
@@ -250,7 +251,7 @@ class ThemeProvider extends ChangeNotifier {
           foregroundColor: softOnSurface,
           backgroundColor: surfaceColors.low,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
           shape: pill,
         ),
       ),
@@ -258,14 +259,14 @@ class ThemeProvider extends ChangeNotifier {
         style: OutlinedButton.styleFrom(
           foregroundColor: s.primary,
           side: BorderSide(color: softOutline, width: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
           shape: pill,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: s.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           shape: pill,
         ),
       ),
@@ -315,12 +316,12 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
 
-      // Other common themes (ListTile, Dialog, BottomSheet, etc.)
+      // Other common themes
       listTileTheme: ListTileThemeData(
         dense: _listDensity == "compact",
         contentPadding: _listDensity == "compact"
             ? const EdgeInsets.symmetric(horizontal: 12, vertical: 0)
-            : const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            : const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         visualDensity: _listDensity == "compact"
             ? const VisualDensity(horizontal: -2, vertical: -2)
             : VisualDensity.standard,

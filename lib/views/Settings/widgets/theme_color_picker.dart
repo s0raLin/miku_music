@@ -30,7 +30,7 @@ class ThemeColorPicker extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -41,7 +41,7 @@ class ThemeColorPicker extends StatelessWidget {
               Text("主题色", style: tt.bodyLarge),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 16,
             runSpacing: 14,
@@ -86,8 +86,8 @@ class _ColorSwatch extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
-        width: 52,
-        height: 52,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(isSelected ? 16 : 28),

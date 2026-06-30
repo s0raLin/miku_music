@@ -68,9 +68,9 @@ class AppToast {
                     ),
                   Text(
                     message,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: fg, fontSize: 14),
+                    style: TextStyle(color: fg, fontSize: 13),
                   ),
                 ],
               ),

@@ -40,8 +40,6 @@ class _MainPageState extends State<MainPage> with WindowListener {
     super.dispose();
   }
 
-  // 修复点：移除了多余的 setState(() {});
-  // StatefulNavigationShell 的 goBranch 会自行处理分支切换引起的局部或整体通知刷新。
   void onTabChanged(int idx) {
     widget.navigationShell.goBranch(idx);
   }
@@ -51,9 +49,6 @@ class _MainPageState extends State<MainPage> with WindowListener {
     super.didChangeDependencies();
     showNavigationDrawer = MediaQuery.of(context).size.width >= 450;
   }
-
-  // _stableIsRoot 延迟一帧更新，防止 tab 切换时短暂闪变导致 BottomBar 抖动
-  bool _stableIsRoot = true;
 
   bool get _isRootBranch {
     return widget.navigationShell.shellRouteContext.navigatorKey.currentState
@@ -102,14 +97,11 @@ class _MainPageState extends State<MainPage> with WindowListener {
     final currentIndex = nav.shell?.currentIndex ?? 0;
     final isMiniMode = mp.isMiniMode;
 
-    // 如果实际值与稳定值不同，延迟一帧后再更新，避免 tab 切换时的瞬时抖动
-    final actualIsRoot = _isRootBranch;
-    if (actualIsRoot != _stableIsRoot) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _stableIsRoot = actualIsRoot);
-      });
-    }
-    final isRoot = _stableIsRoot;
+    // 直接使用 _isRootBranch，不再需要 _stableIsRoot 延迟机制。
+    // StatefulShellRoute.indexedStack 在 root 级别页面切换时不会触发
+    // navigationStack 变化，因此 _isRootBranch 始终为 true，
+    // AnimatedContainer 的 height 保持不变，不会产生动画。
+    final isRoot = _isRootBranch;
 
     // 计算底部栏完整的设计高度
     final double bottomPadding = MediaQuery.of(context).padding.bottom;

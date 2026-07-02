@@ -97,25 +97,11 @@ class _NetworkSongPageState extends State<NetworkSongPage>
           tabs: const [
             Tab(
               height: 40,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.music_note_rounded, size: 16),
-                  SizedBox(width: 6),
-                  Text('歌曲'),
-                ],
-              ),
+              icon: Icon(Icons.music_note_rounded, size: 20),
             ),
             Tab(
               height: 40,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.queue_music_rounded, size: 16),
-                  SizedBox(width: 6),
-                  Text('歌单'),
-                ],
-              ),
+              icon: Icon(Icons.queue_music_rounded, size: 20),
             ),
           ],
         ),
@@ -438,15 +424,26 @@ class _SongSearchTabState extends State<_SongSearchTab>
   ];
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final q = widget.searchCtrl.text.trim();
-    if (q.isNotEmpty &&
-        widget.hasSearched &&
-        q != _lastQueried &&
-        !_isSearching) {
-      _lastQueried = q;
-      _doSearch(q);
+  void didUpdateWidget(covariant _SongSearchTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 父级清除搜索时，重置子状态
+    if (oldWidget.hasSearched && !widget.hasSearched) {
+      setState(() {
+        _lastQueried = '';
+        _results = [];
+        _isSearching = false;
+        _isFiltering = false;
+        _statusMsg = null;
+      });
+      return;
+    }
+    // 仅在 hasSearched 从 false → true 时触发搜索（回车键场景）
+    if (!oldWidget.hasSearched && widget.hasSearched) {
+      final q = widget.searchCtrl.text.trim();
+      if (q.isNotEmpty && !_isSearching) {
+        _lastQueried = q;
+        _doSearch(q);
+      }
     }
   }
 
@@ -601,7 +598,10 @@ class _SongSearchTabState extends State<_SongSearchTab>
         : null;
     final isLoading = _isSearching || _isFiltering;
 
-    if (!widget.hasSearched) {
+    final showEmpty =
+        _lastQueried.isEmpty && _results.isEmpty && !_isSearching;
+
+    if (showEmpty) {
       return _EmptyState(
         icon: Icons.cloud_queue_rounded,
         title: '在线歌曲搜索',
@@ -609,7 +609,8 @@ class _SongSearchTabState extends State<_SongSearchTab>
         tags: _tags,
         onTagTap: (t) {
           widget.searchCtrl.text = t;
-          // 搜索逻辑由父级 onSubmitted / _onSearch 触发
+          _lastQueried = t;
+          _doSearch(t);
         },
       );
     }
@@ -783,15 +784,25 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
   ];
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final q = widget.searchCtrl.text.trim();
-    if (q.isNotEmpty &&
-        widget.hasSearched &&
-        q != _lastQueried &&
-        !_isSearching) {
-      _lastQueried = q;
-      _doSearch(q);
+  void didUpdateWidget(covariant _PlaylistSearchTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 父级清除搜索时，重置子状态
+    if (oldWidget.hasSearched && !widget.hasSearched) {
+      setState(() {
+        _lastQueried = '';
+        _playlists = [];
+        _isSearching = false;
+        _statusMsg = null;
+      });
+      return;
+    }
+    // 仅在 hasSearched 从 false → true 时触发搜索（回车键场景）
+    if (!oldWidget.hasSearched && widget.hasSearched) {
+      final q = widget.searchCtrl.text.trim();
+      if (q.isNotEmpty && !_isSearching) {
+        _lastQueried = q;
+        _doSearch(q);
+      }
     }
   }
 
@@ -919,7 +930,10 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    if (!widget.hasSearched) {
+    final showEmpty =
+        _lastQueried.isEmpty && _playlists.isEmpty && !_isSearching;
+
+    if (showEmpty) {
       return _EmptyState(
         icon: Icons.queue_music_rounded,
         iconColor: cs.secondary,
@@ -928,6 +942,8 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         tags: _tags,
         onTagTap: (t) {
           widget.searchCtrl.text = t;
+          _lastQueried = t;
+          _doSearch(t);
         },
       );
     }

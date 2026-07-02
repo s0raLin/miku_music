@@ -1079,7 +1079,7 @@ class _PlaylistCard extends StatelessWidget {
       color: isOpen
           ? cs.primaryContainer.withValues(alpha: 0.08)
           : cs.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1087,30 +1087,29 @@ class _PlaylistCard extends StatelessWidget {
           InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 children: [
-                  _PlaylistCover(pic: item.pic, size: 60),
-                  const SizedBox(width: 12),
+                  _PlaylistCover(pic: item.pic, size: 44),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           item.title,
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.bodyMedium?.copyWith(
+                          style: tt.bodySmall?.copyWith(
                             fontWeight: FontWeight.w600,
-                            height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Row(
                           children: [
                             Icon(
                               Icons.person_outline_rounded,
-                              size: 12,
+                              size: 11,
                               color: cs.onSurfaceVariant,
                             ),
                             const SizedBox(width: 3),
@@ -1121,23 +1120,20 @@ class _PlaylistCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: tt.labelSmall?.copyWith(
                                   color: cs.onSurfaceVariant,
+                                  fontSize: 11,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
+                            const SizedBox(width: 8),
                             _StatChip(
                               icon: Icons.headphones_rounded,
                               label: _fmt(item.playCount),
                               color: cs.primary,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             _StatChip(
                               icon: Icons.music_note_rounded,
-                              label: '${item.trackCount} 首',
+                              label: '${item.trackCount}首',
                               color: cs.secondary,
                             ),
                           ],
@@ -1145,9 +1141,10 @@ class _PlaylistCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 4),
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                       color: isOpen
                           ? cs.primary.withValues(alpha: 0.12)
@@ -1160,7 +1157,7 @@ class _PlaylistCard extends StatelessWidget {
                       curve: Curves.easeInOut,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        size: 20,
+                        size: 16,
                         color: isOpen ? cs.primary : cs.onSurfaceVariant,
                       ),
                     ),

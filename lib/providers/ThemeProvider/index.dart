@@ -193,7 +193,7 @@ class ThemeProvider extends ChangeNotifier {
       // AppBar (compact)
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
-        toolbarHeight: 52,
+        toolbarHeight: 48,
         backgroundColor: finalSurface,
         foregroundColor: softOnSurface,
         surfaceTintColor: Colors.transparent,
@@ -201,9 +201,9 @@ class ThemeProvider extends ChangeNotifier {
         centerTitle: false,
         titleSpacing: 16,
         titleTextStyle: GoogleFonts.notoSansSc(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.3,
+          letterSpacing: -0.2,
           color: softOnSurface,
         ),
       ),

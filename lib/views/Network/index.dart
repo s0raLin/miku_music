@@ -71,7 +71,8 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
 
     return Scaffold(
       backgroundColor: cs.surface,
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           const SizedBox(height: 8),
           // ── ToggleButtons 切换 ──────────────────────────────────────
@@ -209,6 +210,7 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

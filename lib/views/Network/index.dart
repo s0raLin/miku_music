@@ -16,7 +16,7 @@ import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 // ═══════════════════════════════════════════════════════════════
-//  NetworkSongPage  —  AppBar + TabBar + 搜索栏 + 内容区
+//  NetworkSongPage  —  SegmentedButton + 搜索栏 + 内容区
 // ═══════════════════════════════════════════════════════════════
 
 class NetworkSongPage extends StatefulWidget {
@@ -26,9 +26,8 @@ class NetworkSongPage extends StatefulWidget {
   State<NetworkSongPage> createState() => _NetworkSongPageState();
 }
 
-class _NetworkSongPageState extends State<NetworkSongPage>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _NetworkSongPageState extends State<NetworkSongPage> {
+  int _currentIndex = 0;
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
 
@@ -38,16 +37,11 @@ class _NetworkSongPageState extends State<NetworkSongPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _searchCtrl.addListener(() => setState(() {}));
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) setState(() {});
-    });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchCtrl.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -57,14 +51,14 @@ class _NetworkSongPageState extends State<NetworkSongPage>
     final q = _searchCtrl.text.trim();
     if (q.isEmpty) return;
     _searchFocus.unfocus();
-    _hasSearched[_tabController.index] = true;
+    _hasSearched[_currentIndex] = true;
     setState(() {});
   }
 
   void _onClear() {
     setState(() {
       _searchCtrl.clear();
-      _hasSearched[_tabController.index] = false;
+      _hasSearched[_currentIndex] = false;
     });
   }
 
@@ -73,43 +67,53 @@ class _NetworkSongPageState extends State<NetworkSongPage>
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final hasText = _searchCtrl.text.trim().isNotEmpty;
-    final isFirstTab = _tabController.index == 0;
+    final isFirstTab = _currentIndex == 0;
 
     return Scaffold(
       backgroundColor: cs.surface,
-      // ── 紧凑 AppBar（无标题）─ 嵌入 TabBar 作为 bottom ────────────────
-      appBar: AppBar(
-        toolbarHeight: 4, // 极小，仅为让 TabBar 的 bottom: 生效
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: cs.primary,
-          unselectedLabelColor: cs.onSurfaceVariant,
-          labelStyle: tt.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-          unselectedLabelStyle: tt.labelLarge,
-          indicatorSize: TabBarIndicatorSize.tab,
-          indicatorColor: cs.primary,
-          indicatorWeight: 2.5,
-          dividerColor: Colors.transparent,
-          tabAlignment: TabAlignment.center,
-          isScrollable: false,
-          padding: EdgeInsets.zero,
-          labelPadding: EdgeInsets.zero,
-          tabs: const [
-            Tab(
-              height: 40,
-              icon: Icon(Icons.music_note_rounded, size: 20),
-            ),
-            Tab(
-              height: 40,
-              icon: Icon(Icons.queue_music_rounded, size: 20),
-            ),
-          ],
-        ),
-      ),
-
       body: Column(
         children: [
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
+          // ── ToggleButtons 切换 ──────────────────────────────────────
+          Center(
+            child: ToggleButtons(
+              isSelected: [_currentIndex == 0, _currentIndex == 1],
+              onPressed: (i) => setState(() => _currentIndex = i),
+              borderRadius: BorderRadius.circular(12),
+              selectedColor: cs.onPrimary,
+              fillColor: cs.primary,
+              color: cs.onSurfaceVariant,
+              constraints: const BoxConstraints(
+                minWidth: 72,
+                minHeight: 36,
+              ),
+              children: const [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.music_note_rounded, size: 18),
+                      SizedBox(width: 4),
+                      Text('歌曲'),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.queue_music_rounded, size: 18),
+                      SizedBox(width: 4),
+                      Text('歌单'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
           // ── 搜索栏 (图标左 / 叉号右 / 排序按钮右外侧) ──────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -188,10 +192,10 @@ class _NetworkSongPageState extends State<NetworkSongPage>
           ),
           const SizedBox(height: 4),
 
-          // ── Tab 内容区 ─────────────────────────────────────────────────
+          // ── 内容区 ─────────────────────────────────────────────────
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
+            child: IndexedStack(
+              index: _currentIndex,
               children: [
                 _SongSearchTab(
                   searchCtrl: _searchCtrl,

@@ -530,7 +530,6 @@ class _SongSearchTabState extends State<_SongSearchTab>
 
   Future<void> _download(NeteaseSong song) async {
     try {
-      AppToast.neutral(context, message: '正在下载: ${song.title}', title: '下载中');
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
       final safeTitle = song.title
@@ -906,7 +905,6 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
 
   Future<void> _downloadPlaylistSong(NeteasePlaylistSong song) async {
     try {
-      AppToast.neutral(context, message: '正在下载: ${song.title}', title: '下载中');
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
       final safeTitle = song.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();

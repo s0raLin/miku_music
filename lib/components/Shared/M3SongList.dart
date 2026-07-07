@@ -285,100 +285,113 @@ class _M3SongRow extends StatelessWidget {
       });
     }
 
-    // 选中行使用 secondaryContainer 背景
+    // 选中行使用 secondaryContainer 圆角背景（MD3 风格独立卡片）
+    const hPadding = 8.0;
+    const vPadding = 2.0;
+    const highlightRadius = BorderRadius.all(Radius.circular(12));
+
+    final effectiveRadius = entry.isHighlighted ? highlightRadius : clipRadius;
     final rowColor = entry.isHighlighted
         ? colorScheme.secondaryContainer
         : Colors.transparent;
 
-    return Material(
-      color: rowColor,
-      borderRadius: clipRadius,
-      child: InkWell(
-        borderRadius: clipRadius,
-        splashColor: colorScheme.primary.withValues(alpha: 0.12),
-        highlightColor: colorScheme.primary.withValues(alpha: 0.08),
-        hoverColor: colorScheme.onSurface.withValues(alpha: 0.04),
-        onTap: entry.onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              // ---- 封面 / 图标 ----
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _buildCoverImage(colorScheme),
-                      // Network source badge
-                      if (entry.isNetworkSource)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(alpha: 0.9),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(6),
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.cloud_rounded,
-                              size: 12,
-                              color: colorScheme.onPrimary,
-                            ),
+    final rowContent = Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: vPadding),
+      child: Row(
+        children: [
+          // ---- 封面 / 图标 ----
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildCoverImage(colorScheme),
+                  // Network source badge
+                  if (entry.isNetworkSource)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.9),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(6),
                           ),
                         ),
-                    ],
+                        child: Icon(
+                          Icons.cloud_rounded,
+                          size: 12,
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // ---- 标题 + 副标题 ----
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: entry.isHighlighted
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: entry.isHighlighted
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // ---- 标题 + 副标题 ----
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodyMedium?.copyWith(
-                        fontWeight: entry.isHighlighted
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                        color: entry.isHighlighted
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      entry.subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: entry.isHighlighted
-                            ? colorScheme.primary.withValues(alpha: 0.7)
-                            : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  entry.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: entry.isHighlighted
+                        ? colorScheme.primary.withValues(alpha: 0.7)
+                        : colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              // ---- trailing ----
-              if (entry.trailing != null) ...[
-                const SizedBox(width: 8),
-                entry.trailing!,
               ],
-            ],
+            ),
           ),
+          // ---- trailing ----
+          if (entry.trailing != null) ...[
+            const SizedBox(width: 8),
+            entry.trailing!,
+          ],
+        ],
+      ),
+    );
+
+    return Padding(
+      padding: entry.isHighlighted
+          ? const EdgeInsets.symmetric(vertical: 2)
+          : EdgeInsets.zero,
+      child: Material(
+        color: rowColor,
+        shape: RoundedRectangleBorder(borderRadius: effectiveRadius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: effectiveRadius,
+          splashColor: colorScheme.primary.withValues(alpha: 0.12),
+          highlightColor: colorScheme.primary.withValues(alpha: 0.08),
+          hoverColor: colorScheme.onSurface.withValues(alpha: 0.04),
+          onTap: entry.onTap,
+          child: rowContent,
         ),
       ),
     );

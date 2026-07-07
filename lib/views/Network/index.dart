@@ -1398,64 +1398,67 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
             ),
           ]),
         ),
-        ...visibleSongs.map((song) {
-          final isCurrent = currentNetId == song.id.toString();
-          final entries = M3SongEntry(
-            id: 'net_${song.id}',
-            title: song.title,
-            subtitle: '${song.author}  ·  ${song.source.toUpperCase()}',
-            coverUrl: song.pic,
-            coverHeaders: const {'Referer': 'https://music.163.com/'},
-            fallbackIcon: Icons.music_note_rounded,
-            isHighlighted: isCurrent,
-            trailing: PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded,
-                  size: 18, color: cs.onSurfaceVariant),
-              onSelected: (v) {
-                if (v == 'play') {
-                  widget.onPlaySong(song);
-                } else if (v == 'detail') {
-                  widget.onOpenDetail(song);
-                }
-                else if (v == 'download' && widget.onDownload != null) {
-                  widget.onDownload!(song);
-                }
+        M3SongList(
+          songs: visibleSongs.map((song) {
+            final isCurrent = currentNetId == song.id.toString();
+            return M3SongEntry(
+              id: 'net_${song.id}',
+              title: song.title,
+              subtitle: '${song.author}  ·  ${song.source.toUpperCase()}',
+              coverUrl: song.pic,
+              coverHeaders: const {'Referer': 'https://music.163.com/'},
+              fallbackIcon: Icons.music_note_rounded,
+              isHighlighted: isCurrent,
+              trailing: PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded,
+                    size: 18, color: cs.onSurfaceVariant),
+                onSelected: (v) {
+                  if (v == 'play') {
+                    widget.onPlaySong(song);
+                  } else if (v == 'detail') {
+                    widget.onOpenDetail(song);
+                  }
+                  else if (v == 'download' && widget.onDownload != null) {
+                    widget.onDownload!(song);
+                  }
 
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'play',
-                  child: ListTile(
-                    leading: Icon(Icons.play_arrow_rounded, color: cs.primary),
-                    title: const Text('在线收听'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'play',
+                    child: ListTile(
+                      leading: Icon(Icons.play_arrow_rounded, color: cs.primary),
+                      title: const Text('在线收听'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'detail',
-                  child: ListTile(
-                    leading: Icon(Icons.album_rounded, color: cs.secondary),
-                    title: const Text('查看详情'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                  PopupMenuItem(
+                    value: 'detail',
+                    child: ListTile(
+                      leading: Icon(Icons.album_rounded, color: cs.secondary),
+                      title: const Text('查看详情'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'download',
-                  child: ListTile(
-                    leading: Icon(Icons.download_rounded, color: cs.tertiary),
-                    title: const Text('下载到本地'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                  PopupMenuItem(
+                    value: 'download',
+                    child: ListTile(
+                      leading: Icon(Icons.download_rounded, color: cs.tertiary),
+                      title: const Text('下载到本地'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            onTap: () => widget.onOpenDetail(song),
-          );
-          return M3SongList(songs: [entries], isScrollable: false);
-        }),
+                ],
+              ),
+              onTap: () => widget.onOpenDetail(song),
+            );
+          }).toList(),
+          isScrollable: false,
+          padding: EdgeInsets.zero,
+        ),
         if (hasMore)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),

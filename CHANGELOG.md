@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.53.0](https://github.com/s0raLin/miku_music/compare/v1.52.0...v1.53.0) (2026-07-10)
+
+
+### Features
+
+* **network:** add song sorting functionality to NetworkSongPage ([b0f14c6](https://github.com/s0raLin/miku_music/commit/b0f14c624d8e499f89209adbc07fd6fd61afe89e))
+
+
+### Bug Fixes
+
+* **network:** wrap view with SafeArea ([6f14e00](https://github.com/s0raLin/miku_music/commit/6f14e0036827d5795d5370659ffc16a8edee1d47))
+
 ## [1.52.0](https://github.com/s0raLin/miku_music/compare/v1.51.0...v1.52.0) (2026-07-02)
 
 

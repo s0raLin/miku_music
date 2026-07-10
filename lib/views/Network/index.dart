@@ -8,6 +8,7 @@ import 'package:myapp/api/Client/Netease/index.dart';
 import 'package:myapp/api/Model/NeteasePlaylist/index.dart';
 import 'package:myapp/api/Model/NeteaseSong/index.dart';
 import 'package:myapp/components/Header/index.dart';
+import 'package:myapp/config/globals.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -115,6 +116,12 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
             title: tabButtons,
             pinned: true,
             floating: false,
+            leading: IconButton(
+              onPressed: () {
+                rootScaffoldKey.currentState?.openDrawer();
+              },
+              icon: const Icon(Icons.menu),
+            ),
             actions: [
               IconButton(
                 icon: AnimatedSwitcher(
@@ -262,8 +269,9 @@ class _SortOption extends StatelessWidget {
           fontWeight: isSelected ? FontWeight.w600 : null,
         ),
       ),
-      trailing:
-          isSelected ? Icon(Icons.check_rounded, color: cs.primary, size: 20) : null,
+      trailing: isSelected
+          ? Icon(Icons.check_rounded, color: cs.primary, size: 20)
+          : null,
       onTap: onTap,
     );
   }
@@ -1120,8 +1128,9 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final displayList =
-        _sortedPlaylists.isNotEmpty ? _sortedPlaylists : _playlists;
+    final displayList = _sortedPlaylists.isNotEmpty
+        ? _sortedPlaylists
+        : _playlists;
 
     final showEmpty =
         _lastQueried.isEmpty && _playlists.isEmpty && !_isSearching;

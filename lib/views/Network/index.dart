@@ -20,6 +20,8 @@ import 'package:provider/provider.dart';
 //  NetworkSongPage  —  SegmentedButton + 搜索栏 + 内容区
 // ═══════════════════════════════════════════════════════════════
 
+enum _SortMode { defaultSort, name, artist }
+
 class NetworkSongPage extends StatefulWidget {
   const NetworkSongPage({super.key});
 
@@ -32,6 +34,7 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
   bool _showSearch = false;
+  _SortMode _sortMode = _SortMode.defaultSort;
 
   // 标志：当前激活的 tab 是否已执行过一次搜索
   final Map<int, bool> _hasSearched = {0: false, 1: false};
@@ -151,10 +154,12 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
             _SongSearchTab(
               searchCtrl: _searchCtrl,
               hasSearched: _hasSearched[0] ?? false,
+              sortMode: _sortMode,
             ),
             _PlaylistSearchTab(
               searchCtrl: _searchCtrl,
               hasSearched: _hasSearched[1] ?? false,
+              sortMode: _sortMode,
             ),
           ],
         ),
@@ -188,37 +193,78 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
                   ),
                 ),
               ),
-              ListTile(
-                leading: Icon(
-                  Icons.sort_by_alpha_rounded,
-                  color: cs.primary,
-                  size: 22,
-                ),
-                title: const Text('按名称排序'),
-                onTap: () => Navigator.pop(ctx),
+              _SortOption(
+                icon: Icons.sort_by_alpha_rounded,
+                color: cs.primary,
+                label: '按名称排序',
+                isSelected: _sortMode == _SortMode.name,
+                onTap: () {
+                  setState(() => _sortMode = _SortMode.name);
+                  Navigator.pop(ctx);
+                },
               ),
-              ListTile(
-                leading: Icon(
-                  Icons.person_outline_rounded,
-                  color: cs.secondary,
-                  size: 22,
-                ),
-                title: const Text('按歌手排序'),
-                onTap: () => Navigator.pop(ctx),
+              _SortOption(
+                icon: Icons.person_outline_rounded,
+                color: cs.secondary,
+                label: '按歌手排序',
+                isSelected: _sortMode == _SortMode.artist,
+                onTap: () {
+                  setState(() => _sortMode = _SortMode.artist);
+                  Navigator.pop(ctx);
+                },
               ),
-              ListTile(
-                leading: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: cs.tertiary,
-                  size: 22,
-                ),
-                title: const Text('默认排序'),
-                onTap: () => Navigator.pop(ctx),
+              _SortOption(
+                icon: Icons.auto_awesome_rounded,
+                color: cs.tertiary,
+                label: '默认排序',
+                isSelected: _sortMode == _SortMode.defaultSort,
+                onTap: () {
+                  setState(() => _sortMode = _SortMode.defaultSort);
+                  Navigator.pop(ctx);
+                },
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  排序选项（带选中标记）
+// ═══════════════════════════════════════════════════════════════
+
+class _SortOption extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SortOption({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(icon, color: color, size: 22),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? cs.primary : null,
+          fontWeight: isSelected ? FontWeight.w600 : null,
+        ),
+      ),
+      trailing:
+          isSelected ? Icon(Icons.check_rounded, color: cs.primary, size: 20) : null,
+      onTap: onTap,
     );
   }
 }
@@ -473,8 +519,13 @@ class _EmptyState extends StatelessWidget {
 class _SongSearchTab extends StatefulWidget {
   final TextEditingController searchCtrl;
   final bool hasSearched;
+  final _SortMode sortMode;
 
-  const _SongSearchTab({required this.searchCtrl, required this.hasSearched});
+  const _SongSearchTab({
+    required this.searchCtrl,
+    required this.hasSearched,
+    required this.sortMode,
+  });
 
   @override
   State<_SongSearchTab> createState() => _SongSearchTabState();
@@ -486,6 +537,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
   bool get wantKeepAlive => true;
 
   List<NeteaseSong> _results = [];
+  List<NeteaseSong> _sortedResults = [];
   bool _isSearching = false;
   bool _isFiltering = false;
   String? _statusMsg;
@@ -504,6 +556,21 @@ class _SongSearchTabState extends State<_SongSearchTab>
     'J-POP',
   ];
 
+  List<NeteaseSong> _sortResults(List<NeteaseSong> source) {
+    switch (widget.sortMode) {
+      case _SortMode.name:
+        final sorted = List.of(source);
+        sorted.sort((a, b) => a.title.compareTo(b.title));
+        return sorted;
+      case _SortMode.artist:
+        final sorted = List.of(source);
+        sorted.sort((a, b) => a.author.compareTo(b.author));
+        return sorted;
+      case _SortMode.defaultSort:
+        return source;
+    }
+  }
+
   @override
   void didUpdateWidget(covariant _SongSearchTab oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -512,6 +579,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
       setState(() {
         _lastQueried = '';
         _results = [];
+        _sortedResults = [];
         _isSearching = false;
         _isFiltering = false;
         _statusMsg = null;
@@ -526,6 +594,12 @@ class _SongSearchTabState extends State<_SongSearchTab>
         _doSearch(q);
       }
     }
+    // 排序模式变化时重新排序
+    if (oldWidget.sortMode != widget.sortMode && _results.isNotEmpty) {
+      setState(() {
+        _sortedResults = _sortResults(_results);
+      });
+    }
   }
 
   Future<void> _doSearch(String q) async {
@@ -533,12 +607,14 @@ class _SongSearchTabState extends State<_SongSearchTab>
       _isSearching = true;
       _statusMsg = '正在搜索...';
       _results = [];
+      _sortedResults = [];
     });
     try {
       final raw = await NeteaseApi.search(q);
       if (!mounted) return;
       setState(() {
         _results = raw;
+        _sortedResults = _sortResults(raw);
         _isSearching = false;
         _statusMsg = '搜索到 ${raw.length} 首，正在过滤可播放链接...';
       });
@@ -565,6 +641,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
     if (!mounted) return;
     setState(() {
       _results = ok;
+      _sortedResults = _sortResults(ok);
       _isFiltering = false;
       _statusMsg = ok.isEmpty ? '所有链接均无法访问' : '已找到 ${ok.length} 首可播放歌曲';
     });
@@ -573,9 +650,10 @@ class _SongSearchTabState extends State<_SongSearchTab>
   Future<void> _play(NeteaseSong song) async {
     try {
       final mp = context.read<MusicProvider>();
-      final idx = _results.indexOf(song);
+      final displayList = _sortedResults.isNotEmpty ? _sortedResults : _results;
+      final idx = displayList.indexOf(song);
       if (idx < 0) return;
-      final songMaps = _results
+      final songMaps = displayList
           .map(
             (s) => <String, String?>{
               'id': s.id,
@@ -677,6 +755,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
         ? currentMusic!.id.substring(4)
         : null;
     final isLoading = _isSearching || _isFiltering;
+    final displayList = _sortedResults.isNotEmpty ? _sortedResults : _results;
 
     final showEmpty = _lastQueried.isEmpty && _results.isEmpty && !_isSearching;
 
@@ -748,7 +827,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
       );
     }
 
-    final entries = _results
+    final entries = displayList
         .map(
           (s) => M3SongEntry(
             id: 'net_${s.id}',
@@ -825,10 +904,12 @@ class _SongSearchTabState extends State<_SongSearchTab>
 class _PlaylistSearchTab extends StatefulWidget {
   final TextEditingController searchCtrl;
   final bool hasSearched;
+  final _SortMode sortMode;
 
   const _PlaylistSearchTab({
     required this.searchCtrl,
     required this.hasSearched,
+    required this.sortMode,
   });
 
   @override
@@ -841,6 +922,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
   bool get wantKeepAlive => true;
 
   List<NeteasePlaylistItem> _playlists = [];
+  List<NeteasePlaylistItem> _sortedPlaylists = [];
   bool _isSearching = false;
   String? _statusMsg;
   String _lastQueried = '';
@@ -862,6 +944,21 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     '治愈',
   ];
 
+  List<NeteasePlaylistItem> _sortPlaylists(List<NeteasePlaylistItem> source) {
+    switch (widget.sortMode) {
+      case _SortMode.name:
+        final sorted = List.of(source);
+        sorted.sort((a, b) => a.title.compareTo(b.title));
+        return sorted;
+      case _SortMode.artist:
+        final sorted = List.of(source);
+        sorted.sort((a, b) => a.creator.compareTo(b.creator));
+        return sorted;
+      case _SortMode.defaultSort:
+        return source;
+    }
+  }
+
   @override
   void didUpdateWidget(covariant _PlaylistSearchTab oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -870,6 +967,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       setState(() {
         _lastQueried = '';
         _playlists = [];
+        _sortedPlaylists = [];
         _isSearching = false;
         _statusMsg = null;
       });
@@ -883,6 +981,12 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         _doSearch(q);
       }
     }
+    // 排序模式变化时重新排序
+    if (oldWidget.sortMode != widget.sortMode && _playlists.isNotEmpty) {
+      setState(() {
+        _sortedPlaylists = _sortPlaylists(_playlists);
+      });
+    }
   }
 
   Future<void> _doSearch(String q) async {
@@ -890,6 +994,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       _isSearching = true;
       _statusMsg = '正在搜索歌单...';
       _playlists = [];
+      _sortedPlaylists = [];
       _openedPlaylist = null;
       _detail = null;
     });
@@ -898,6 +1003,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       if (!mounted) return;
       setState(() {
         _playlists = list;
+        _sortedPlaylists = _sortPlaylists(list);
         _isSearching = false;
         _statusMsg = list.isEmpty ? '未找到相关歌单' : '找到 ${list.length} 个歌单';
       });
@@ -1014,6 +1120,9 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
+    final displayList =
+        _sortedPlaylists.isNotEmpty ? _sortedPlaylists : _playlists;
+
     final showEmpty =
         _lastQueried.isEmpty && _playlists.isEmpty && !_isSearching;
 
@@ -1087,9 +1196,9 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-            itemCount: _playlists.length,
+            itemCount: displayList.length,
             itemBuilder: (ctx, i) {
-              final item = _playlists[i];
+              final item = displayList[i];
               final isOpen = _openedPlaylist?.id == item.id;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),

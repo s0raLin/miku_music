@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/Netease/index.dart';
 import 'package:myapp/api/Model/NeteasePlaylist/index.dart';
 import 'package:myapp/api/Model/NeteaseSong/index.dart';
+import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/components/Shared/index.dart';
@@ -30,6 +31,7 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   int _currentIndex = 0;
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  bool _showSearch = false;
 
   // 标志：当前激活的 tab 是否已执行过一次搜索
   final Map<int, bool> _hasSearched = {0: false, 1: false};
@@ -65,151 +67,96 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
     final hasText = _searchCtrl.text.trim().isNotEmpty;
     final isFirstTab = _currentIndex == 0;
 
+    final tabButtons = ToggleButtons(
+      isSelected: [_currentIndex == 0, _currentIndex == 1],
+      onPressed: (i) => setState(() => _currentIndex = i),
+      borderRadius: BorderRadius.circular(12),
+      selectedColor: cs.onPrimary,
+      fillColor: cs.primary,
+      color: cs.onSurfaceVariant,
+      constraints: const BoxConstraints(minWidth: 72, minHeight: 36),
+      children: const [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.music_note_rounded, size: 18),
+              SizedBox(width: 4),
+              Text('歌曲'),
+            ],
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.queue_music_rounded, size: 18),
+              SizedBox(width: 4),
+              Text('歌单'),
+            ],
+          ),
+        ),
+      ],
+    );
+
     return Scaffold(
       backgroundColor: cs.surface,
-      body: SafeArea(
-        child: Column(
-        children: [
-          const SizedBox(height: 8),
-          // ── ToggleButtons 切换 ──────────────────────────────────────
-          Center(
-            child: ToggleButtons(
-              isSelected: [_currentIndex == 0, _currentIndex == 1],
-              onPressed: (i) => setState(() => _currentIndex = i),
-              borderRadius: BorderRadius.circular(12),
-              selectedColor: cs.onPrimary,
-              fillColor: cs.primary,
-              color: cs.onSurfaceVariant,
-              constraints: const BoxConstraints(
-                minWidth: 72,
-                minHeight: 36,
-              ),
-              children: const [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.music_note_rounded, size: 18),
-                      SizedBox(width: 4),
-                      Text('歌曲'),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.queue_music_rounded, size: 18),
-                      SizedBox(width: 4),
-                      Text('歌单'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // ── 搜索栏 (图标左 / 叉号右 / 排序按钮右外侧) ──────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: TextField(
-                      controller: _searchCtrl,
-                      focusNode: _searchFocus,
-                      onSubmitted: (_) => _onSearch(),
-                      style: tt.bodyLarge,
-                      decoration: InputDecoration(
-                        hintText: isFirstTab ? '搜索歌曲、歌手...' : '搜索歌单名称...',
-                        hintStyle: tt.bodyLarge?.copyWith(
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          color: cs.onSurfaceVariant,
-                          size: 20,
-                        ),
-                        prefixIconConstraints: const BoxConstraints(
-                          minWidth: 40,
-                          minHeight: 40,
-                        ),
-                        suffixIcon: hasText
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.close_rounded,
-                                  size: 18,
-                                  color: cs.onSurfaceVariant,
-                                ),
-                                onPressed: _onClear,
-                                padding: EdgeInsets.zero,
-                                visualDensity: VisualDensity.compact,
-                              )
-                            : const SizedBox(width: 40),
-                        suffixIconConstraints: const BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 36,
-                        ),
-                        filled: true,
-                        fillColor: cs.surfaceContainerHigh,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: cs.primary, width: 1.2),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 排序按钮（移到搜索框外面）
-                IconButton(
-                  icon: Icon(
-                    Icons.sort_rounded,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          Header(
+            title: tabButtons,
+            pinned: true,
+            floating: false,
+            actions: [
+              IconButton(
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _showSearch
+                        ? Icons.search_off_rounded
+                        : Icons.search_rounded,
+                    key: ValueKey(_showSearch),
                     size: 22,
                     color: cs.onSurfaceVariant,
                   ),
-                  onPressed: () => _showSortSheet(context),
-                  tooltip: '排序',
-                  visualDensity: VisualDensity.compact,
                 ),
-              ],
-            ),
+                onPressed: () => setState(() => _showSearch = !_showSearch),
+                tooltip: _showSearch ? '关闭搜索' : '搜索',
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-
-          // ── 内容区 ─────────────────────────────────────────────────
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: [
-                _SongSearchTab(
-                  searchCtrl: _searchCtrl,
-                  hasSearched: _hasSearched[0] ?? false,
-                ),
-                _PlaylistSearchTab(
-                  searchCtrl: _searchCtrl,
-                  hasSearched: _hasSearched[1] ?? false,
-                ),
-              ],
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SearchBarDelegate(
+              showSearch: _showSearch,
+              searchCtrl: _searchCtrl,
+              searchFocus: _searchFocus,
+              hasText: hasText,
+              isFirstTab: isFirstTab,
+              onSearch: _onSearch,
+              onClear: _onClear,
+              onSort: () => _showSortSheet(context),
             ),
           ),
         ],
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _SongSearchTab(
+              searchCtrl: _searchCtrl,
+              hasSearched: _hasSearched[0] ?? false,
+            ),
+            _PlaylistSearchTab(
+              searchCtrl: _searchCtrl,
+              hasSearched: _hasSearched[1] ?? false,
+            ),
+          ],
         ),
       ),
     );
@@ -271,6 +218,134 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  搜索栏 SliverPersistentHeader delegate（钉在 Header 下方）
+// ═══════════════════════════════════════════════════════════════
+
+class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
+  final bool showSearch;
+  final TextEditingController searchCtrl;
+  final FocusNode searchFocus;
+  final bool hasText;
+  final bool isFirstTab;
+  final VoidCallback onSearch;
+  final VoidCallback onClear;
+  final VoidCallback onSort;
+
+  const _SearchBarDelegate({
+    required this.showSearch,
+    required this.searchCtrl,
+    required this.searchFocus,
+    required this.hasText,
+    required this.isFirstTab,
+    required this.onSearch,
+    required this.onClear,
+    required this.onSort,
+  });
+
+  @override
+  double get minExtent => showSearch ? 60 : 0;
+
+  @override
+  double get maxExtent => showSearch ? 60 : 0;
+
+  @override
+  bool shouldRebuild(covariant _SearchBarDelegate oldDelegate) {
+    return showSearch != oldDelegate.showSearch ||
+        hasText != oldDelegate.hasText ||
+        isFirstTab != oldDelegate.isFirstTab;
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    if (!showSearch) return const SizedBox.shrink();
+
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      color: cs.surface,
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 44,
+              child: TextField(
+                controller: searchCtrl,
+                focusNode: searchFocus,
+                onSubmitted: (_) => onSearch(),
+                autofocus: true,
+                style: tt.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: isFirstTab ? '搜索歌曲、歌手...' : '搜索歌单名称...',
+                  hintStyle: tt.bodyLarge?.copyWith(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: cs.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  suffixIcon: hasText
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          onPressed: onClear,
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        )
+                      : const SizedBox(width: 40),
+                  suffixIconConstraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  filled: true,
+                  fillColor: cs.surfaceContainerHigh,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 0,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: cs.primary, width: 1.2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: Icon(
+              Icons.sort_rounded,
+              size: 22,
+              color: cs.onSurfaceVariant,
+            ),
+            onPressed: onSort,
+            tooltip: '排序',
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
     );
   }
@@ -603,8 +678,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
         : null;
     final isLoading = _isSearching || _isFiltering;
 
-    final showEmpty =
-        _lastQueried.isEmpty && _results.isEmpty && !_isSearching;
+    final showEmpty = _lastQueried.isEmpty && _results.isEmpty && !_isSearching;
 
     if (showEmpty) {
       return _EmptyState(
@@ -907,9 +981,15 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     try {
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
-      final safeTitle = song.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
-      final safeArtist = song.author.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
-      final songDir = Directory(p.join(m3MusicDir.path, '$safeTitle - $safeArtist'));
+      final safeTitle = song.title
+          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+          .trim();
+      final safeArtist = song.author
+          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+          .trim();
+      final songDir = Directory(
+        p.join(m3MusicDir.path, '$safeTitle - $safeArtist'),
+      );
       if (!await songDir.exists()) await songDir.create(recursive: true);
       String ext = p.url.extension(song.url);
       if (ext.contains('?')) ext = ext.split('?').first;
@@ -1375,26 +1455,31 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: Row(children: [
-            Text(
-              '${songs.length} 首歌曲',
-              style: tt.labelLarge?.copyWith(color: cs.primary),
-            ),
-            const Spacer(),
-            FilledButton.tonalIcon(
-              onPressed: () => widget.onPlaySong(songs.first),
-              icon: const Icon(Icons.play_arrow_rounded, size: 16),
-              label: const Text('播放全部'),
-              style: FilledButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+          child: Row(
+            children: [
+              Text(
+                '${songs.length} 首歌曲',
+                style: tt.labelLarge?.copyWith(color: cs.primary),
               ),
-            ),
-          ]),
+              const Spacer(),
+              FilledButton.tonalIcon(
+                onPressed: () => widget.onPlaySong(songs.first),
+                icon: const Icon(Icons.play_arrow_rounded, size: 16),
+                label: const Text('播放全部'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         M3SongList(
           songs: visibleSongs.map((song) {
@@ -1408,24 +1493,28 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
               fallbackIcon: Icons.music_note_rounded,
               isHighlighted: isCurrent,
               trailing: PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert_rounded,
-                    size: 18, color: cs.onSurfaceVariant),
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  size: 18,
+                  color: cs.onSurfaceVariant,
+                ),
                 onSelected: (v) {
                   if (v == 'play') {
                     widget.onPlaySong(song);
                   } else if (v == 'detail') {
                     widget.onOpenDetail(song);
-                  }
-                  else if (v == 'download' && widget.onDownload != null) {
+                  } else if (v == 'download' && widget.onDownload != null) {
                     widget.onDownload!(song);
                   }
-
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(
                     value: 'play',
                     child: ListTile(
-                      leading: Icon(Icons.play_arrow_rounded, color: cs.primary),
+                      leading: Icon(
+                        Icons.play_arrow_rounded,
+                        color: cs.primary,
+                      ),
                       title: const Text('在线收听'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
@@ -1462,8 +1551,11 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: TextButton.icon(
               onPressed: () => setState(() => _visibleCount = nextBatch),
-              icon: Icon(Icons.expand_more_rounded,
-                  size: 18, color: cs.primary),
+              icon: Icon(
+                Icons.expand_more_rounded,
+                size: 18,
+                color: cs.primary,
+              ),
               label: Text(
                 '加载更多 ($_visibleCount/$nextBatch)',
                 style: tt.labelMedium?.copyWith(color: cs.primary),

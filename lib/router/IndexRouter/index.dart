@@ -26,6 +26,7 @@ import 'package:myapp/views/User/RecentlyPlayed/index.dart';
 import 'package:myapp/views/User/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
+import 'package:myapp/views/CoverFlow/index.dart';
 import 'package:myapp/views/ToplistDetail/index.dart';
 import 'package:myapp/views/UpdateDownload/index.dart';
 import 'package:myapp/views/User/DownloadManagement/index.dart';
@@ -221,6 +222,11 @@ final _routes = [
     name: "settings",
     path: "/settings",
     builder: (context, state) => SettingsPage(),
+  ),
+  GoRoute(
+    name: "cover-flow",
+    path: "/cover-flow",
+    builder: (context, state) => const CoverFlowPage(),
   ),
   StatefulShellRoute.indexedStack(
     builder: (context, state, navigationShell) {

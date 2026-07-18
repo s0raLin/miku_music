@@ -1,6 +1,7 @@
 // ─── 封面 + 元信息 + 控制台 ───────────────────────────────────────────────────
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
@@ -89,104 +90,11 @@ class _CoverContentState extends State<CoverContent> {
         const SizedBox(height: 20),
         // 封面区域
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final size = constraints.maxHeight.clamp(
-                0.0,
-                constraints.maxWidth,
-              );
-              return Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.none,
-                  children: [
-                    // ── Ambient blurred color-melt glow ──
-                    Positioned(
-                      child: Container(
-                        width: size * 0.9,
-                        height: size * 0.9,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  cs.primaryContainer.withValues(alpha: 0.35),
-                              blurRadius: size * 0.55,
-                              spreadRadius: size * 0.15,
-                            ),
-                            BoxShadow(
-                              color: cs.secondaryContainer
-                                  .withValues(alpha: 0.25),
-                              blurRadius: size * 0.4,
-                              spreadRadius: size * 0.1,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // ── Album art cover ──
-                    Container(
-                      width: size,
-                      height: size,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cs.shadow.withValues(alpha: 0.08),
-                            blurRadius: 24,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            _buildAlbumArt(cs, musicProvider, size),
-                            // Network source badge
-                            if (widget.music.source == MusicSource.network)
-                              Positioned(
-                                right: 8,
-                                bottom: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: cs.primary.withValues(alpha: 0.85),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.cloud_rounded,
-                                        size: 14,
-                                        color: cs.onPrimary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '网络',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: cs.onPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+          child: _NormalCoverSection(
+            key: const ValueKey('normal'),
+            music: widget.music,
+            onTapCover: () => context.push('/cover-flow'),
+            buildAlbumArt: _buildAlbumArt,
           ),
         ),
         const SizedBox(height: 28),
@@ -518,6 +426,127 @@ class _CtrlButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(size / 2),
         child: SizedBox(width: size, height: size, child: Center(child: child)),
       ),
+    );
+  }
+}
+
+// ─── Normal Cover Section (default mode) ──────────────────────────────
+class _NormalCoverSection extends StatelessWidget {
+  final Music music;
+  final VoidCallback onTapCover;
+  final Widget Function(ColorScheme, MusicProvider, double) buildAlbumArt;
+
+  const _NormalCoverSection({
+    super.key,
+    required this.music,
+    required this.onTapCover,
+    required this.buildAlbumArt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final mp = context.watch<MusicProvider>();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.maxHeight.clamp(
+          0.0,
+          constraints.maxWidth,
+        );
+        return Center(
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // ── Ambient blurred color-melt glow ──
+              Positioned(
+                child: Container(
+                  width: size * 0.9,
+                  height: size * 0.9,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.primaryContainer.withValues(alpha: 0.35),
+                        blurRadius: size * 0.55,
+                        spreadRadius: size * 0.15,
+                      ),
+                      BoxShadow(
+                        color: cs.secondaryContainer.withValues(alpha: 0.25),
+                        blurRadius: size * 0.4,
+                        spreadRadius: size * 0.1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // ── Album art cover (tappable) ──
+              GestureDetector(
+                onTap: onTapCover,
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.shadow.withValues(alpha: 0.08),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        buildAlbumArt(cs, mp, size),
+                        // Network source badge
+                        if (music.source == MusicSource.network)
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.primary.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_rounded,
+                                    size: 14,
+                                    color: cs.onPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '网络',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/model/Music/index.dart';
@@ -20,20 +21,24 @@ class CoverTabContent extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final minHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : double.infinity;
         return SingleChildScrollView(
-          // 确保内容不满一屏时，也能撑开到最大高度
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: SizedBox(
+              height: minHeight == double.infinity ? null : minHeight,
               child: Column(
-                // 核心：让所有子组件在垂直方向上均匀居中分布
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 1. 封面
-                  _AlbumArt(music: music),
+                  // 1. 封面 (with CoverFlow tap)
+                  _AlbumArt(
+                    music: music,
+                    onTapCoverFlow: () => context.push('/cover-flow'),
+                  ),
 
-                  // 如果空间足够，可以换成 Spacer() 或者弹性间距，空间不够时用固定的
                   const SizedBox(height: 24),
 
                   // 2. 快捷操作栏
@@ -61,7 +66,8 @@ class CoverTabContent extends StatelessWidget {
 //1. 封面组件（独立提取）
 class _AlbumArt extends StatelessWidget {
   final Music music;
-  const _AlbumArt({required this.music});
+  final VoidCallback onTapCoverFlow;
+  const _AlbumArt({required this.music, required this.onTapCoverFlow});
 
   @override
   Widget build(BuildContext context) {
@@ -72,35 +78,38 @@ class _AlbumArt extends StatelessWidget {
       builder: (context, constraints) {
         final size = (constraints.maxWidth * 0.72).clamp(200.0, 320.0);
 
-        return Center(
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: cs.shadow.withValues(alpha: 0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _buildAlbumArt(music, musicProvider, cs, size),
-
-                  // 网络标识
-                  if (music.source == MusicSource.network)
-                    Positioned(
-                      right: 12,
-                      bottom: 12,
-                      child: _NetworkBadge(cs: cs),
-                    ),
+        return GestureDetector(
+          onTap: onTapCoverFlow,
+          child: Center(
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.shadow.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
                 ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildAlbumArt(music, musicProvider, cs, size),
+
+                    // 网络标识
+                    if (music.source == MusicSource.network)
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: _NetworkBadge(cs: cs),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -340,9 +349,9 @@ class _ProgressSectionState extends State<_ProgressSection> {
   }
 }
 
-//4. 底部控制（基本保持，但更简洁）
+//4. 底部控制
 class _BottomPlaybackControls extends StatelessWidget {
-  const _BottomPlaybackControls({super.key});
+  const _BottomPlaybackControls();
 
   @override
   Widget build(BuildContext context) {

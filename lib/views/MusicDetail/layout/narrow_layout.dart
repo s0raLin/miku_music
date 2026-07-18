@@ -56,13 +56,15 @@ class _NarrowLayoutState extends State<NarrowLayout> {
         child: Stack(
           children: [
             // ── PageView ──
-            PageView(
-              controller: _pageController,
-              onPageChanged: (i) => setState(() => _page = i),
-              children: [
-                CoverTabContent(music: widget.music),
-                const LyricsSection(),
-              ],
+            Positioned.fill(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (i) => setState(() => _page = i),
+                children: [
+                  CoverTabContent(music: widget.music),
+                  const LyricsSection(),
+                ],
+              ),
             ),
 
             // ── 顶部操作栏 ──

@@ -141,19 +141,19 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
               ),
             ],
           ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SearchBarDelegate(
-              showSearch: _showSearch,
-              searchCtrl: _searchCtrl,
-              searchFocus: _searchFocus,
-              hasText: hasText,
-              isFirstTab: isFirstTab,
-              onSearch: _onSearch,
-              onClear: _onClear,
-              onSort: () => _showSortSheet(context),
+          if (_showSearch)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SearchBarDelegate(
+                searchCtrl: _searchCtrl,
+                searchFocus: _searchFocus,
+                hasText: hasText,
+                isFirstTab: isFirstTab,
+                onSearch: _onSearch,
+                onClear: _onClear,
+                onSort: () => _showSortSheet(context),
+              ),
             ),
-          ),
         ],
         body: IndexedStack(
           index: _currentIndex,
@@ -282,7 +282,6 @@ class _SortOption extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 
 class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
-  final bool showSearch;
   final TextEditingController searchCtrl;
   final FocusNode searchFocus;
   final bool hasText;
@@ -292,7 +291,6 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
   final VoidCallback onSort;
 
   const _SearchBarDelegate({
-    required this.showSearch,
     required this.searchCtrl,
     required this.searchFocus,
     required this.hasText,
@@ -303,15 +301,14 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  double get minExtent => showSearch ? 60 : 0;
+  double get minExtent => 60;
 
   @override
-  double get maxExtent => showSearch ? 60 : 0;
+  double get maxExtent => 60;
 
   @override
   bool shouldRebuild(covariant _SearchBarDelegate oldDelegate) {
-    return showSearch != oldDelegate.showSearch ||
-        hasText != oldDelegate.hasText ||
+    return hasText != oldDelegate.hasText ||
         isFirstTab != oldDelegate.isFirstTab;
   }
 
@@ -321,7 +318,6 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    if (!showSearch) return const SizedBox.shrink();
 
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;

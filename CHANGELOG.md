@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.54.0](https://github.com/s0raLin/miku_music/compare/v1.53.0...v1.54.0) (2026-07-18)
+
+
+### Features
+
+* **ui:** 新增 CoverFlow 视图并重构音乐详情页布局 ([ceec5ca](https://github.com/s0raLin/miku_music/commit/ceec5cac1d70429385824760d9f04cbfb958b055))
+
 ## [1.53.0](https://github.com/s0raLin/miku_music/compare/v1.52.0...v1.53.0) (2026-07-10)
 
 

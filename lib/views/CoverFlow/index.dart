@@ -165,19 +165,78 @@ class CoverFlow extends StatefulWidget {
 
 class _CoverFlowState extends State<CoverFlow> {
   late final CoverflowCarouselController _controller;
+  MusicProvider? _mp;
   int _currentIndex = 0;
+  int? _lastSyncedId;
 
   @override
   void initState() {
     super.initState();
     _controller = CoverflowCarouselController();
     _currentIndex = widget.initialIndex;
+    _controller.pageListenable.addListener(_onControllerChanged);
+    if (widget.initialIndex >= 0 &&
+        widget.initialIndex < widget.items.length) {
+      _lastSyncedId = widget.items[widget.initialIndex].id;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final mp = Provider.of<MusicProvider>(context, listen: false);
+    if (mp != _mp) {
+      _mp?.removeListener(_onProviderChanged);
+      _mp = mp;
+      _mp!.addListener(_onProviderChanged);
+    }
   }
 
   @override
   void dispose() {
+    _mp?.removeListener(_onProviderChanged);
+    _controller.pageListenable.removeListener(_onControllerChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onControllerChanged() {
+    final page = _controller.page.round();
+    if (page != _currentIndex && page >= 0 && page < widget.items.length) {
+      _currentIndex = page;
+      _lastSyncedId = widget.items[page].id;
+      setState(() {});
+    }
+  }
+
+  // 播放中的歌曲变化（如自动下一首）时，让轮播跟随定位到该卡片
+  void _onProviderChanged() {
+    final mp = _mp;
+    if (mp == null) return;
+    final current = mp.currentMusic;
+    if (current == null) return;
+    final idx = mp.queue.indexWhere((m) => m.id == current.id);
+    if (idx < 0 || idx >= widget.items.length) return;
+    if (idx == _currentIndex && _lastSyncedId == current.id.hashCode) return;
+    _lastSyncedId = current.id.hashCode;
+    _currentIndex = idx;
+    _controller.animateTo(idx);
+    setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant CoverFlow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncToInitial();
+  }
+
+  void _syncToInitial() {
+    final idx = widget.initialIndex;
+    if (idx < 0 || idx >= widget.items.length) return;
+    _currentIndex = idx;
+    _lastSyncedId = widget.items[idx].id;
+    _controller.animateTo(idx);
+    setState(() {});
   }
 
   @override
@@ -246,9 +305,9 @@ class _CoverFlowState extends State<CoverFlow> {
             cardBorderRadius: BorderRadius.circular(18),
             initialPage: widget.initialIndex,
             onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
+              _currentIndex = index;
+              _lastSyncedId = widget.items[index].id;
+              setState(() {});
               widget.onPageChanged?.call(widget.items[index]);
             },
             itemBuilder: (context, index) {

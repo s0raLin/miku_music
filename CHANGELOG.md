@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.55.0](https://github.com/s0raLin/miku_music/compare/v1.54.0...v1.55.0) (2026-07-20)
+
+
+### Features
+
+* **ui:** 优化 CoverFlow 视图实现与视觉效果 ([c2c392a](https://github.com/s0raLin/miku_music/commit/c2c392a7c27d9f58ca1b6490fa6bb0c5a1dce544))
+* **ui:** 实现 CoverFlow 视图与播放状态的同步机制 ([4a606bd](https://github.com/s0raLin/miku_music/commit/4a606bd2c52dc52e8ca7716b45c61b98aec30978))
+
 ## [1.54.0](https://github.com/s0raLin/miku_music/compare/v1.53.0...v1.54.0) (2026-07-18)
 
 

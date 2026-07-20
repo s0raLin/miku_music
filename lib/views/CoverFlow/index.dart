@@ -1,6 +1,8 @@
-// ─── CoverFlow 独立页面 - 基于 coverflow_carousel 库 ──────────────────────────
+// ─── CoverFlow 独立页面 - 基于 coverflow_carousel 库 (Material 3 Expressive) ──
 //  使用 coverflow_carousel 提供的 3D Cover Flow 轮播组件，
 //  支持数据驱动、平滑透视、重叠卡片与程序化导航。
+//  视觉遵循 Material 3 Expressive：以 ColorScheme 令牌驱动色彩、使用统一的
+//  圆角标度（AppRadius）、以 surface 容器层次构建层次、以主题字体排版。
 
 import 'dart:typed_data';
 import 'dart:ui';
@@ -84,7 +86,7 @@ class CoverFlowPage extends StatelessWidget {
                           child: Container(color: Colors.transparent),
                         ),
                       ),
-                      // 中心保留磨砂模糊，仅四周用主题色收拢保证边缘干净
+                      // 中心保留磨砂模糊，仅四周用主题 surface 收拢保证边缘干净
                       Container(
                         decoration: BoxDecoration(
                           gradient: RadialGradient(
@@ -97,7 +99,7 @@ class CoverFlowPage extends StatelessWidget {
                                     Colors.black.withValues(alpha: 0.9),
                                   ]
                                 : [
-                                    Colors.white.withValues(alpha: 0.0),
+                                    cs.surface.withValues(alpha: 0.0),
                                     cs.surface.withValues(alpha: 0.35),
                                     cs.surface.withValues(alpha: 0.9),
                                   ],
@@ -114,7 +116,7 @@ class CoverFlowPage extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [cs.surface, Colors.black],
+                      colors: [cs.surface, cs.surfaceContainerLowest],
                     ),
                   ),
                 ),
@@ -248,8 +250,8 @@ class CoverFlow extends StatefulWidget {
     required this.isPlaying,
     this.itemWidth = 280,
     this.itemHeight = 280,
-    this.itemMaxSize = 340,
-    this.viewportFraction = 0.5,
+    this.itemMaxSize = 360,
+    this.viewportFraction = 0.62,
   });
 
   @override
@@ -336,24 +338,31 @@ class _CoverFlowState extends State<CoverFlow> {
   Widget build(BuildContext context) {
     final n = widget.items.length;
     if (n == 0) {
-      return const Center(
-        child: Text('暂无数据', style: TextStyle(color: Colors.white70)),
+      return Center(
+        child: Text(
+          '暂无数据',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
       );
     }
 
     final centerItem = widget.items[_currentIndex];
-    final cs2 = Theme.of(context).colorScheme;
-    final isDark = cs2.brightness == Brightness.dark;
-    final fg = isDark ? Colors.white : Colors.black87;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = cs.brightness == Brightness.dark;
+    final onContainer =
+        isDark ? cs.onSurface : cs.onSurface; // 卡片叠在模糊背景之上
+    final fg = onContainer;
     final shadow = isDark
-        ? const Shadow(color: Colors.black54, blurRadius: 8)
-        : const Shadow(color: Colors.white70, blurRadius: 8);
+        ? const Shadow(color: Colors.black54, blurRadius: 12)
+        : const Shadow(color: Colors.black26, blurRadius: 12);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardSize = (constraints.maxWidth * 0.72)
             .clamp(widget.itemWidth, widget.itemMaxSize)
-            .clamp(widget.itemWidth, constraints.maxHeight - 160.0);
+            .clamp(widget.itemWidth, constraints.maxHeight - 200.0);
 
         final carousel = CoverflowCarousel.builder(
           controller: _controller,
@@ -365,9 +374,14 @@ class _CoverFlowState extends State<CoverFlow> {
           isInfinite: true,
           obscure: 0,
           viewportFraction: widget.viewportFraction,
-          enableShadow: false,
-          elevation: 0,
-          cardBorderRadius: BorderRadius.circular(18),
+          // M3 Expressive：以 surfaceContainer 层次的柔和阴影替代生硬黑影
+          enableShadow: true,
+          shadowColor: cs.shadow,
+          elevation: 6,
+          cardBorderRadius: AppRadius.cardBR,
+          // 宽松堆叠：增大相邻/远端卡片间距，避免拥挤
+          nearCardSpacing: 72,
+          farCardSpacing: 80,
           initialPage: widget.initialIndex,
           onPageChanged: (index) {
             _currentIndex = index;
@@ -401,13 +415,11 @@ class _CoverFlowState extends State<CoverFlow> {
               left: 20,
               bottom: 24,
               child: _OverlayButton(
-                color: fg,
-                shadow: shadow,
                 onPressed: () => widget.onTogglePlay?.call(),
                 tooltip: '播放 / 暂停',
                 child: ValueListenableBuilder<bool>(
                   valueListenable: widget.isPlaying,
-                  builder: (_, playing, __) => Icon(
+                  builder: (_, playing, _) => Icon(
                     playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     color: fg,
                     shadows: [shadow],
@@ -421,8 +433,6 @@ class _CoverFlowState extends State<CoverFlow> {
               right: 20,
               bottom: 24,
               child: _OverlayButton(
-                color: fg,
-                shadow: shadow,
                 onPressed: () {
                   _showInfoSheet(context, centerItem, fg, shadow);
                 },
@@ -446,6 +456,7 @@ class _CoverFlowState extends State<CoverFlow> {
     Color fg,
     Shadow shadow,
   ) {
+    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -453,8 +464,8 @@ class _CoverFlowState extends State<CoverFlow> {
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(24),
+          color: cs.surfaceContainerHigh,
+          borderRadius: AppRadius.cardBR,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -462,22 +473,19 @@ class _CoverFlowState extends State<CoverFlow> {
           children: [
             Text(
               item.title,
-              style: TextStyle(
-                color: fg,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                shadows: [shadow],
-              ),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: cs.onSurface,
+                    shadows: [shadow],
+                  ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
             Text(
               item.subtitle,
-              style: TextStyle(
-                color: fg.withValues(alpha: 0.7),
-                fontSize: 14,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -488,17 +496,13 @@ class _CoverFlowState extends State<CoverFlow> {
   }
 }
 
-/// ── 底部悬浮按钮（主题自适应，半透明圆底） ───────────────────────────────
+/// ── 底部悬浮按钮（M3 Expressive 圆形 FAB 风格，主题自适应） ─────────────────
 class _OverlayButton extends StatelessWidget {
-  final Color color;
-  final Shadow shadow;
   final VoidCallback onPressed;
   final String tooltip;
   final Widget child;
 
   const _OverlayButton({
-    required this.color,
-    required this.shadow,
     required this.onPressed,
     required this.tooltip,
     required this.child,
@@ -508,17 +512,23 @@ class _OverlayButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Material(
-      color: cs.surface.withValues(alpha: 0.3),
+      color: cs.surfaceContainerHighest,
+      surfaceTintColor: cs.primary,
       shape: const CircleBorder(),
       elevation: 3,
-      shadowColor: shadow.color,
-      child: IconButton(
+      shadowColor: cs.shadow,
+      child: IconButton.filledTonal(
         onPressed: onPressed,
         icon: child,
-        iconSize: 30,
+        iconSize: 28,
         tooltip: tooltip,
         splashRadius: 24,
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
+        style: IconButton.styleFrom(
+          backgroundColor: cs.surfaceContainerHighest,
+          foregroundColor: cs.onSurface,
+          shape: const CircleBorder(),
+        ),
       ),
     );
   }
@@ -532,20 +542,16 @@ class _CoverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final hasCover =
         item.coverBytes?.isNotEmpty == true ||
         (item.imageUrl != null && item.imageUrl!.isNotEmpty);
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: AppRadius.cardBR,
+        // M3 Expressive：以 surface 容器层次提供柔和层次，而非生硬黑影
+        color: cs.surfaceContainerHigh,
         gradient: hasCover
             ? null
             : LinearGradient(
@@ -558,7 +564,7 @@ class _CoverCard extends StatelessWidget {
               ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.cardBR,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -571,8 +577,8 @@ class _CoverCard extends StatelessWidget {
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 8,
+                  vertical: 14,
+                  horizontal: 12,
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -587,12 +593,13 @@ class _CoverCard extends StatelessWidget {
                 child: Text(
                   item.title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-                  ),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 6),
+                        ],
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -616,7 +623,7 @@ class _CoverCard extends StatelessWidget {
             ? {'Referer': 'https://music.163.com/'}
             : {},
         fadeInDuration: const Duration(milliseconds: 250),
-        placeholder: (_, __) => Container(
+        placeholder: (_, _) => Container(
           color: item.color.withValues(alpha: 0.3),
           child: const Center(
             child: CircularProgressIndicator(
@@ -625,7 +632,7 @@ class _CoverCard extends StatelessWidget {
             ),
           ),
         ),
-        errorWidget: (_, __, ___) => Container(
+        errorWidget: (_, _, _) => Container(
           color: item.color.withValues(alpha: 0.3),
           child: const Icon(Icons.music_note, color: Colors.white54, size: 48),
         ),

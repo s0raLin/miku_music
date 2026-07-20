@@ -249,6 +249,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  coverflow_carousel:
+    dependency: "direct main"
+    description:
+      name: coverflow_carousel
+      sha256: "574563e19c6256ad7077536c4d1f4dcc2d07d5c20c5e37629c4e73f207a80653"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   cross_file:
     dependency: transitive
     description:

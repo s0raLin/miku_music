@@ -3,6 +3,7 @@
 //  支持数据驱动、平滑透视、重叠卡片与程序化导航。
 
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:coverflow_carousel/coverflow_carousel.dart';
@@ -34,71 +35,137 @@ class CoverFlowPage extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [cs.surface, Colors.black],
-          ),
-        ),
-        child: SafeArea(
-          child: Consumer<MusicProvider>(
-            builder: (context, mp, _) {
-              if (mp.currentMusic == null) {
-                return const AppEmptyState(
-                  icon: Icons.album_rounded,
-                  title: '未选择歌曲',
-                  subtitle: '播放一首歌曲后，可在此浏览封面轮播',
-                );
-              }
-              if (mp.queue.isEmpty) {
-                return const AppEmptyState(
-                  icon: Icons.queue_music_rounded,
-                  title: '播放队列为空',
-                  subtitle: '添加到播放队列后即可浏览封面',
-                );
-              }
-              return CoverFlow(
-                key: ValueKey(mp.queue.length),
-                items: mp.queue
-                    .map(
-                      (m) => CoverItem(
-                        id: m.id.hashCode,
-                        title: m.title,
-                        subtitle: '${m.artist}  ·  ${m.album}',
-                        imageUrl: mp.getCoverUrl(m.id),
-                        coverBytes: m.coverBytes,
-                        isNetwork: m.source == MusicSource.network,
-                        color: _palette[m.id.hashCode % _palette.length],
+      body: Consumer<MusicProvider>(
+        builder: (context, mp, _) {
+          final coverBytes = mp.currentMusic?.coverBytes;
+          final coverUrl =
+              mp.currentMusic != null
+                  ? mp.getCoverUrl(mp.currentMusic!.id)
+                  : null;
+          final hasCover =
+              (coverBytes?.isNotEmpty ?? false) ||
+              (coverUrl != null && coverUrl.isNotEmpty);
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // 当前播放封面作为模糊背景
+              if (hasCover)
+                Positioned.fill(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      coverBytes?.isNotEmpty == true
+                          ? Image.memory(
+                              coverBytes!,
+                              fit: BoxFit.cover,
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: coverUrl!,
+                              fit: BoxFit.cover,
+                              httpHeaders: coverUrl.contains('music.126.net')
+                                  ? {'Referer': 'https://music.163.com/'}
+                                  : {},
+                            ),
+                      ClipRect(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(
+                            sigmaX: 60,
+                            sigmaY: 60,
+                          ),
+                          child: Container(color: Colors.transparent),
+                        ),
                       ),
-                    )
-                    .toList(),
-                initialIndex: mp.currentMusic != null
-                    ? mp.queue
-                          .indexOf(mp.currentMusic!)
-                          .clamp(0, mp.queue.length - 1)
-                    : 0,
-                onItemTapped: (item) {
-                  final idx = mp.queue.indexWhere(
-                    (m) => m.id.hashCode == item.id,
-                  );
-                  if (idx >= 0 && mp.queue[idx].id != mp.currentMusic?.id) {
-                    mp.playByIndex(idx);
-                  }
-                },
-                onPageChanged: (item) {
-                  final idx = mp.queue.indexWhere(
-                    (m) => m.id.hashCode == item.id,
-                  );
-                  if (idx >= 0 && mp.queue[idx].id != mp.currentMusic?.id) {
-                    mp.playByIndex(idx);
-                  }
-                },
-              );
-            },
-          ),
-        ),
+                      // 暗化蒙层，保证文字可读
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.35),
+                              Colors.black.withValues(alpha: 0.65),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [cs.surface, Colors.black],
+                    ),
+                  ),
+                ),
+
+              // 前景内容
+              SafeArea(
+                child: Builder(
+                  builder: (context) {
+                    if (mp.currentMusic == null) {
+                      return const AppEmptyState(
+                        icon: Icons.album_rounded,
+                        title: '未选择歌曲',
+                        subtitle: '播放一首歌曲后，可在此浏览封面轮播',
+                      );
+                    }
+                    if (mp.queue.isEmpty) {
+                      return const AppEmptyState(
+                        icon: Icons.queue_music_rounded,
+                        title: '播放队列为空',
+                        subtitle: '添加到播放队列后即可浏览封面',
+                      );
+                    }
+                    return CoverFlow(
+                      key: ValueKey(mp.queue.length),
+                      items: mp.queue
+                          .map(
+                            (m) => CoverItem(
+                              id: m.id.hashCode,
+                              title: m.title,
+                              subtitle: '${m.artist}  ·  ${m.album}',
+                              imageUrl: mp.getCoverUrl(m.id),
+                              coverBytes: m.coverBytes,
+                              isNetwork: m.source == MusicSource.network,
+                              color: _palette[m.id.hashCode % _palette.length],
+                            ),
+                          )
+                          .toList(),
+                      initialIndex: mp.currentMusic != null
+                          ? mp.queue
+                                .indexOf(mp.currentMusic!)
+                                .clamp(0, mp.queue.length - 1)
+                          : 0,
+                      onItemTapped: (item) {
+                        final idx = mp.queue.indexWhere(
+                          (m) => m.id.hashCode == item.id,
+                        );
+                        if (idx >= 0 &&
+                            mp.queue[idx].id != mp.currentMusic?.id) {
+                          mp.playByIndex(idx);
+                        }
+                      },
+                      onPageChanged: (item) {
+                        final idx = mp.queue.indexWhere(
+                          (m) => m.id.hashCode == item.id,
+                        );
+                        if (idx >= 0 &&
+                            mp.queue[idx].id != mp.currentMusic?.id) {
+                          mp.playByIndex(idx);
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -156,7 +223,7 @@ class CoverFlow extends StatefulWidget {
     this.onItemTapped,
     this.onPageChanged,
     this.itemWidth = 200,
-    this.itemHeight = 280,
+    this.itemHeight = 200,
   });
 
   @override
@@ -298,10 +365,10 @@ class _CoverFlowState extends State<CoverFlow> {
             scrollDirection: Axis.horizontal,
             mode: CoverflowMode.coverflow,
             isInfinite: true,
-            obscure: 0.45,
+            obscure: 0,
             viewportFraction: 0.32,
-            enableShadow: true,
-            elevation: 12,
+            enableShadow: false,
+            elevation: 0,
             cardBorderRadius: BorderRadius.circular(18),
             initialPage: widget.initialIndex,
             onPageChanged: (index) {

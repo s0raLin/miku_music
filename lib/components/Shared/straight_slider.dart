@@ -124,7 +124,7 @@ class _StraightSliderPainter extends CustomPainter {
         ),
         const Radius.circular(_SliderSettings.trackHeight / 2),
       ),
-      Paint()..color = cs.surfaceContainerHighest,
+      Paint()..color = cs.outlineVariant.withValues(alpha: 0.5),
     );
 
     // 2. active progress fill

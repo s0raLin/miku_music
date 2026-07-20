@@ -112,7 +112,7 @@ class _WavySliderState extends State<WavySlider>
                     max: widget.max,
                     phase: _waveController.value * 2 * math.pi,
                     activeColor: cs.primary,
-                    inactiveColor: cs.surfaceContainerHighest,
+                    inactiveColor: cs.outlineVariant.withValues(alpha: 0.5),
                     hPadding: _SliderSettings.hPadding,
                   ),
                 ),

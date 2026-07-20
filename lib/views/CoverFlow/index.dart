@@ -360,9 +360,26 @@ class _CoverFlowState extends State<CoverFlow> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardSize = (constraints.maxWidth * 0.72)
-            .clamp(widget.itemWidth, widget.itemMaxSize)
-            .clamp(widget.itemWidth, constraints.maxHeight - 200.0);
+        // 横屏（手机）适配：高度有限，卡片以高度为基准，并预留底部按钮空间，
+        // 避免超出边界。竖屏仍以宽度为基准。
+        final isLandscape =
+            constraints.maxWidth > constraints.maxHeight;
+        final reserved = isLandscape ? 24.0 : 200.0;
+        final availableHeight = (constraints.maxHeight - reserved)
+            .clamp(0.0, double.infinity);
+
+        double cardSize;
+        if (isLandscape) {
+          // 横屏：卡片高度不超过可用高度，宽度也以高度为主，避免溢出
+          cardSize = availableHeight.clamp(
+            widget.itemWidth * 0.5,
+            widget.itemMaxSize,
+          );
+        } else {
+          cardSize = (constraints.maxWidth * 0.72)
+              .clamp(widget.itemWidth, widget.itemMaxSize)
+              .clamp(widget.itemWidth, availableHeight);
+        }
 
         final carousel = CoverflowCarousel.builder(
           controller: _controller,
@@ -410,40 +427,81 @@ class _CoverFlowState extends State<CoverFlow> {
               ),
             ),
 
-            // 底部左：播放/暂停
-            Positioned(
-              left: 20,
-              bottom: 24,
-              child: _OverlayButton(
-                onPressed: () => widget.onTogglePlay?.call(),
-                tooltip: '播放 / 暂停',
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: widget.isPlaying,
-                  builder: (_, playing, _) => Icon(
-                    playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            // 横屏时把控制按钮放到右侧边缘竖排，避免与卡片重叠；
+            // 竖屏保持在底部左右两侧。
+            if (isLandscape)
+              Positioned(
+                right: 16,
+                top: constraints.maxHeight / 2 - 60,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _OverlayButton(
+                      onPressed: () => widget.onTogglePlay?.call(),
+                      tooltip: '播放 / 暂停',
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: widget.isPlaying,
+                        builder: (_, playing, _) => Icon(
+                          playing
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: fg,
+                          shadows: [shadow],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _OverlayButton(
+                      onPressed: () =>
+                          _showInfoSheet(context, centerItem, fg, shadow),
+                      tooltip: '歌曲信息',
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        color: fg,
+                        shadows: [shadow],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else ...[
+              // 底部左：播放/暂停
+              Positioned(
+                left: 20,
+                bottom: 24,
+                child: _OverlayButton(
+                  onPressed: () => widget.onTogglePlay?.call(),
+                  tooltip: '播放 / 暂停',
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: widget.isPlaying,
+                    builder: (_, playing, _) => Icon(
+                      playing
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: fg,
+                      shadows: [shadow],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 底部右：歌曲信息
+              Positioned(
+                right: 20,
+                bottom: 24,
+                child: _OverlayButton(
+                  onPressed: () {
+                    _showInfoSheet(context, centerItem, fg, shadow);
+                  },
+                  tooltip: '歌曲信息',
+                  child: Icon(
+                    Icons.info_outline_rounded,
                     color: fg,
                     shadows: [shadow],
                   ),
                 ),
               ),
-            ),
-
-            // 底部右：歌曲信息
-            Positioned(
-              right: 20,
-              bottom: 24,
-              child: _OverlayButton(
-                onPressed: () {
-                  _showInfoSheet(context, centerItem, fg, shadow);
-                },
-                tooltip: '歌曲信息',
-                child: Icon(
-                  Icons.info_outline_rounded,
-                  color: fg,
-                  shadows: [shadow],
-                ),
-              ),
-            ),
+            ],
           ],
         );
       },

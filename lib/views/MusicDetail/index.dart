@@ -5,6 +5,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/views/MusicDetail/layout/narrow_layout.dart';
 import 'package:myapp/views/MusicDetail/layout/wide_layout.dart';
+import 'package:myapp/views/MusicDetail/layout/landscape_layout.dart';
 
 import 'package:provider/provider.dart';
 
@@ -45,10 +46,18 @@ class _MusicDetailPageState extends State<MusicDetailPage> {
         subtitle: _hadMusic ? "队列已清空" : "正在加载...",
       );
     }
-    final isWide = MediaQuery.sizeOf(context).width > 700;
 
-    return isWide
-        ? WideLayout(music: music)
-        : NarrowLayout(music: music);
+    final size = MediaQuery.sizeOf(context);
+    final isLandscape = size.width > size.height;
+
+    // 横屏：一律使用紧凑的横屏布局（封面可见 + 安全区域 + 歌词并排），
+    // 不受宽度阈值影响，避免手机横屏误用大屏模式。
+    if (isLandscape) {
+      return LandscapeLayout(music: music);
+    }
+
+    // 竖屏：宽度足够（如平板）用大屏布局，否则用窄屏布局
+    final isWide = size.width > 700;
+    return isWide ? WideLayout(music: music) : NarrowLayout(music: music);
   }
 }

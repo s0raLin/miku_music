@@ -46,10 +46,12 @@ class CoverFlowPage extends StatelessWidget {
               (coverBytes?.isNotEmpty ?? false) ||
               (coverUrl != null && coverUrl.isNotEmpty);
 
+          final isDark = cs.brightness == Brightness.dark;
+
           return Stack(
             fit: StackFit.expand,
             children: [
-              // 当前播放封面作为模糊背景
+              // 当前播放封面作为模糊背景（克制的磨砂质感）
               if (hasCover)
                 Positioned.fill(
                   child: Stack(
@@ -69,23 +71,37 @@ class CoverFlowPage extends StatelessWidget {
                             ),
                       ClipRect(
                         child: BackdropFilter(
-                          filter: ImageFilter.blur(
-                            sigmaX: 60,
-                            sigmaY: 60,
+                          filter: ImageFilter.compose(
+                            outer: ImageFilter.blur(
+                              sigmaX: 50,
+                              sigmaY: 50,
+                            ),
+                            inner: ImageFilter.matrix(
+                              Matrix4.diagonal3Values(1.1, 1.1, 1.0)
+                                  .storage,
+                            ),
                           ),
                           child: Container(color: Colors.transparent),
                         ),
                       ),
-                      // 暗化蒙层，保证文字可读
+                      // 中心保留磨砂模糊，仅四周用主题色收拢保证边缘干净
                       Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.35),
-                              Colors.black.withValues(alpha: 0.65),
-                            ],
+                          gradient: RadialGradient(
+                            center: Alignment.center,
+                            radius: 1.2,
+                            colors: isDark
+                                ? [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.35),
+                                    Colors.black.withValues(alpha: 0.9),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.0),
+                                    cs.surface.withValues(alpha: 0.35),
+                                    cs.surface.withValues(alpha: 0.9),
+                                  ],
+                            stops: const [0.0, 0.7, 1.0],
                           ),
                         ),
                       ),
@@ -141,6 +157,8 @@ class CoverFlowPage extends StatelessWidget {
                                 .indexOf(mp.currentMusic!)
                                 .clamp(0, mp.queue.length - 1)
                           : 0,
+                      isPlaying: ValueNotifier(mp.player.playing),
+                      onTogglePlay: () => mp.togglePlay(),
                       onItemTapped: (item) {
                         final idx = mp.queue.indexWhere(
                           (m) => m.id.hashCode == item.id,
@@ -213,8 +231,12 @@ class CoverFlow extends StatefulWidget {
   final int initialIndex;
   final void Function(CoverItem)? onItemTapped;
   final void Function(CoverItem)? onPageChanged;
+  final VoidCallback? onTogglePlay;
+  final ValueNotifier<bool> isPlaying;
   final double itemWidth;
   final double itemHeight;
+  final double itemMaxSize;
+  final double viewportFraction;
 
   const CoverFlow({
     super.key,
@@ -222,8 +244,12 @@ class CoverFlow extends StatefulWidget {
     this.initialIndex = 0,
     this.onItemTapped,
     this.onPageChanged,
-    this.itemWidth = 200,
-    this.itemHeight = 200,
+    this.onTogglePlay,
+    required this.isPlaying,
+    this.itemWidth = 280,
+    this.itemHeight = 280,
+    this.itemMaxSize = 340,
+    this.viewportFraction = 0.5,
   });
 
   @override
@@ -316,102 +342,184 @@ class _CoverFlowState extends State<CoverFlow> {
     }
 
     final centerItem = widget.items[_currentIndex];
+    final cs2 = Theme.of(context).colorScheme;
+    final isDark = cs2.brightness == Brightness.dark;
+    final fg = isDark ? Colors.white : Colors.black87;
+    final shadow = isDark
+        ? const Shadow(color: Colors.black54, blurRadius: 8)
+        : const Shadow(color: Colors.white70, blurRadius: 8);
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 歌曲信息
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-          child: Column(
-            children: [
-              Text(
-                centerItem.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                centerItem.subtitle,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 13,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardSize = (constraints.maxWidth * 0.72)
+            .clamp(widget.itemWidth, widget.itemMaxSize)
+            .clamp(widget.itemWidth, constraints.maxHeight - 160.0);
 
-        const SizedBox(height: 20),
+        final carousel = CoverflowCarousel.builder(
+          controller: _controller,
+          itemCount: n,
+          itemWidth: cardSize,
+          itemHeight: cardSize,
+          scrollDirection: Axis.horizontal,
+          mode: CoverflowMode.coverflow,
+          isInfinite: true,
+          obscure: 0,
+          viewportFraction: widget.viewportFraction,
+          enableShadow: false,
+          elevation: 0,
+          cardBorderRadius: BorderRadius.circular(18),
+          initialPage: widget.initialIndex,
+          onPageChanged: (index) {
+            _currentIndex = index;
+            _lastSyncedId = widget.items[index].id;
+            setState(() {});
+            widget.onPageChanged?.call(widget.items[index]);
+          },
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () => widget.onItemTapped?.call(widget.items[index]),
+              child: _CoverCard(item: widget.items[index]),
+            );
+          },
+        );
 
-        // 3D Cover Flow 轮播
-        SizedBox(
-          height: widget.itemHeight + 60,
-          child: CoverflowCarousel.builder(
-            controller: _controller,
-            itemCount: n,
-            itemWidth: widget.itemWidth,
-            itemHeight: widget.itemHeight,
-            scrollDirection: Axis.horizontal,
-            mode: CoverflowMode.coverflow,
-            isInfinite: true,
-            obscure: 0,
-            viewportFraction: 0.32,
-            enableShadow: false,
-            elevation: 0,
-            cardBorderRadius: BorderRadius.circular(18),
-            initialPage: widget.initialIndex,
-            onPageChanged: (index) {
-              _currentIndex = index;
-              _lastSyncedId = widget.items[index].id;
-              setState(() {});
-              widget.onPageChanged?.call(widget.items[index]);
-            },
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () => widget.onItemTapped?.call(widget.items[index]),
-                child: _CoverCard(item: widget.items[index]),
-              );
-            },
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // 导航按钮
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        return Stack(
+          fit: StackFit.expand,
           children: [
-            IconButton(
-              onPressed: () => _controller.previous(),
-              icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
-              iconSize: 32,
-              tooltip: '上一张',
-            ),
-            const SizedBox(width: 32),
-            IconButton(
-              onPressed: () => _controller.next(),
-              icon: const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white,
+            // 3D Cover Flow 轮播（沉浸式，卡片居中放大）
+            Positioned.fill(
+              child: Center(
+                child: SizedBox(
+                  height: cardSize,
+                  child: carousel,
+                ),
               ),
-              iconSize: 32,
-              tooltip: '下一张',
+            ),
+
+            // 底部左：播放/暂停
+            Positioned(
+              left: 20,
+              bottom: 24,
+              child: _OverlayButton(
+                color: fg,
+                shadow: shadow,
+                onPressed: () => widget.onTogglePlay?.call(),
+                tooltip: '播放 / 暂停',
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: widget.isPlaying,
+                  builder: (_, playing, __) => Icon(
+                    playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: fg,
+                    shadows: [shadow],
+                  ),
+                ),
+              ),
+            ),
+
+            // 底部右：歌曲信息
+            Positioned(
+              right: 20,
+              bottom: 24,
+              child: _OverlayButton(
+                color: fg,
+                shadow: shadow,
+                onPressed: () {
+                  _showInfoSheet(context, centerItem, fg, shadow);
+                },
+                tooltip: '歌曲信息',
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  color: fg,
+                  shadows: [shadow],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showInfoSheet(
+    BuildContext context,
+    CoverItem item,
+    Color fg,
+    Shadow shadow,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              item.title,
+              style: TextStyle(
+                color: fg,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                shadows: [shadow],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.subtitle,
+              style: TextStyle(
+                color: fg.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
-        const SizedBox(height: 16),
-      ],
+      ),
+    );
+  }
+}
+
+/// ── 底部悬浮按钮（主题自适应，半透明圆底） ───────────────────────────────
+class _OverlayButton extends StatelessWidget {
+  final Color color;
+  final Shadow shadow;
+  final VoidCallback onPressed;
+  final String tooltip;
+  final Widget child;
+
+  const _OverlayButton({
+    required this.color,
+    required this.shadow,
+    required this.onPressed,
+    required this.tooltip,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surface.withValues(alpha: 0.3),
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: shadow.color,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: child,
+        iconSize: 30,
+        tooltip: tooltip,
+        splashRadius: 24,
+        padding: const EdgeInsets.all(10),
+      ),
     );
   }
 }

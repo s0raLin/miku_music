@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.56.0](https://github.com/s0raLin/miku_music/compare/v1.55.0...v1.56.0) (2026-07-20)
+
+
+### Features
+
+* **ui:** 为 CoverFlow 视图添加模糊背景效果 ([3bbaf2f](https://github.com/s0raLin/miku_music/commit/3bbaf2f4ac91d07c89fd54ede3676ed580256335))
+* **ui:** 实现音乐详情页沉浸式布局与共享组件库 ([d74571d](https://github.com/s0raLin/miku_music/commit/d74571df73ccf87c7d8708c02245b6304b7c786a))
+
 ## [1.55.0](https://github.com/s0raLin/miku_music/compare/v1.54.0...v1.55.0) (2026-07-20)
 
 

@@ -8,6 +8,9 @@
 
 export 'app_radius.dart';
 export 'app_toast.dart';
+export 'album_art_image.dart';
+export 'blur_cover_background.dart';
+export 'immersive_top_bar.dart';
 export 'app_section_header.dart';
 export 'app_panel.dart';
 export 'artwork_cover.dart';

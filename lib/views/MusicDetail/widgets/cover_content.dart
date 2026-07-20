@@ -1,5 +1,4 @@
-// ─── 封面 + 元信息 + 控制台 ───────────────────────────────────────────────────
-import 'package:cached_network_image/cached_network_image.dart';
+// ─── 封面 + 元信息 + 控制台 (宽屏布局) ──────────────────────────────────
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
@@ -30,43 +29,7 @@ class _CoverContentState extends State<CoverContent> {
   }
 
   Widget _buildAlbumArt(ColorScheme cs, MusicProvider mp, double size) {
-    // 1. 优先使用内存中的 coverBytes
-    if (widget.music.coverBytes?.isNotEmpty == true) {
-      return Image.memory(widget.music.coverBytes!, fit: BoxFit.cover);
-    }
-
-    // 2. 网络歌曲：通过 MusicProvider 获取 coverUrl
-    final coverUrl = mp.getCoverUrl(widget.music.id);
-    if (coverUrl != null && coverUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: coverUrl,
-        fit: BoxFit.cover,
-        httpHeaders: coverUrl.contains('music.126.net')
-            ? {'Referer': 'https://music.163.com/'}
-            : {},
-        placeholder: (_, _) => Container(
-          color: cs.surfaceContainerHighest,
-        ),
-        errorWidget: (_, _, _) => Container(
-          color: cs.surfaceContainerHighest,
-          child: Icon(
-            Icons.music_note_rounded,
-            size: size * 0.3,
-            color: cs.primary.withValues(alpha: 0.5),
-          ),
-        ),
-      );
-    }
-
-    // 3. 兜底图标
-    return Container(
-      color: cs.surfaceContainerHighest,
-      child: Icon(
-        Icons.music_note_rounded,
-        size: size * 0.3,
-        color: cs.primary.withValues(alpha: 0.5),
-      ),
-    );
+    return AlbumArtImage(music: widget.music, size: size);
   }
 
   @override
@@ -112,7 +75,7 @@ class _CoverContentState extends State<CoverContent> {
                       widget.music.title,
                       style: TextStyle(
                         fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         color: cs.onSurface,
                         letterSpacing: -0.5,
                       ),
@@ -134,7 +97,7 @@ class _CoverContentState extends State<CoverContent> {
                 ),
               ),
               // 📎 添加到歌单按钮
-              IconButton(
+              IconButton.filledTonal(
                 onPressed: () {
                   MusicActionMenu.showAddToPlaylistSheet(context, widget.music);
                 },
@@ -143,20 +106,16 @@ class _CoverContentState extends State<CoverContent> {
                 icon: Icon(
                   Icons.add_rounded,
                   size: 28,
-                  color: cs.onSurfaceVariant,
+                  color: cs.onSecondaryContainer,
                 ),
               ),
-              IconButton(
+              IconButton.filledTonal(
                 onPressed: () {
-                  final wasLiked = playlistProvider
-                      .getPlaylistSongs(
-                        PlaylistProvider.favoritesPlaylistId,
-                        musicProvider.library,
-                        musicProvider: musicProvider,
-                      )
-                      .any((m) => m.id == widget.music.id);
-
-                  playlistProvider.toggleMusicFavorite(widget.music, musicProvider: musicProvider);
+                  final wasLiked = isLiked;
+                  playlistProvider.toggleMusicFavorite(
+                    widget.music,
+                    musicProvider: musicProvider,
+                  );
 
                   AppToast.neutral(
                     context,
@@ -173,7 +132,7 @@ class _CoverContentState extends State<CoverContent> {
                         ? Icons.favorite_rounded
                         : Icons.favorite_border_rounded,
                     key: ValueKey<bool>(isLiked),
-                    color: isLiked ? cs.primary : cs.onSurfaceVariant,
+                    color: isLiked ? Colors.redAccent : cs.onSecondaryContainer,
                     size: 28,
                   ),
                 ),
@@ -319,7 +278,7 @@ class _PlaybackControls extends StatelessWidget {
                   onPressed: mp.togglePlayMode,
                   tooltip: modeTooltip(mp.playMode),
                   child: Icon(modeIcon(mp.playMode),
-                      size: iconSize, color: cs.onSurfaceVariant),
+                      size: iconSize, color: cs.onSecondaryContainer),
                 ),
                 SizedBox(width: gap),
                 _CtrlButton(
@@ -327,7 +286,7 @@ class _PlaybackControls extends StatelessWidget {
                   onPressed: mp.playPrev,
                   tooltip: '上一首',
                   child: Icon(Icons.skip_previous_rounded,
-                      size: iconSize * 1.1, color: cs.onSurface),
+                      size: iconSize * 1.1, color: cs.onSecondaryContainer),
                 ),
                 SizedBox(width: gap),
                 SizedBox(
@@ -340,8 +299,8 @@ class _PlaybackControls extends StatelessWidget {
                       FilledButton(
                         onPressed: mp.togglePlay,
                         style: FilledButton.styleFrom(
-                          backgroundColor: cs.primaryContainer,
-                          foregroundColor: cs.onPrimaryContainer,
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
                           minimumSize: Size(playSize, playSize),
                           maximumSize: Size(playSize, playSize),
                           padding: EdgeInsets.zero,
@@ -371,7 +330,7 @@ class _PlaybackControls extends StatelessWidget {
                           child: IgnorePointer(
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: cs.primary,
+                              color: cs.onPrimary,
                               strokeCap: StrokeCap.round,
                             ),
                           ),
@@ -385,7 +344,7 @@ class _PlaybackControls extends StatelessWidget {
                   onPressed: mp.playNext,
                   tooltip: '下一首',
                   child: Icon(Icons.skip_next_rounded,
-                      size: iconSize * 1.1, color: cs.onSurface),
+                      size: iconSize * 1.1, color: cs.onSecondaryContainer),
                 ),
                 SizedBox(width: gap),
                 _CtrlButton(
@@ -393,7 +352,7 @@ class _PlaybackControls extends StatelessWidget {
                   tooltip: '当前播放队列',
                   onPressed: () => Scaffold.of(pageContext).openEndDrawer(),
                   child: Icon(Icons.queue_music_rounded,
-                      size: iconSize, color: cs.onSurfaceVariant),
+                      size: iconSize, color: cs.onSecondaryContainer),
                 ),
               ],
             );
@@ -419,12 +378,21 @@ class _CtrlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(size / 2),
-        child: SizedBox(width: size, height: size, child: Center(child: child)),
+      child: Material(
+        color: cs.secondaryContainer,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(size / 2),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Center(child: child),
+          ),
+        ),
       ),
     );
   }
@@ -488,17 +456,17 @@ class _NormalCoverSection extends StatelessWidget {
                   width: size,
                   height: size,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: AppRadius.cardBR,
                     boxShadow: [
                       BoxShadow(
-                        color: cs.shadow.withValues(alpha: 0.08),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
+                        color: cs.shadow.withValues(alpha: 0.16),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: AppRadius.cardBR,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [

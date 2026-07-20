@@ -44,13 +44,15 @@ class _LyricGroup {
 class _ActiveLyricItem extends StatefulWidget {
   final _LyricGroup group;
   final TextStyle baseStyle;
-  final ColorScheme cs;
+  final Color activeColor;
+  final Color inactiveColor;
   final Stream<PositionData> positionStream;
 
   const _ActiveLyricItem({
     required this.group,
     required this.baseStyle,
-    required this.cs,
+    required this.activeColor,
+    required this.inactiveColor,
     required this.positionStream,
   });
 
@@ -136,8 +138,8 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
                   return LinearProgressIndicator(
                     value: val,
                     minHeight: 3,
-                    backgroundColor: widget.cs.onSurface.withValues(alpha: 0.2),
-                    valueColor: AlwaysStoppedAnimation(widget.cs.primary),
+                    backgroundColor: widget.inactiveColor.withValues(alpha: 0.2),
+                    valueColor: AlwaysStoppedAnimation(widget.activeColor),
                   );
                 },
               ),
@@ -186,8 +188,8 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    widget.cs.primary,
-                    widget.cs.onSurface.withValues(alpha: 0.35),
+                    widget.activeColor,
+                    widget.inactiveColor.withValues(alpha: 0.35),
                   ],
                   stops: [progress, progress],
                 ).createShader(rect);
@@ -417,10 +419,6 @@ class _LyricsSectionState extends State<LyricsSection>
           ),
         if (_isUserInteracting && _focusedIndex >= 0)
           _buildCenterInteractionBar(cs),
-        if (!currentLyricsEmpty) ...[
-          _buildFadeGradient(Alignment.topCenter, cs),
-          _buildFadeGradient(Alignment.bottomCenter, cs),
-        ],
       ],
     );
   }
@@ -428,9 +426,9 @@ class _LyricsSectionState extends State<LyricsSection>
 
   Widget _buildEmptyState(MusicProvider mp, BuildContext context) {
     return AppEmptyState(
-      icon: Icons.music_note_rounded,
+      icon: Icons.lyrics_rounded,
       title: "暂无歌词",
-      subtitle: "点击标题栏「歌词」图标切换来源",
+      subtitle: "点击右上角「歌词」图标切换来源",
     );
   }
 
@@ -478,38 +476,41 @@ class _LyricsSectionState extends State<LyricsSection>
         ? (index - _focusedIndex).abs() == 1
         : (index - currentIndex).abs() == 1;
 
+    final activeColor = cs.onSurface; // 高强调：落在统一 scrim 上，对比稳定
+    final inactiveColor = cs.onSurfaceVariant;
+
     final baseStyle = isActive
         ? TextStyle(
-            fontSize: 22,
+            fontSize: 23,
             fontWeight: FontWeight.w800,
-            color: cs.primary,
-            height: 1.4,
+            color: activeColor,
+            height: 1.45,
           )
         : isNear
         ? TextStyle(
-            fontSize: 17.5,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: cs.onSurface.withValues(alpha: 0.9),
-            height: 1.4,
+            color: inactiveColor.withValues(alpha: 0.9),
+            height: 1.45,
           )
         : TextStyle(
-            fontSize: 15.5,
+            fontSize: 16,
             fontWeight: FontWeight.w400,
-            color: cs.onSurfaceVariant.withValues(alpha: 0.85),
-            height: 1.4,
+            color: inactiveColor.withValues(alpha: 0.6),
+            height: 1.45,
           );
 
     final translationStyle = isActive
         ? TextStyle(
-            fontSize: 13.5,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: cs.primary.withValues(alpha: 0.75),
+            color: inactiveColor.withValues(alpha: 0.85),
             height: 1.4,
           )
         : TextStyle(
-            fontSize: 12,
+            fontSize: 12.5,
             fontWeight: FontWeight.w400,
-            color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+            color: inactiveColor.withValues(alpha: 0.55),
             height: 1.4,
           );
 
@@ -533,7 +534,8 @@ class _LyricsSectionState extends State<LyricsSection>
                 ? _ActiveLyricItem(
                     group: group,
                     baseStyle: baseStyle,
-                    cs: cs,
+                    activeColor: activeColor,
+                    inactiveColor: inactiveColor,
                     positionStream: mp.positionDataStream,
                   )
                 : Text(
@@ -561,8 +563,8 @@ class _LyricsSectionState extends State<LyricsSection>
                   child: LinearProgressIndicator(
                     value: group.getProgress(_positionMs),
                     minHeight: 3,
-                    backgroundColor: cs.onSurface.withValues(alpha: 0.2),
-                    valueColor: AlwaysStoppedAnimation(cs.primary),
+                    backgroundColor: activeColor.withValues(alpha: 0.2),
+                    valueColor: AlwaysStoppedAnimation(activeColor),
                   ),
                 ),
               ),
@@ -668,26 +670,6 @@ class _LyricsSectionState extends State<LyricsSection>
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFadeGradient(Alignment alignment, ColorScheme cs) {
-    return IgnorePointer(
-      child: Align(
-        alignment: alignment,
-        child: Container(
-          height: 100,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: alignment,
-              end: alignment == Alignment.topCenter
-                  ? Alignment.bottomCenter
-                  : Alignment.topCenter,
-              colors: [cs.surface, cs.surface.withValues(alpha: 0)],
-            ),
           ),
         ),
       ),

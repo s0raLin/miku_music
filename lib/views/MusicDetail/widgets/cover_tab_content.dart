@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
@@ -71,7 +70,6 @@ class _AlbumArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final musicProvider = context.watch<MusicProvider>();
     final cs = Theme.of(context).colorScheme;
 
     return LayoutBuilder(
@@ -85,21 +83,21 @@ class _AlbumArt extends StatelessWidget {
               width: size,
               height: size,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppRadius.cardBR,
                 boxShadow: [
                   BoxShadow(
-                    color: cs.shadow.withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    color: cs.shadow.withValues(alpha: 0.18),
+                    blurRadius: 32,
+                    offset: const Offset(0, 16),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppRadius.cardBR,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _buildAlbumArt(music, musicProvider, cs, size),
+                    AlbumArtImage(music: music, size: size),
 
                     // 网络标识
                     if (music.source == MusicSource.network)
@@ -115,46 +113,6 @@ class _AlbumArt extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildAlbumArt(
-    Music music,
-    MusicProvider mp,
-    ColorScheme cs,
-    double size,
-  ) {
-    // 内存图片优先
-    if (music.coverBytes?.isNotEmpty == true) {
-      return Image.memory(music.coverBytes!, fit: BoxFit.cover);
-    }
-
-    // 网络图片
-    final coverUrl = mp.getCoverUrl(music.id);
-    if (coverUrl != null && coverUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: coverUrl,
-        fit: BoxFit.cover,
-        httpHeaders: coverUrl.contains('music.126.net')
-            ? {'Referer': 'https://music.163.com/'}
-            : null,
-        placeholder: (_, _) => _placeholder(cs, size),
-        errorWidget: (_, _, _) => _placeholder(cs, size),
-      );
-    }
-
-    // 兜底
-    return _placeholder(cs, size);
-  }
-
-  Widget _placeholder(ColorScheme cs, double size) {
-    return Container(
-      color: cs.surfaceContainerHighest,
-      child: Icon(
-        Icons.music_note_rounded,
-        size: size * 0.35,
-        color: cs.primary.withValues(alpha: 0.6),
-      ),
     );
   }
 }
@@ -214,11 +172,11 @@ class _ActionBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
+          IconButton.filledTonal(
             onPressed: () => Scaffold.of(context).openEndDrawer(),
-            icon: Icon(Icons.playlist_play_rounded, color: cs.onSurface),
+            icon: Icon(Icons.playlist_play_rounded, color: cs.onSecondaryContainer),
           ),
-          IconButton(
+          IconButton.filledTonal(
             onPressed: () {
               final wasLiked = isLiked;
               playlistProvider.toggleMusicFavorite(
@@ -236,15 +194,15 @@ class _ActionBar extends StatelessWidget {
                     ? Icons.favorite_rounded
                     : Icons.favorite_border_rounded,
                 key: ValueKey<bool>(isLiked),
-                color: isLiked ? Colors.redAccent : cs.onSurface,
+                color: isLiked ? Colors.redAccent : cs.onSecondaryContainer,
                 size: 28,
               ),
             ),
           ),
-          IconButton(
+          IconButton.filledTonal(
             onPressed: () =>
                 MusicActionMenu.showAddToPlaylistSheet(context, music),
-            icon: Icon(Icons.add_rounded, color: cs.onSurface),
+            icon: Icon(Icons.add_rounded, color: cs.onSecondaryContainer),
             tooltip: '添加到歌单',
           ),
         ],
@@ -370,12 +328,12 @@ class _BottomPlaybackControls extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
+            IconButton.filledTonal(
               onPressed: mp.playPrev,
               icon: Icon(
                 Icons.skip_previous_rounded,
-                size: 36,
-                color: cs.onSurface,
+                size: 32,
+                color: cs.onSecondaryContainer,
               ),
             ),
             const SizedBox(width: 20),
@@ -385,7 +343,7 @@ class _BottomPlaybackControls extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  IconButton(
+                  IconButton.filled(
                     onPressed: mp.togglePlay,
                     iconSize: 48,
                     icon: AnimatedSwitcher(
@@ -395,7 +353,7 @@ class _BottomPlaybackControls extends StatelessWidget {
                             ? Icons.pause_rounded
                             : Icons.play_arrow_rounded,
                         key: ValueKey(playing),
-                        color: cs.onSurface,
+                        color: cs.onPrimary,
                       ),
                     ),
                   ),
@@ -405,12 +363,12 @@ class _BottomPlaybackControls extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 20),
-            IconButton(
+            IconButton.filledTonal(
               onPressed: mp.playNext,
               icon: Icon(
                 Icons.skip_next_rounded,
-                size: 36,
-                color: cs.onSurface,
+                size: 32,
+                color: cs.onSecondaryContainer,
               ),
             ),
           ],

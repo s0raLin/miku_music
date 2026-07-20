@@ -24,60 +24,62 @@ class WideLayout extends StatefulWidget {
 class _WideLayoutState extends State<WideLayout> {
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          "正在播放",
-          style: tt.titleMedium,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          // 歌词来源切换图标按钮
-          IconButton(
-            onPressed: () => _showLyricSourceDialog(context),
-            tooltip: '歌词来源',
-            icon: const Icon(Icons.lyrics_rounded),
-          ),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (details) {
-              MusicActionMenu.showMoreOptions(context, details);
-            },
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.more_vert_rounded),
-            ),
-          ),
-          const Padding(padding: EdgeInsets.only(right: 8)),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1280),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(flex: 5, child: CoverContent(music: widget.music)),
-                  const SizedBox(width: 24),
-                  const Expanded(flex: 4, child: LyricsSection()),
+      extendBodyBehindAppBar: true,
+      endDrawer: PlaybackQueueDrawer(),
+      body: BlurCoverBackground(
+        music: widget.music,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // ── 沉浸式顶部条（无标题）──
+              ImmersiveTopBar(
+                onBack: () => context.pop(),
+                actions: [
+                  ImmersiveIconButton(
+                    onPressed: (_) => _showLyricSourceDialog(context),
+                    icon: Icons.lyrics_rounded,
+                    tooltip: '歌词来源',
+                    color: cs.primary,
+                  ),
+                  ImmersiveIconButton(
+                    onPressed: (det) =>
+                        MusicActionMenu.showMoreOptions(context, det),
+                    icon: Icons.more_vert_rounded,
+                    tooltip: '更多',
+                  ),
                 ],
               ),
-            ),
+
+              // ── 主内容区 ──
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1280),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: CoverContent(music: widget.music),
+                        ),
+                        const SizedBox(width: 24),
+                        const Expanded(
+                          flex: 4,
+                          child: LyricsSection(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
-      endDrawer: PlaybackQueueDrawer(),
     );
   }
 

@@ -48,40 +48,52 @@ class _NarrowLayoutState extends State<NarrowLayout> {
   @override
   Widget build(BuildContext context) {
     final isCover = _page == 0;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       endDrawer: PlaybackQueueDrawer(),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // ── PageView ──
-            Positioned.fill(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (i) => setState(() => _page = i),
-                children: [
-                  CoverTabContent(music: widget.music),
-                  const LyricsSection(),
+      body: BlurCoverBackground(
+        music: widget.music,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // ── PageView ──
+              Positioned.fill(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (i) => setState(() => _page = i),
+                  children: [
+                    CoverTabContent(music: widget.music),
+                    const LyricsSection(),
+                  ],
+                ),
+              ),
+
+              // ── 沉浸式顶部操作栏（无标题）──
+              ImmersiveTopBar(
+                onBack: () => context.pop(),
+                actions: [
+                  _PageDots(page: _page, onTap: _goToPage),
+                  const SizedBox(width: 8),
+                  if (isCover)
+                    ImmersiveIconButton(
+                      onPressed: (det) =>
+                          MusicActionMenu.showMoreOptions(context, det),
+                      icon: Icons.more_vert_rounded,
+                      tooltip: '更多',
+                    )
+                  else
+                    ImmersiveIconButton(
+                      onPressed: (_) => _showLyricSourceDialog(context),
+                      icon: Icons.lyrics_rounded,
+                      tooltip: '歌词来源',
+                      color: cs.primary,
+                    ),
                 ],
               ),
-            ),
-
-            // ── 顶部操作栏 ──
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _TopBar(
-                isCover: isCover,
-                page: _page,
-                onBack: () => context.pop(),
-                onPageDot: _goToPage,
-                onMore: (det) => MusicActionMenu.showMoreOptions(context, det),
-                onLyricSource: () => _showLyricSourceDialog(context),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -118,7 +130,7 @@ class _NarrowLayoutState extends State<NarrowLayout> {
                     const SizedBox(width: 10),
                     Text(
                       '歌词来源',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -208,62 +220,7 @@ class _NarrowLayoutState extends State<NarrowLayout> {
   }
 }
 
-// ── 顶部操作栏 ──
-class _TopBar extends StatelessWidget {
-  final bool isCover;
-  final int page;
-  final VoidCallback onBack;
-  final void Function(int) onPageDot;
-  final void Function(TapDownDetails) onMore;
-  final VoidCallback onLyricSource;
-
-  const _TopBar({
-    required this.isCover,
-    required this.page,
-    required this.onBack,
-    required this.onPageDot,
-    required this.onMore,
-    required this.onLyricSource,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      height: 52,
-      child: Row(
-        children: [
-          // 返回
-          IconButton(
-            icon: Icon(Icons.keyboard_arrow_down_rounded, color: cs.onSurface),
-            onPressed: onBack,
-          ),
-          const Spacer(),
-          // 页面指示点
-          _PageDots(page: page, onTap: onPageDot),
-          const Spacer(),
-          // 右侧按钮
-          if (isCover)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: onMore,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Icon(Icons.more_vert_rounded, color: cs.onSurface),
-              ),
-            )
-          else
-            IconButton(
-              onPressed: onLyricSource,
-              icon: Icon(Icons.lyrics_rounded, color: cs.primary),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
+// ── 页面指示点 ──
 class _PageDots extends StatelessWidget {
   final int page;
   final void Function(int) onTap;
@@ -280,7 +237,7 @@ class _PageDots extends StatelessWidget {
           onTap: () => onTap(i),
           behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
@@ -290,7 +247,7 @@ class _PageDots extends StatelessWidget {
                 borderRadius: BorderRadius.circular(3),
                 color: sel
                     ? cs.primary
-                    : cs.onSurfaceVariant.withValues(alpha: 0.28),
+                    : cs.onSurfaceVariant.withValues(alpha: 0.4),
               ),
             ),
           ),

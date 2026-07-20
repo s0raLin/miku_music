@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.0](https://github.com/s0raLin/miku_music/compare/v1.56.0...v1.57.0) (2026-07-20)
+
+
+### Features
+
+* **ui:** 增强移动端横屏适配能力 ([8590a80](https://github.com/s0raLin/miku_music/commit/8590a8018e8b86a91666615b40fd6cffd1214b04))
+
 ## [1.56.0](https://github.com/s0raLin/miku_music/compare/v1.55.0...v1.56.0) (2026-07-20)
 
 

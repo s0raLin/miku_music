@@ -1,17 +1,13 @@
-// ─── HomePage M3 极致简约改版 ─────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/api/Client/Music/index.dart';
-import 'package:myapp/components/Header/index.dart';
-import 'package:myapp/components/Shared/index.dart';
-import 'package:myapp/config/globals.dart';
-import 'package:myapp/model/Toplist/index.dart';
-import 'package:myapp/constants/Assets/index.dart';
+import 'package:myapp/components/Shared/app_empty_state.dart';
+import 'package:myapp/components/Shared/app_panel.dart';
+import 'package:myapp/components/Shared/app_section_header.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
-import 'package:myapp/views/Home/widgets/toplist_card.dart';
+import 'package:myapp/components/Header/index.dart';
+import 'package:myapp/components/Shared/observable_music_grid_card.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -21,61 +17,26 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-enum ImageInfo {
-  image0("1", "", MyAssets.background),
-  image1("2", "", MyAssets.background2),
-  image2("3", "", MyAssets.background3),
-  image3("4", "", MyAssets.background4),
-  image4("5", "", MyAssets.background5);
-
-  const ImageInfo(this.title, this.subtitle, this.url);
-  final String title;
-  final String subtitle;
-  final String url;
-}
-
 class _HomePageState extends State<HomePage> {
-  final CarouselController controller = CarouselController(initialItem: 1);
   bool _updateCheckStarted = false;
-  ToplistInfo? _toplistInfo;
 
   @override
   void initState() {
     super.initState();
-    // 首帧渲染完成后异步加载数据，不阻塞首页显示
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_updateCheckStarted) {
         _updateCheckStarted = true;
         _checkForUpdate();
       }
-      _fetchToplist();
     });
   }
 
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchToplist() async {
-    final info = await MusicApi.fetchToplist();
-    if (mounted) {
-      setState(() {
-        _toplistInfo = info;
-      });
-    }
-  }
-
-  /// 仅在 Android 平台检查更新，有新版则弹出更新弹窗（用户可选择跳过）
   Future<void> _checkForUpdate() async {
     if (!UpdateCheckService.isSupportedPlatform) return;
-
     try {
       final result = await UpdateCheckService.instance.checkForUpdate();
       if (!mounted) return;
-
-      if (result.hasUpdate && result.latestRelease != null && mounted) {
+      if (result.hasUpdate && result.latestRelease != null) {
         _showUpdateDialog(result.latestRelease!);
       }
     } catch (e) {
@@ -110,243 +71,252 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final playlistProvider = context.watch<PlaylistProvider>();
-    final library = context.watch<MusicProvider>().library;
+    final musicProvider = context.watch<MusicProvider>();
+    final library = musicProvider.library;
+
     final history = playlistProvider.getHistorySongs(
       library,
-      musicProvider: context.read<MusicProvider>(),
+      musicProvider: musicProvider,
     );
-    final textTheme = Theme.of(context).textTheme;
+
+    final favorites = playlistProvider.getPlaylistSongs(
+      PlaylistProvider.favoritesPlaylistId,
+      library,
+      musicProvider: musicProvider,
+    );
+
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: colorScheme.surface,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          Header(
-            pinned: true,
-            leading: IconButton(
-              onPressed: () {
-                rootScaffoldKey.currentState?.openDrawer();
-              },
-              icon: const Icon(Icons.menu),
-            ),
-            title: Text(
-              '发现',
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            centerTitle: false,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.primary.withOpacity(0.15),
+              colorScheme.surface,
+              colorScheme.surface,
+            ],
           ),
-
-          // ── 2. M3 轮播图区域 ────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final double carouselHeight = (constraints.maxWidth * 0.52)
-                      .clamp(160.0, 220.0);
-                  return SizedBox(
-                    height: carouselHeight,
-                    child: CarouselView.weighted(
-                      itemSnapping: true,
-                      controller: controller,
-                      flexWeights: const <int>[1, 7, 1],
-                      onTap: (index) => controller.animateToItem(
-                        index,
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOutCubic,
-                      ),
-                      children: ImageInfo.values
-                          .map((image) => HeroLayoutCard(imageInfo: image))
-                          .toList(),
-                    ),
-                  );
-                },
+        ),
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // 1. Header
+            Header(
+              pinned: true,
+              leading: IconButton(
+                onPressed: () =>
+                    (context.findAncestorStateOfType<ScaffoldState>())
+                        ?.openDrawer(),
+                icon: const Icon(Icons.menu),
               ),
-            ),
-          ),
-
-          // ── 3. 最近播放标题栏 ──────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '最近播放',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => context.push('/user/recent'),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                    ),
-                    label: const Icon(Icons.arrow_forward, size: 16),
-                    icon: Text(
-                      '查看更多',
-                      style: textTheme.labelLarge?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── 4. 最近播放横向列表 ────────────────────────────────────────────
-          history.isEmpty
-              ? SliverToBoxAdapter(
-                  key: const ValueKey('history-empty'),
-                  child: AppPanel(
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: colorScheme.secondaryContainer,
-                          foregroundColor: colorScheme.onSecondaryContainer,
-                          child: const Icon(Icons.history_rounded),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "暂无历史播放\n快去听歌吧!",
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : SliverToBoxAdapter(
-                  key: const ValueKey('history-list'),
-                  child: SizedBox(
-                    height: 180,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: history.take(6).length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 12),
-                      itemBuilder: (context, index) {
-                        final item = history[index];
-                        return ObservableMusicGridCard(
-                          index: index,
-                          music: item,
-                          onTap: () {
-                            final mp = context.read<MusicProvider>();
-                            mp.replaceQueue(history, startIndex: index);
-                            context.push('/music-detail');
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
-
-          // ── 5. 排行榜模块 ──────────────────────────────────────────────────
-          if (_toplistInfo != null) ...[
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              // ✨ 修改 1：给标题添加左侧 Padding，让“发现”往右缩进一点
+              title: Padding(
+                padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '热门榜单',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  '发现',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
                   ),
                 ),
               ),
+              centerTitle: false,
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(color: Colors.transparent),
+              ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ToplistCard(
-                  info: _toplistInfo!,
-                  onTap: () => context.push('/toplist'),
-                ),
+
+            // 2. 页面主体内容
+            SliverPadding(
+              padding: const EdgeInsets.only(top: 20),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // 2.1 欢迎头部
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          child: Icon(
+                            Icons.headphones_rounded,
+                            color: colorScheme.onTertiaryContainer,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '音乐新征程，从这里开始',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '00: 欢迎您',
+                              style: textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // 2.2 横向播放历史列表
+                  // ✨ 修改 2：给 AppSectionHeader 加上左侧 Padding，确保它与下面的卡片一致
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0),
+                    child: AppSectionHeader(
+                      title: '播放历史',
+                      action: history.isNotEmpty
+                          ? TextButton.icon(
+                              onPressed: () {
+                                context.push('/user/recent');
+                              },
+                              icon: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('查看更多'),
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  history.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          child: AppPanel(
+                            child: AppEmptyState(
+                              icon: Icons.history_rounded,
+                              title: '暂无播放历史',
+                              subtitle: '快去听歌吧，这里会显示你听过的歌曲',
+                              compact: true,
+                            ),
+                          ),
+                        )
+                      : SizedBox(
+                          height: 180,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: history.take(6).length,
+                            itemBuilder: (context, index) {
+                              final song = history[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: SizedBox(
+                                  width: 170,
+                                  child: ObservableMusicGridCard(
+                                    index: index,
+                                    music: song,
+                                    onTap: () async {
+                                      await musicProvider.replaceQueue(
+                                        history,
+                                        startIndex: index,
+                                      );
+                                      if (context.mounted &&
+                                          musicProvider.currentMusic != null) {
+                                        context.push('/music-detail');
+                                      }
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                  const SizedBox(height: 32),
+
+                  // 2.3 横向收藏列表
+                  // ✨ 修改 3：同样给 AppSectionHeader 加上左侧 Padding
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0),
+                    child: AppSectionHeader(
+                      title: '收藏的音乐',
+                      action: favorites.isNotEmpty
+                          ? TextButton.icon(
+                              onPressed: () {
+                                context.push('/user/playlist/favorites');
+                              },
+                              icon: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('查看更多'),
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  favorites.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                          child: AppPanel(
+                            child: AppEmptyState(
+                              icon: Icons.favorite_border_rounded,
+                              title: '还没有收藏歌曲',
+                              subtitle: '播放歌曲时点击爱心即可收藏',
+                              compact: true,
+                            ),
+                          ),
+                        )
+                      : SizedBox(
+                          height: 180,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: favorites.take(6).length,
+                            itemBuilder: (context, index) {
+                              final song = favorites[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: SizedBox(
+                                  width: 170,
+                                  child: ObservableMusicGridCard(
+                                    index: index,
+                                    music: song,
+                                    onTap: () async {
+                                      await musicProvider.replaceQueue(
+                                        favorites,
+                                        startIndex: index,
+                                      );
+                                      if (context.mounted &&
+                                          musicProvider.currentMusic != null) {
+                                        context.push('/music-detail');
+                                      }
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                  const SizedBox(height: 60),
+                ]),
               ),
             ),
           ],
-
-          // 底部预留安全距离
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
-        ],
+        ),
       ),
-    );
-  }
-}
-
-class HeroLayoutCard extends StatelessWidget {
-  const HeroLayoutCard({super.key, required this.imageInfo});
-
-  final ImageInfo imageInfo;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image(
-            image: AssetImage(imageInfo.url),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-        ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black38],
-              stops: [0.6, 1.0],
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                imageInfo.title,
-                style: textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (imageInfo.subtitle.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  imageInfo.subtitle,
-                  style: textTheme.bodySmall?.copyWith(color: Colors.white70),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

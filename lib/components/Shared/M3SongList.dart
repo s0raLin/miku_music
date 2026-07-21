@@ -114,7 +114,12 @@ class M3SongList extends StatelessWidget {
           : const NeverScrollableScrollPhysics(),
       padding: padding,
       itemCount: songs.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
+      separatorBuilder: (_, __) => const Divider(
+        height: 1,
+        // ✨ 修改点 1：左右留出间距，不与封面图重叠
+        indent: 68.0,
+        endIndent: 16.0,
+      ),
       itemBuilder: (context, index) {
         final isFirst = index == 0;
         final isLast = index == songs.length - 1;
@@ -165,7 +170,8 @@ class SliverM3SongList extends StatelessWidget {
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index.isOdd) {
-            return const Divider(height: 1);
+            // ✨ 修改点 2：同样在这里给分隔线加上间距
+            return const Divider(height: 1, indent: 68.0, endIndent: 16.0);
           }
           final songIndex = index ~/ 2;
           final isFirst = songIndex == 0;

@@ -367,7 +367,7 @@ class _MusicSection extends StatelessWidget {
                 ),
               )
             : SizedBox(
-                height: 200,
+                height: 140,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -377,7 +377,7 @@ class _MusicSection extends StatelessWidget {
                     return Padding(
                       padding: const EdgeInsets.only(right: 14),
                       child: SizedBox(
-                        width: 180,
+                        width: 140,
                         child: ObservableMusicGridCard(
                           index: index,
                           music: song,

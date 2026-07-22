@@ -74,12 +74,14 @@ class _ObservableMusicGridCardState extends State<ObservableMusicGridCard> {
       subtitle: music.artist,
       coverBytes: music.coverBytes,
       coverUrl: coverUrl,
-      coverHeaders: isNetwork && coverUrl != null && coverUrl.contains('music.126.net')
+      coverHeaders:
+          isNetwork && coverUrl != null && coverUrl.contains('music.126.net')
           ? {'Referer': 'https://music.163.com/'}
           : null,
       fallbackIcon: Icons.music_note_rounded,
       onTap: widget.onTap,
       isLoading: hasNoCover && musicProvider.isCoverLoading(music.id),
+      borderRadius: BorderRadius.circular(32),
       badge: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(

@@ -31,7 +31,6 @@ class _CapsuleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
 
     return Material(
       color: Colors.transparent,
@@ -66,11 +65,11 @@ class _CapsuleBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(32),
                   onTap: () => context.push('/music-detail'),
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: const EdgeInsets.fromLTRB(
                       6,
                       6,
                       8,
-                      8 + bottomInset,
+                      8,
                     ), // 只保留必要的底部
                     child: Row(
                       children: [

@@ -16,6 +16,7 @@ class MediaOverlayCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? badge;
   final bool isLoading;
+  final BorderRadius? borderRadius;
 
   const MediaOverlayCard({
     super.key,
@@ -29,6 +30,7 @@ class MediaOverlayCard extends StatelessWidget {
     this.onTap,
     this.badge,
     this.isLoading = false,
+    this.borderRadius,
   });
 
   @override
@@ -47,7 +49,7 @@ class MediaOverlayCard extends StatelessWidget {
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.card),
+            borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.card),
           ),
           child: Stack(
             fit: StackFit.expand,

@@ -81,7 +81,13 @@ class _MainPageState extends State<MainPage> with WindowListener {
             child: Column(
               children: [
                 Expanded(child: widget.navigationShell),
-                if (!isMiniMode) NowPlayingBar(),
+                if (!isMiniMode)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom,
+                    ),
+                    child: const NowPlayingBar(),
+                  ),
               ],
             ),
           ),

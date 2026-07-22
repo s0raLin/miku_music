@@ -54,29 +54,28 @@ class PlaylistProvider extends ChangeNotifier {
     validIds.addAll(localSongIds);
     if (musicProvider != null) {
       // Add ALL song IDs currently in the queue (both local and network).
-      // This is critical for songs from "下载管理" (Download Management) page
-      // whose IDs are file paths and are NOT in MusicProvider.library.
-      // Without this, those songs get filtered out from favorites/history/playlists.
       for (final song in musicProvider.queue) {
         validIds.add(song.id);
       }
       // Also add all known network song IDs from persisted metadata
-      // (critical for cold-start: queue is empty but _networkMeta is loaded)
       validIds.addAll(musicProvider.networkSongIds);
     }
 
     _activeSongIds = validIds;
     // 过滤歌单内的无效 ID
+    // Preserve file-path IDs (downloaded songs) even if not in activeSongIds,
+    // because downloaded songs exist on disk but never get added to library.
     _filteredPlaylists = _rawPlaylists.map((playlist) {
       final activeIds = playlist.songIds
-          .where((id) => validIds.contains(id))
+          .where((id) => validIds.contains(id) || _isFilePath(id))
           .toList();
       return playlist.copyWith(songIds: activeIds);
     }).toList();
 
     // 过滤播放历史内的无效 ID
+    // Preserve file-path IDs (downloaded songs) even if not in activeSongIds.
     _filteredHistoryIds = _rawHistoryIds
-        .where((id) => validIds.contains(id))
+        .where((id) => validIds.contains(id) || _isFilePath(id))
         .toList();
 
     notifyListeners();
@@ -236,6 +235,11 @@ class PlaylistProvider extends ChangeNotifier {
   Future<void> toggleMusicFavorite(Music music, {MusicProvider? musicProvider}) async {
     await _dbService.toggleMusicFavorite(music.id);
     await refreshFromDb(musicProvider: musicProvider);
+  }
+
+  /// Returns true if [id] looks like a local file path (downloaded song).
+  static bool _isFilePath(String id) {
+    return id.startsWith('/') || id.contains(':\\');
   }
 
   // ─────────────────────────────────────────────

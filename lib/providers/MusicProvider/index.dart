@@ -144,6 +144,25 @@ class MusicProvider extends ChangeNotifier {
     _safeNotifyListeners();
   }
 
+  /// Add a single downloaded/local song to the library (dedup by id).
+  void addToLibrary(Music music) {
+    final idx = _library.indexWhere((m) => m.id == music.id);
+    if (idx != -1) {
+      // Preserve existing cover/lyrics if already loaded
+      _library[idx] = _library[idx].copyWith(
+        title: music.title,
+        artist: music.artist,
+        album: music.album,
+        duration: music.duration,
+        coverBytes: music.coverBytes ?? _library[idx].coverBytes,
+        lyrics: music.lyrics ?? _library[idx].lyrics,
+      );
+    } else {
+      _library.add(music);
+    }
+    _safeNotifyListeners();
+  }
+
   void setMiniMode(bool value) {
     _isMiniMode = value;
     _safeNotifyListeners();

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -740,6 +741,34 @@ class _SongSearchTabState extends State<_SongSearchTab>
       } catch (_) {}
       if (!mounted) return;
       if (audioResult != null) {
+        // Add downloaded song to music library for playlist/favorite support
+        try {
+          final mp = context.read<MusicProvider>();
+          Uint8List? coverBytes;
+          if (coverPath != null) {
+            final coverFile = File(coverPath);
+            if (await coverFile.exists()) {
+              coverBytes = await coverFile.readAsBytes();
+            }
+          }
+          String? lyrics;
+          if (lrcPath != null) {
+            final lrcFile = File(lrcPath);
+            if (await lrcFile.exists()) {
+              lyrics = await lrcFile.readAsString();
+            }
+          }
+          mp.addToLibrary(Music(
+            id: audioPath,
+            title: song.title,
+            artist: song.author,
+            duration: Duration.zero,
+            coverBytes: coverBytes,
+            lyrics: lyrics,
+            album: null,
+            source: MusicSource.local,
+          ));
+        } catch (_) {}
         final buf = StringBuffer('已保存到: $audioPath');
         if (lrcPath != null) buf.write('\n歌词: $lrcPath');
         if (coverPath != null) buf.write('\n封面: $coverPath');

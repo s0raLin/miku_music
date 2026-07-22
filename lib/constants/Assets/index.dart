@@ -11,6 +11,7 @@ class MyAssets {
   static const String prev = "assets/prev.png";
   static const String dashboard = "assets/dashboard.png";
   static const String queue = "assets/queue.png";
+  static const String search = "assets/search.png";
   static const String app_icon = "assets/app_icon/app_icon.png";
   static const String app_icon1 = "assets/app_icon/app_icon1.png";
   static const String app_icon2 = "assets/app_icon/app_icon2.png";

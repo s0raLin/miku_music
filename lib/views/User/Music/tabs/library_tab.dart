@@ -5,7 +5,7 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
-import 'package:myapp/views/Music/widgets/album_card.dart';
+import 'package:myapp/views/User/Music/widgets/album_card.dart';
 import 'package:provider/provider.dart';
 
 class LibraryTab extends StatelessWidget {

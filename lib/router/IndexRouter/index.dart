@@ -12,7 +12,7 @@ import 'package:myapp/views/User/Files/index.dart';
 import 'package:myapp/views/Home/index.dart';
 import 'package:myapp/views/Login/index.dart';
 import 'package:myapp/views/User/Files/AlumDetail/index.dart';
-import 'package:myapp/views/Music/index.dart';
+import 'package:myapp/views/User/Music/index.dart';
 import 'package:myapp/views/MusicDetail/index.dart';
 import 'package:myapp/views/User/Network/index.dart';
 import 'package:myapp/views/Network/index.dart';
@@ -27,7 +27,6 @@ import 'package:myapp/views/User/index.dart';
 import 'package:myapp/views/index.dart';
 import 'package:myapp/views/About/index.dart';
 import 'package:myapp/views/CoverFlow/index.dart';
-import 'package:myapp/views/ToplistDetail/index.dart';
 import 'package:myapp/views/UpdateDownload/index.dart';
 import 'package:myapp/views/User/DownloadManagement/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
@@ -65,18 +64,10 @@ final List<AppNavItem> navItems = [
     label: "首页",
   ),
   AppNavItem(
-    name: "music",
-    path: "/music",
-    page: MusicPage(),
-    i: ImageIcon(AssetImage(MyAssets.music)),
-    icon: Icons.music_note,
-    label: "本地音乐",
-  ),
-  AppNavItem(
     name: "network",
     path: "/network-songs",
     page: NetworkSongPage(),
-    i: ImageIcon(AssetImage(MyAssets.dashboard)),
+    i: ImageIcon(AssetImage(MyAssets.search)),
     icon: Icons.cloud_queue,
     label: "网络歌曲",
   ),
@@ -88,6 +79,13 @@ final List<AppNavItem> navItems = [
     icon: Icons.person,
     label: "我的",
     routes: [
+      GoRoute(
+        name: "music",
+        path: "/music",
+        builder: (context, state) {
+          return const MusicPage();
+        },
+      ),
       GoRoute(
         name: "files",
         path: "/files",
@@ -187,10 +185,7 @@ final _routes = [
     },
   ),
   GoRoute(path: "/search", builder: (context, state) => const SearchPage()),
-  GoRoute(
-    path: "/toplist",
-    builder: (context, state) => const ToplistDetailPage(),
-  ),
+
   GoRoute(
     path: "/playlist-edit/:id",
     builder: (context, state) {
@@ -205,11 +200,8 @@ final _routes = [
         child: MusicDetailPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(0, 1),
-                  end: Offset.zero,
-                ).animate(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
                   CurvedAnimation(parent: animation, curve: Curves.easeOutExpo),
                 ),
             child: child,

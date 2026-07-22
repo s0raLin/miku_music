@@ -147,7 +147,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                       const SizedBox(width: 12),
                       TextButton.icon(
-                        onPressed: () => nav.jumpByPath("/music"),
+                        onPressed: () => context.push("/user/music"),
                         icon: const Icon(Icons.library_music_rounded, size: 18),
                         label: const Text("音乐库"),
                       ),

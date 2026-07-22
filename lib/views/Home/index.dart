@@ -1,8 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/app_empty_state.dart';
 import 'package:myapp/components/Shared/app_panel.dart';
-import 'package:myapp/components/Shared/app_section_header.dart';
+import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
@@ -68,6 +69,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _shufflePlayAll(MusicProvider musicProvider) async {
+    final lib = List<Music>.from(musicProvider.library);
+    if (lib.isEmpty) return;
+    lib.shuffle(Random());
+    await musicProvider.replaceQueue(lib, startIndex: 0);
+    if (mounted && musicProvider.currentMusic != null) {
+      context.push('/music-detail');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final playlistProvider = context.watch<PlaylistProvider>();
@@ -89,234 +100,304 @@ class _HomePageState extends State<HomePage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: colorScheme.surface,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              colorScheme.primary.withOpacity(0.15),
-              colorScheme.surface,
-              colorScheme.surface,
-            ],
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // ── Header ──
+          Header(
+            pinned: true,
+            leading: IconButton(
+              onPressed: () =>
+                  (context.findAncestorStateOfType<ScaffoldState>())
+                      ?.openDrawer(),
+              icon: const Icon(Icons.menu),
+            ),
+            title: Text(
+              '发现',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            centerTitle: false,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(color: Colors.transparent),
+            ),
+          ),
+
+          // ── Body ──
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // ▲ Quick Actions
+                _QuickActions(
+                  colorScheme: colorScheme,
+                  textTheme: textTheme,
+                  hasLibrary: library.isNotEmpty,
+                  onShufflePlay: () => _shufflePlayAll(musicProvider),
+                ),
+
+                const SizedBox(height: 32),
+
+                // ▲ 播放历史
+                _MusicSection(
+                  title: '播放历史',
+                  icon: Icons.history_rounded,
+                  songs: history,
+                  musicProvider: musicProvider,
+                  colorScheme: colorScheme,
+                  textTheme: textTheme,
+                  viewAllRoute: '/user/recent',
+                  emptyTitle: '暂无播放历史',
+                  emptySubtitle: '快去听歌吧，这里会显示你听过的歌曲',
+                ),
+
+                const SizedBox(height: 28),
+
+                // ▲ 收藏的音乐
+                _MusicSection(
+                  title: '收藏的音乐',
+                  icon: Icons.favorite_rounded,
+                  songs: favorites,
+                  musicProvider: musicProvider,
+                  colorScheme: colorScheme,
+                  textTheme: textTheme,
+                  viewAllRoute: '/user/playlist/favorites',
+                  emptyTitle: '还没有收藏歌曲',
+                  emptySubtitle: '播放歌曲时点击爱心即可收藏',
+                ),
+
+                const SizedBox(height: 16),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Quick Actions — MD3 快捷操作入口
+// ═══════════════════════════════════════════════════════════
+class _QuickActions extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final bool hasLibrary;
+  final VoidCallback onShufflePlay;
+
+  const _QuickActions({
+    required this.colorScheme,
+    required this.textTheme,
+    required this.hasLibrary,
+    required this.onShufflePlay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _ActionChip(
+          icon: Icons.shuffle_rounded,
+          label: '随机播放',
+          colorScheme: colorScheme,
+          textTheme: textTheme,
+          onTap: hasLibrary ? onShufflePlay : null,
+        ),
+        const SizedBox(width: 12),
+        _ActionChip(
+          icon: Icons.search_rounded,
+          label: '搜索歌曲',
+          colorScheme: colorScheme,
+          textTheme: textTheme,
+          onTap: () => context.push('/search'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final VoidCallback? onTap;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.colorScheme,
+    required this.textTheme,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
+    return Expanded(
+      child: Material(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: enabled
+                      ? colorScheme.primary
+                      : colorScheme.onSurface.withValues(alpha: 0.3),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: textTheme.labelLarge?.copyWith(
+                    color: enabled
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // 1. Header
-            Header(
-              pinned: true,
-              leading: IconButton(
-                onPressed: () =>
-                    (context.findAncestorStateOfType<ScaffoldState>())
-                        ?.openDrawer(),
-                icon: const Icon(Icons.menu),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Music Section — 横向滚动歌曲卡片区域
+// ═══════════════════════════════════════════════════════════
+class _MusicSection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final List<Music> songs;
+  final MusicProvider musicProvider;
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final String viewAllRoute;
+  final String emptyTitle;
+  final String emptySubtitle;
+
+  const _MusicSection({
+    required this.title,
+    required this.icon,
+    required this.songs,
+    required this.musicProvider,
+    required this.colorScheme,
+    required this.textTheme,
+    required this.viewAllRoute,
+    required this.emptyTitle,
+    required this.emptySubtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Padding(
+          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: colorScheme.onSecondaryContainer,
+                ),
               ),
-              // ✨ 修改 1：给标题添加左侧 Padding，让“发现”往右缩进一点
-              title: Padding(
-                padding: const EdgeInsets.only(left: 4.0),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
-                  '发现',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
+                  title,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              centerTitle: false,
-              flexibleSpace: Container(
-                decoration: const BoxDecoration(color: Colors.transparent),
-              ),
-            ),
-
-            // 2. 页面主体内容
-            SliverPadding(
-              padding: const EdgeInsets.only(top: 20),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // 2.1 欢迎头部
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: colorScheme.tertiaryContainer,
-                          child: Icon(
-                            Icons.headphones_rounded,
-                            color: colorScheme.onTertiaryContainer,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '音乐新征程，从这里开始',
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '00: 欢迎您',
-                              style: textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+              if (songs.isNotEmpty)
+                TextButton(
+                  onPressed: () => context.push(viewAllRoute),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    '查看全部',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 32),
-
-                  // 2.2 横向播放历史列表
-                  // ✨ 修改 2：给 AppSectionHeader 加上左侧 Padding，确保它与下面的卡片一致
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16.0),
-                    child: AppSectionHeader(
-                      title: '播放历史',
-                      action: history.isNotEmpty
-                          ? TextButton.icon(
-                              onPressed: () {
-                                context.push('/user/recent');
-                              },
-                              icon: const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 16,
-                              ),
-                              label: const Text('查看更多'),
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  history.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          child: AppPanel(
-                            child: AppEmptyState(
-                              icon: Icons.history_rounded,
-                              title: '暂无播放历史',
-                              subtitle: '快去听歌吧，这里会显示你听过的歌曲',
-                              compact: true,
-                            ),
-                          ),
-                        )
-                      : SizedBox(
-                          height: 180,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: history.take(6).length,
-                            itemBuilder: (context, index) {
-                              final song = history[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: SizedBox(
-                                  width: 170,
-                                  child: ObservableMusicGridCard(
-                                    index: index,
-                                    music: song,
-                                    onTap: () async {
-                                      await musicProvider.replaceQueue(
-                                        history,
-                                        startIndex: index,
-                                      );
-                                      if (context.mounted &&
-                                          musicProvider.currentMusic != null) {
-                                        context.push('/music-detail');
-                                      }
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                  const SizedBox(height: 32),
-
-                  // 2.3 横向收藏列表
-                  // ✨ 修改 3：同样给 AppSectionHeader 加上左侧 Padding
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16.0),
-                    child: AppSectionHeader(
-                      title: '收藏的音乐',
-                      action: favorites.isNotEmpty
-                          ? TextButton.icon(
-                              onPressed: () {
-                                context.push('/user/playlist/favorites');
-                              },
-                              icon: const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 16,
-                              ),
-                              label: const Text('查看更多'),
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  favorites.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-                          child: AppPanel(
-                            child: AppEmptyState(
-                              icon: Icons.favorite_border_rounded,
-                              title: '还没有收藏歌曲',
-                              subtitle: '播放歌曲时点击爱心即可收藏',
-                              compact: true,
-                            ),
-                          ),
-                        )
-                      : SizedBox(
-                          height: 180,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: favorites.take(6).length,
-                            itemBuilder: (context, index) {
-                              final song = favorites[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: SizedBox(
-                                  width: 170,
-                                  child: ObservableMusicGridCard(
-                                    index: index,
-                                    music: song,
-                                    onTap: () async {
-                                      await musicProvider.replaceQueue(
-                                        favorites,
-                                        startIndex: index,
-                                      );
-                                      if (context.mounted &&
-                                          musicProvider.currentMusic != null) {
-                                        context.push('/music-detail');
-                                      }
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                  const SizedBox(height: 60),
-                ]),
-              ),
-            ),
-          ],
+                ),
+            ],
+          ),
         ),
-      ),
+
+        // Content
+        songs.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: AppPanel(
+                  child: AppEmptyState(
+                    icon: icon,
+                    title: emptyTitle,
+                    subtitle: emptySubtitle,
+                    compact: true,
+                  ),
+                ),
+              )
+            : SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  itemCount: songs.take(6).length,
+                  itemBuilder: (context, index) {
+                    final song = songs[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 14),
+                      child: SizedBox(
+                        width: 180,
+                        child: ObservableMusicGridCard(
+                          index: index,
+                          music: song,
+                          onTap: () async {
+                            await musicProvider.replaceQueue(
+                              songs,
+                              startIndex: index,
+                            );
+                            if (context.mounted &&
+                                musicProvider.currentMusic != null) {
+                              context.push('/music-detail');
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+      ],
     );
   }
 }

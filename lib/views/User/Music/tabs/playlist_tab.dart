@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
-import 'package:myapp/views/Music/widgets/playlist_card.dart';
+import 'package:myapp/views/User/Music/widgets/playlist_card.dart';
 import 'package:provider/provider.dart';
 
 class PlaylistTab extends StatelessWidget {

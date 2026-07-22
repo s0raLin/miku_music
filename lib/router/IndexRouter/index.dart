@@ -69,7 +69,7 @@ final List<AppNavItem> navItems = [
     page: NetworkSongPage(),
     i: ImageIcon(AssetImage(MyAssets.search)),
     icon: Icons.cloud_queue,
-    label: "网络歌曲",
+    label: "网络",
   ),
   AppNavItem(
     name: "user",

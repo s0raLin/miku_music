@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.57.1](https://github.com/s0raLin/miku_music/compare/v1.57.0...v1.57.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* **music:** 调整音乐页面 TabBar 对齐方式 ([ad5fd9c](https://github.com/s0raLin/miku_music/commit/ad5fd9cbaefd3b497ac257c4c32f3ab63c48f1de))
+
 ## [1.57.0](https://github.com/s0raLin/miku_music/compare/v1.56.0...v1.57.0) (2026-07-20)
 
 

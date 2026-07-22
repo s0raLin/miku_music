@@ -24,6 +24,7 @@ class _MusicPageState extends State<MusicPage> {
                 pinned: true,
                 bottom: const TabBar(
                   isScrollable: true,
+                  tabAlignment: TabAlignment.start,
                   tabs: [
                     Tab(text: "乐库"),
                     Tab(text: "歌单"),

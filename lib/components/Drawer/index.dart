@@ -1,192 +1,134 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/providers/ThemeProvider/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
 
-sealed class DrawerItem {
-  final String group;
-  final String label;
-  final IconData icon;
-  const DrawerItem({
-    required this.group,
-    required this.label,
-    required this.icon,
-  });
-}
-
-class NavItem extends DrawerItem {
-  final String path;
-  final IconData selectedIcon;
-  final bool isDestructive;
-  const NavItem({
-    required super.group,
-    required super.label,
-    required super.icon,
-    required this.path,
-    required this.selectedIcon,
-    this.isDestructive = false,
-  });
-}
-
-class SwitchItem extends DrawerItem {
-  const SwitchItem({
-    required super.group,
-    required super.label,
-    required super.icon,
-  });
-}
-
-// ==================== MainDrawer ====================
-
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
 
-  List<DrawerItem> _buildMenuConfig(bool isLoggedIn) => [
-    // 音乐
-    NavItem(
-      group: '音乐',
-      path: '/user/playlist/favorites',
-      label: '我的收藏',
-      icon: Icons.favorite_border_rounded,
-      selectedIcon: Icons.favorite_rounded,
-    ),
-    NavItem(
-      group: '音乐',
-      path: '/user/recent',
-      label: '最近播放',
-      icon: Icons.history_rounded,
-      selectedIcon: Icons.history_rounded,
-    ),
-    NavItem(
-      group: '音乐',
-      path: '/search',
-      label: '查找歌曲',
-      icon: Icons.search_rounded,
-      selectedIcon: Icons.search_rounded,
-    ),
-
-    // 偏好
-    SwitchItem(group: '偏好', label: '夜间模式', icon: Icons.dark_mode_outlined),
-
-    // 其他
-    NavItem(
-      group: '其他',
-      path: '/settings',
-      label: '设置',
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings_rounded,
-    ),
-    NavItem(
-      group: '其他',
-      path: '/about',
-      label: '关于',
-      icon: Icons.info_outline_rounded,
-      selectedIcon: Icons.info_rounded,
-    ),
-    if (isLoggedIn)
-      NavItem(
-        group: '其他',
-        path: 'logout',
-        label: '退出登录',
-        icon: Icons.logout_rounded,
-        selectedIcon: Icons.logout_rounded,
-        isDestructive: true,
-      ),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final userProvider = context.watch<UserProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    final isLoggedIn = userProvider.user != null;
-
-    final menuConfig = _buildMenuConfig(isLoggedIn);
-    final navItems = menuConfig.whereType<NavItem>().toList();
-
+    final isLoggedIn = userProvider.isLoggedIn;
     final currentLocation = GoRouterState.of(context).uri.path;
-    final selectedIndex = navItems.indexWhere((e) => e.path == currentLocation);
 
-    return NavigationDrawer(
-      selectedIndex: selectedIndex >= 0 ? selectedIndex : 0,
-      onDestinationSelected: (index) {
-        final item = navItems[index];
-        Navigator.of(context).pop();
-        if (item.path == 'logout') {
-          _confirmLogout(context);
-        } else {
-          context.push(item.path);
-        }
-      },
-      children: [
-        // Header
-        _DrawerHeader(
-          isLoggedIn: isLoggedIn,
-          username: userProvider.user?.username,
-          email: userProvider.user?.email,
-          avatarURL: userProvider.user?.avatarURL,
-        ),
-
-        // 分组菜单
-        ..._buildGroupedDestinations(
-          context,
-          menuConfig,
-          navItems,
-          themeProvider,
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildGroupedDestinations(
-    BuildContext context,
-    List<DrawerItem> items,
-    List<NavItem> navItems,
-    ThemeProvider themeProvider,
-  ) {
-    final grouped = <String, List<DrawerItem>>{};
-    for (final item in items) {
-      grouped.putIfAbsent(item.group, () => []).add(item);
-    }
-
-    return grouped.entries.expand((entry) {
-      final isLastGroup = entry.key == grouped.keys.last;
-
-      return [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(28, 16, 28, 8),
-          child: Text(
-            entry.key,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        ...entry.value.map((item) {
-          if (item is SwitchItem) {
-            return _SwitchTile(
-              item: item,
-              value: themeProvider.themeMode == ThemeMode.dark,
-              onChanged: (_) => themeProvider.setThemeMode(
-                themeProvider.themeMode == ThemeMode.dark
-                    ? ThemeMode.light
-                    : ThemeMode.dark,
+    return Drawer(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(left: Radius.circular(24)),
+      ),
+      backgroundColor: cs.surface,
+      child: SafeArea(
+        child: Column(
+          children: [
+            _DrawerHeader(isLoggedIn: isLoggedIn, userProvider: userProvider),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  _Section(
+                    title: '音乐',
+                    children: [
+                      _DrawerTile(
+                        path: '/user/playlist/favorites',
+                        label: '我的收藏',
+                        icon: Icons.favorite_border_rounded,
+                        selectedIcon: Icons.favorite_rounded,
+                        isSelected: currentLocation == '/user/playlist/favorites',
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.push('/user/playlist/favorites');
+                        },
+                      ),
+                      _DrawerTile(
+                        path: '/user/recent',
+                        label: '最近播放',
+                        icon: Icons.history_rounded,
+                        selectedIcon: Icons.history_rounded,
+                        isSelected: currentLocation == '/user/recent',
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.push('/user/recent');
+                        },
+                      ),
+                      _DrawerTile(
+                        path: '/search',
+                        label: '查找歌曲',
+                        icon: Icons.search_rounded,
+                        selectedIcon: Icons.search_rounded,
+                        isSelected: currentLocation == '/search',
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.push('/search');
+                        },
+                      ),
+                    ],
+                  ),
+                  _Section(
+                    title: '偏好',
+                    children: [
+                      SwitchListTile(
+                        title: const Text('夜间模式'),
+                        secondary: Icon(Icons.dark_mode_outlined),
+                        value: themeProvider.themeMode == ThemeMode.dark,
+                        onChanged: (_) => themeProvider.setThemeMode(
+                          themeProvider.themeMode == ThemeMode.dark
+                              ? ThemeMode.light
+                              : ThemeMode.dark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _Section(
+                    title: '其他',
+                    children: [
+                      _DrawerTile(
+                        path: '/settings',
+                        label: '设置',
+                        icon: Icons.settings_outlined,
+                        selectedIcon: Icons.settings_rounded,
+                        isSelected: currentLocation == '/settings',
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.push('/settings');
+                        },
+                      ),
+                      _DrawerTile(
+                        path: '/about',
+                        label: '关于',
+                        icon: Icons.info_outline_rounded,
+                        selectedIcon: Icons.info_rounded,
+                        isSelected: currentLocation == '/about',
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.push('/about');
+                        },
+                      ),
+                      if (isLoggedIn)
+                        _DrawerTile(
+                          path: 'logout',
+                          label: '退出登录',
+                          icon: Icons.logout_rounded,
+                          selectedIcon: Icons.logout_rounded,
+                          isSelected: false,
+                          isDestructive: true,
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _confirmLogout(context);
+                          },
+                        ),
+                    ],
+                  ),
+                ],
               ),
-            );
-          }
-
-          final nav = item as NavItem;
-          return NavigationDrawerDestination(
-            icon: Icon(nav.icon),
-            selectedIcon: Icon(nav.selectedIcon),
-            label: Text(nav.label),
-          );
-        }),
-        if (!isLastGroup) const Divider(indent: 28, endIndent: 28),
-      ];
-    }).toList();
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _confirmLogout(BuildContext context) {
@@ -213,20 +155,14 @@ class MainDrawer extends StatelessWidget {
   }
 }
 
-// ====================== Header ======================
-
 class _DrawerHeader extends StatelessWidget {
+  final bool isLoggedIn;
+  final UserProvider userProvider;
+
   const _DrawerHeader({
     required this.isLoggedIn,
-    this.username,
-    this.email,
-    this.avatarURL,
+    required this.userProvider,
   });
-
-  final bool isLoggedIn;
-  final String? username;
-  final String? email;
-  final String? avatarURL;
 
   @override
   Widget build(BuildContext context) {
@@ -235,12 +171,11 @@ class _DrawerHeader extends StatelessWidget {
 
     return InkWell(
       onTap: !isLoggedIn ? () => context.push('/login') : null,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
         child: Row(
           children: [
-            // 左侧头像
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -250,37 +185,40 @@ class _DrawerHeader extends StatelessWidget {
                 ),
               ),
               child: CircleAvatar(
-                radius: 30,
+                radius: 28,
                 backgroundColor: cs.primaryContainer,
                 foregroundColor: cs.onPrimaryContainer,
-                backgroundImage: (avatarURL != null && avatarURL!.isNotEmpty)
-                    ? NetworkImage(avatarURL!)
+                backgroundImage: isLoggedIn &&
+                        userProvider.user?.avatarURL != null &&
+                        userProvider.user!.avatarURL!.isNotEmpty
+                    ? NetworkImage(userProvider.user!.avatarURL!)
                     : null,
-                child: (avatarURL == null || avatarURL!.isEmpty)
-                    ? Icon(Icons.person_rounded, size: 32)
+                child: (!isLoggedIn ||
+                        userProvider.user?.avatarURL == null ||
+                        userProvider.user!.avatarURL!.isEmpty)
+                    ? Icon(Icons.person_rounded, size: 28)
                     : null,
               ),
             ),
             const SizedBox(width: 16),
-            // 右侧文字信息（竖直居中，左对齐）
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    isLoggedIn ? (username ?? '用户') : '游客',
+                    isLoggedIn ? (userProvider.user?.username ?? '用户') : '游客',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isLoggedIn ? (email ?? '未设置邮箱') : '还未登录',
+                    isLoggedIn ? (userProvider.user?.email ?? '未设置邮箱') : '还未登录',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
+                          color: cs.onSurfaceVariant,
+                        ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -294,43 +232,94 @@ class _DrawerHeader extends StatelessWidget {
   }
 }
 
-// ====================== Switch Tile ======================
+class _DrawerTile extends StatelessWidget {
+  final String path;
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
+  final bool isSelected;
+  final bool isDestructive;
+  final VoidCallback onTap;
 
-class _SwitchTile extends StatelessWidget {
-  const _SwitchTile({
-    required this.item,
-    required this.value,
-    required this.onChanged,
+  const _DrawerTile({
+    required this.path,
+    required this.label,
+    required this.icon,
+    required this.selectedIcon,
+    required this.isSelected,
+    required this.onTap,
+    this.isDestructive = false,
   });
-
-  final SwitchItem item;
-  final bool value;
-  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(28),
-        onTap: () => onChanged(!value),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(item.icon, size: 24),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  item.label,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-              Switch(value: value, onChanged: onChanged),
-            ],
+    final cs = Theme.of(context).colorScheme;
+    final effectiveIcon = isSelected ? selectedIcon : icon;
+    final iconColor = isDestructive
+        ? cs.error
+        : isSelected
+            ? cs.primary
+            : cs.onSurfaceVariant;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: cs.secondaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(28),
+              )
+            : null,
+        child: ListTile(
+          dense: true,
+          leading: Icon(effectiveIcon, color: iconColor, size: 24),
+          title: Text(
+            label,
+            style: TextStyle(
+              color: isDestructive
+                  ? cs.error
+                  : isSelected
+                      ? cs.onSecondaryContainer
+                      : cs.onSurface,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
           ),
+          onTap: onTap,
         ),
       ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _Section({
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 16, 28, 8),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+        ),
+        ...children,
+      ],
     );
   }
 }

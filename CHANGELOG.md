@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.58.0](https://github.com/s0raLin/miku_music/compare/v1.57.1...v1.58.0) (2026-07-26)
+
+
+### Features
+
+* **home:** 实现按歌单展示的播放历史功能 ([9c5d3b8](https://github.com/s0raLin/miku_music/commit/9c5d3b84850d075f03ddf7d8e72633e6c980de6b))
+
 ## [1.57.1](https://github.com/s0raLin/miku_music/compare/v1.57.0...v1.57.1) (2026-07-22)
 
 

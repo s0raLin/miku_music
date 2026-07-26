@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/app_empty_state.dart';
 import 'package:myapp/components/Shared/app_panel.dart';
 import 'package:myapp/model/Music/index.dart';
-import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
@@ -98,10 +97,6 @@ class _HomePageState extends State<HomePage> {
       musicProvider: musicProvider,
     );
 
-    final userPlaylists = playlistProvider.userPlaylists
-        .where((p) => p.songIds.isNotEmpty)
-        .toList();
-
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -152,10 +147,7 @@ class _HomePageState extends State<HomePage> {
                   colorScheme: colorScheme,
                   textTheme: textTheme,
                   historySongs: history,
-                  userPlaylists: userPlaylists,
-                  musicProvider: musicProvider,
-                  playlistProvider: playlistProvider,
-                  library: library,
+                  onViewAll: () => context.push('/user/recent'),
                 ),
 
                 const SizedBox(height: 28),
@@ -413,19 +405,13 @@ class _PlaylistHistorySection extends StatelessWidget {
   final ColorScheme colorScheme;
   final TextTheme textTheme;
   final List<Music> historySongs;
-  final List<Playlist> userPlaylists;
-  final MusicProvider musicProvider;
-  final PlaylistProvider playlistProvider;
-  final List<Music> library;
+  final VoidCallback onViewAll;
 
   const _PlaylistHistorySection({
     required this.colorScheme,
     required this.textTheme,
     required this.historySongs,
-    required this.userPlaylists,
-    required this.musicProvider,
-    required this.playlistProvider,
-    required this.library,
+    required this.onViewAll,
   });
 
   @override
@@ -460,9 +446,9 @@ class _PlaylistHistorySection extends StatelessWidget {
                   ),
                 ),
               ),
-              if (historySongs.isNotEmpty || userPlaylists.isNotEmpty)
+              if (historySongs.isNotEmpty)
                 TextButton(
-                  onPressed: () => context.push('/user/recent'),
+                  onPressed: onViewAll,
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     minimumSize: Size.zero,
@@ -481,7 +467,7 @@ class _PlaylistHistorySection extends StatelessWidget {
         ),
 
         // Content
-        (historySongs.isEmpty && userPlaylists.isEmpty)
+        historySongs.isEmpty
             ? Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: AppPanel(
@@ -498,10 +484,9 @@ class _PlaylistHistorySection extends StatelessWidget {
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 2),
-                  itemCount: 1 + userPlaylists.length,
+                  itemCount: 1,
                   itemBuilder: (context, index) {
                     if (index == 0) {
-                      // 最近播放 (第一个)
                       return Padding(
                         padding: const EdgeInsets.only(right: 14),
                         child: PlaylistListCard(
@@ -509,31 +494,13 @@ class _PlaylistHistorySection extends StatelessWidget {
                           songCount: historySongs.length,
                           coverBytes: null,
                           coverPath: null,
-                          songs: historySongs.take(4).toList(),
-                          onTap: () => context.push('/user/recent'),
+                          recentSongs: historySongs.take(4).toList(),
+                          showSongList: true,
+                          onTap: onViewAll,
                         ),
                       );
                     }
-                    // 用户歌单
-                    final playlist = userPlaylists[index - 1];
-                    final playlistSongs =
-                        playlistProvider.getPlaylistSongs(
-                      playlist.id,
-                      library,
-                      musicProvider: musicProvider,
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 14),
-                      child: PlaylistListCard(
-                        playlistName: playlist.name,
-                        songCount: playlist.songIds.length,
-                        coverBytes: playlist.coverBytes,
-                        coverPath: playlist.coverPath,
-                        songs: playlistSongs.take(4).toList(),
-                        onTap: () =>
-                            context.push('/user/playlist/${playlist.id}'),
-                      ),
-                    );
+                    return const SizedBox.shrink();
                   },
                 ),
               ),

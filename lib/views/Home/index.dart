@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/app_empty_state.dart';
 import 'package:myapp/components/Shared/app_panel.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/model/Playlist/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/observable_music_grid_card.dart';
+import 'package:myapp/views/User/Music/widgets/playlist_list_card.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -96,6 +98,10 @@ class _HomePageState extends State<HomePage> {
       musicProvider: musicProvider,
     );
 
+    final userPlaylists = playlistProvider.userPlaylists
+        .where((p) => p.songIds.isNotEmpty)
+        .toList();
+
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -141,17 +147,15 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 32),
 
-                // ▲ 播放历史
-                _MusicSection(
-                  title: '播放历史',
-                  icon: Icons.history_rounded,
-                  songs: history,
-                  musicProvider: musicProvider,
+                // ▲ 播放历史（按歌单展示）
+                _PlaylistHistorySection(
                   colorScheme: colorScheme,
                   textTheme: textTheme,
-                  viewAllRoute: '/user/recent',
-                  emptyTitle: '暂无播放历史',
-                  emptySubtitle: '快去听歌吧，这里会显示你听过的歌曲',
+                  historySongs: history,
+                  userPlaylists: userPlaylists,
+                  musicProvider: musicProvider,
+                  playlistProvider: playlistProvider,
+                  library: library,
                 ),
 
                 const SizedBox(height: 28),
@@ -392,6 +396,142 @@ class _MusicSection extends StatelessWidget {
                             }
                           },
                         ),
+                      ),
+                    );
+                  },
+                ),
+               ),
+       ],
+     );
+   }
+ }
+
+// ═══════════════════════════════════════════════════════════
+// Playlist History Section — 按歌单展示播放历史的横向懒加载列表
+// ═══════════════════════════════════════════════════════════
+class _PlaylistHistorySection extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final List<Music> historySongs;
+  final List<Playlist> userPlaylists;
+  final MusicProvider musicProvider;
+  final PlaylistProvider playlistProvider;
+  final List<Music> library;
+
+  const _PlaylistHistorySection({
+    required this.colorScheme,
+    required this.textTheme,
+    required this.historySongs,
+    required this.userPlaylists,
+    required this.musicProvider,
+    required this.playlistProvider,
+    required this.library,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Padding(
+          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.history_rounded,
+                  size: 20,
+                  color: colorScheme.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '播放历史',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (historySongs.isNotEmpty || userPlaylists.isNotEmpty)
+                TextButton(
+                  onPressed: () => context.push('/user/recent'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    '查看全部',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        // Content
+        (historySongs.isEmpty && userPlaylists.isEmpty)
+            ? Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: AppPanel(
+                  child: AppEmptyState(
+                    icon: Icons.history_rounded,
+                    title: '暂无播放历史',
+                    subtitle: '快去听歌吧，这里会显示你听过的歌曲',
+                    compact: true,
+                  ),
+                ),
+              )
+            : SizedBox(
+                height: 220,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  itemCount: 1 + userPlaylists.length,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // 最近播放 (第一个)
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 14),
+                        child: PlaylistListCard(
+                          playlistName: '最近播放',
+                          songCount: historySongs.length,
+                          coverBytes: null,
+                          coverPath: null,
+                          songs: historySongs.take(4).toList(),
+                          onTap: () => context.push('/user/recent'),
+                        ),
+                      );
+                    }
+                    // 用户歌单
+                    final playlist = userPlaylists[index - 1];
+                    final playlistSongs =
+                        playlistProvider.getPlaylistSongs(
+                      playlist.id,
+                      library,
+                      musicProvider: musicProvider,
+                    );
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 14),
+                      child: PlaylistListCard(
+                        playlistName: playlist.name,
+                        songCount: playlist.songIds.length,
+                        coverBytes: playlist.coverBytes,
+                        coverPath: playlist.coverPath,
+                        songs: playlistSongs.take(4).toList(),
+                        onTap: () =>
+                            context.push('/user/playlist/${playlist.id}'),
                       ),
                     );
                   },

@@ -150,7 +150,7 @@ class _HomePageState extends State<HomePage> {
                   onViewAll: () => context.push('/user/recent'),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
 
                 // ▲ 收藏的音乐
                 _MusicSection(
@@ -272,7 +272,7 @@ class _ActionChip extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Music Section — 横向滚动歌曲卡片区域
+// Music Section — 横向滚动歌曲卡片区域（正方形卡片）
 // ═══════════════════════════════════════════════════════════
 class _MusicSection extends StatelessWidget {
   final String title;
@@ -299,6 +299,13 @@ class _MusicSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = 16.0 * 2;
+    final spacing = 14.0;
+    final cardsPerRow = 3.2;
+    final cardSize = ((screenWidth - padding - spacing * 2) / cardsPerRow)
+        .clamp(80.0, 160.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -349,7 +356,7 @@ class _MusicSection extends StatelessWidget {
           ),
         ),
 
-        // Content
+        // Content - 正方形卡片
         songs.isEmpty
             ? Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -363,7 +370,7 @@ class _MusicSection extends StatelessWidget {
                 ),
               )
             : SizedBox(
-                height: 140,
+                height: cardSize,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -373,7 +380,8 @@ class _MusicSection extends StatelessWidget {
                     return Padding(
                       padding: const EdgeInsets.only(right: 14),
                       child: SizedBox(
-                        width: 140,
+                        width: cardSize,
+                        height: cardSize,
                         child: ObservableMusicGridCard(
                           index: index,
                           music: song,
@@ -392,14 +400,14 @@ class _MusicSection extends StatelessWidget {
                     );
                   },
                 ),
-               ),
-       ],
-     );
-   }
- }
+              ),
+      ],
+    );
+  }
+}
 
 // ═══════════════════════════════════════════════════════════
-// Playlist History Section — 按歌单展示播放历史的横向懒加载列表
+// Playlist History Section — 按歌单展示播放历史
 // ═══════════════════════════════════════════════════════════
 class _PlaylistHistorySection extends StatelessWidget {
   final ColorScheme colorScheme;
@@ -416,6 +424,13 @@ class _PlaylistHistorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = 16.0 * 2;
+    final spacing = 14.0;
+    final cardsPerRow = 3.2;
+    final cardSize = ((screenWidth - padding - spacing * 2) / cardsPerRow)
+        .clamp(80.0, 160.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -466,7 +481,7 @@ class _PlaylistHistorySection extends StatelessWidget {
           ),
         ),
 
-        // Content
+        // Content - 正方形卡片
         historySongs.isEmpty
             ? Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -480,28 +495,17 @@ class _PlaylistHistorySection extends StatelessWidget {
                 ),
               )
             : SizedBox(
-                height: 220,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  itemCount: 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 14),
-                        child: PlaylistListCard(
-                          playlistName: '最近播放',
-                          songCount: historySongs.length,
-                          coverBytes: null,
-                          coverPath: null,
-                          recentSongs: historySongs.take(4).toList(),
-                          showSongList: true,
-                          onTap: onViewAll,
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                width: cardSize,
+                child: PlaylistListCard(
+                  playlistName: '最近播放',
+                  songCount: historySongs.length,
+                  coverBytes: historySongs.isNotEmpty
+                      ? historySongs.first.coverBytes
+                      : null,
+                  coverPath: null,
+                  recentSongs: historySongs.take(4).toList(),
+                  showSongList: true,
+                  onTap: onViewAll,
                 ),
               ),
       ],

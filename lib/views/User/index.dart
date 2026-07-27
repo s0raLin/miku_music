@@ -80,7 +80,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   final user = userProvider.user;
                   return _UserProfileCard(
                     username: user?.username ?? "请先登录",
-                    bio: user?.email ?? "暂无描述",
+                    bio: user?.signature ?? user?.email ?? "暂无描述",
                     avatarUrl: user?.avatarURL,
                     followers: 0,
                     following: 0,

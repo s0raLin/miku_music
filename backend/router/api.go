@@ -54,6 +54,9 @@ func Setup(r *gin.Engine, cfg *config.Config) *gin.Engine {
 
 			// 注销账号（需要登录）
 			auth.POST("/delete-account", authHandler.DeleteAccount)
+
+			// 更新个性签名（需要登录）
+			auth.POST("/update-signature", authHandler.UpdateSignature)
 		}
 
 		music := sandBox.Group("/music")

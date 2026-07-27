@@ -54,7 +54,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _existingAvatarUrl = user?.avatarURL;
     _usernameController = TextEditingController(text: user?.username ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
-    _bioController = TextEditingController(text: '这是一段默认的个性签名...');
+    _bioController = TextEditingController(text: user?.signature ?? '');
   }
 
   @override
@@ -407,8 +407,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
         username: _usernameController.text,
         email: _emailController.text,
         avatarURL: avatarUrl,
+        signature: _bioController.text,
         token: currentUser.token,
       );
+
+      // 持久化个性签名到后端
+      if (_bioController.text.trim().isNotEmpty) {
+        await UserApi.updateSignature(signature: _bioController.text.trim());
+      }
 
       await userProvider.updateUserInfo(updatedUser);
 

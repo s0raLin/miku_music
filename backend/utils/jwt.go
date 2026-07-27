@@ -20,8 +20,8 @@ func GenerateToken(userID uint, username string) (string, error) {
 		UserID: userID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			// 过期时间：24小时后
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		// 过期时间：30天
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(30 * 24 * time.Hour)),
 			// 签发时间
 			IssuedAt: jwt.NewNumericDate(time.Now()),
 			// 签发者

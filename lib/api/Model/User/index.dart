@@ -19,6 +19,10 @@ class User {
 
   final String email;
 
+  /// 个性签名
+  @JsonKey(name: 'signature')
+  final String? signature;
+
   /// JWT token，从登录/注册响应中获取，不存储在后端
   @JsonKey(includeFromJson: false, includeToJson: false)
   String? token;
@@ -28,6 +32,7 @@ class User {
     required this.username,
     required this.avatarURL,
     required this.email,
+    this.signature,
     this.token,
   });
 

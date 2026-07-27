@@ -15,6 +15,7 @@ type User struct {
 	Email        string `gorm:"type:varchar(255);uniqueIndex;comment:邮箱(唯一)" json:"email"`
 	Username     string `gorm:"type:varchar(50);not null" json:"username"`
 	PasswordHash string `gorm:"column:password;type:varchar(255);comment:bcrypt密码哈希" json:"-"` // 映射到旧 password 列
+	Signature    string `gorm:"type:varchar(255);comment:个性签名" json:"signature"`
 
 	UploadMusics     []MusicInfo `gorm:"many2many:user_uploads_music;"`
 	UplaodsPlayLists []PlayList  `gorm:"many2many:user_uploads_playlist"`

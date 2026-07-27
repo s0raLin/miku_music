@@ -244,4 +244,24 @@ class UserApi {
       );
     }
   }
+
+  // ─────────────────── 更新个性签名 ───────────────────
+
+  /// 更新个性签名（需要已登录）
+  static Future<void> updateSignature({
+    required String signature,
+  }) async {
+    final response = await HttpUtils().post(
+      "$base/update-signature",
+      data: {"signature": signature},
+    );
+
+    final result = ApiResponse.fromJson(response.data);
+    if (result.code != 0) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: result.msg,
+      );
+    }
+  }
 }

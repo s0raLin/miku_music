@@ -443,3 +443,33 @@ func (h *AuthHandler) DeleteAccount(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "账号已注销"})
 }
+
+// ──────────────────────────── 更新个性签名 ────────────────────────────
+
+type UpdateSignatureReq struct {
+	Signature string `json:"signature" binding:"required,max=255"` // 个性签名
+}
+
+// UpdateSignature 更新当前登录用户的个性签名
+// POST /api/auth/update-signature
+func (h *AuthHandler) UpdateSignature(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "未登录"})
+		return
+	}
+
+	var req UpdateSignatureReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误: " + err.Error()})
+		return
+	}
+
+	uid := userID.(uint)
+	if err := repository.DB.Model(&model.User{}).Where("id = ?", uid).Update("signature", req.Signature).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "签名保存失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "签名更新成功"})
+}

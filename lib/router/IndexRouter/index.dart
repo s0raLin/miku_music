@@ -231,7 +231,10 @@ final _routes = [
   ),
 ];
 
+final appNavigatorKey = GlobalKey<NavigatorState>();
+
 final _router = GoRouter(
+  navigatorKey: appNavigatorKey,
   initialLocation: "/splash",
   routes: _routes,
   errorBuilder: (context, state) => const NotFoundPage(),

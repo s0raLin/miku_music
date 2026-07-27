@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:myapp/components/Shared/app_toast.dart';
+import 'package:myapp/router/IndexRouter/index.dart';
 
 class HttpUtils {
   static String _baseUrl = dotenv.get(
@@ -119,7 +122,21 @@ class HttpUtils {
         debugPrint("连接超时");
         break;
       case DioExceptionType.badResponse:
-        debugPrint("服务器响应错误: ${e.response?.statusCode}");
+        final statusCode = e.response?.statusCode;
+        if (statusCode == 401) {
+          AppToast.error(
+            appNavigatorKey.currentContext!,
+            message: "登录已过期，请重新登录",
+            title: "会话过期",
+          );
+          clearAuthToken();
+          appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+            '/login',
+            (route) => false,
+          );
+        } else {
+          debugPrint("服务器响应错误: $statusCode");
+        }
         break;
       default:
         debugPrint("未知网络错误: ${e.message}");

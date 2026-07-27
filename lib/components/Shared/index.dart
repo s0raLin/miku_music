@@ -19,7 +19,5 @@ export 'media_overlay_card.dart';
 export 'app_empty_state.dart';
 export 'wavy_slider.dart';
 export 'straight_slider.dart';
-export 'observable_music_grid_card.dart';
-export 'observable_music_list_item.dart';
 export 'adaptive_menu.dart';
 export 'EmailVerificationModal.dart';

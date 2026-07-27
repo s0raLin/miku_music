@@ -5,7 +5,6 @@ import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
-import 'package:myapp/providers/NavProvider/index.dart';
 import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:provider/provider.dart';
 
@@ -21,7 +20,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final nav = context.read<NavProvider>();
 
     final quickCards = [
       _PlaylistQuickCard(

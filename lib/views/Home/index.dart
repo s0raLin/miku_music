@@ -8,7 +8,7 @@ import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:myapp/components/Header/index.dart';
-import 'package:myapp/components/Shared/observable_music_grid_card.dart';
+import 'package:myapp/components/Shared/media_overlay_card.dart';
 import 'package:myapp/views/User/Music/widgets/playlist_list_card.dart';
 import 'package:provider/provider.dart';
 
@@ -378,13 +378,21 @@ class _MusicSection extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final song = songs[index];
                     return Padding(
-                      padding: const EdgeInsets.only(right: 14),
+                      padding: const EdgeInsets.only(right: 8),
                       child: SizedBox(
                         width: cardSize,
                         height: cardSize,
-                        child: ObservableMusicGridCard(
-                          index: index,
-                          music: song,
+                        child: MediaOverlayCard(
+                          title: song.title,
+                          subtitle: song.artist,
+                          coverBytes: song.coverBytes,
+                          coverUrl: song.source == MusicSource.network
+                              ? musicProvider.getCoverUrl(song.id)
+                              : null,
+                          coverHeaders: song.source == MusicSource.network
+                              ? {'Referer': 'https://music.163.com/'}
+                              : null,
+                          fallbackIcon: Icons.music_note_rounded,
                           onTap: () async {
                             await musicProvider.replaceQueue(
                               songs,
@@ -395,6 +403,40 @@ class _MusicSection extends StatelessWidget {
                               context.push('/music-detail');
                             }
                           },
+                          isLoading:
+                              (song.coverBytes == null ||
+                                  song.coverBytes!.isEmpty) &&
+                              musicProvider.isCoverLoading(song.id),
+                          borderRadius: BorderRadius.circular(32),
+                          badge: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHigh
+                                  .withValues(
+                                    alpha:
+                                        colorScheme.brightness ==
+                                            Brightness.dark
+                                        ? 0.88
+                                        : 0.82,
+                                  ),
+                              border: Border.all(
+                                color: colorScheme.outlineVariant.withValues(
+                                  alpha: 0.45,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '#${index + 1}',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     );

@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // AuthHandler 认证相关的 HTTP 处理器
@@ -160,33 +161,47 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// 再次检查邮箱是否已被注册（防止并发）
+	// 同时检查是否已注销（软删除），允许重新注册
 	var existing model.User
-	if result := repository.DB.Where("email = ?", req.Email).First(&existing); result.Error == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "该邮箱已被注册"})
-		return
-	}
+	if result := repository.DB.Unscoped().Where("email = ?", req.Email).First(&existing); result.Error == nil {
+		if existing.DeletedAt.Valid {
+			// 用户已注销，重新激活
+			existing.DeletedAt = gorm.DeletedAt{}
+			existing.Username = req.Username
+			hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+			existing.PasswordHash = string(hashedPassword)
+			if err := repository.DB.Unscoped().Save(&existing).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "用户重新激活失败"})
+				return
+			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "该邮箱已被注册"})
+			return
+		}
+	} else {
+		// 密码 bcrypt 哈希
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "密码加密失败"})
+			return
+		}
 
-	// 密码 bcrypt 哈希
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "密码加密失败"})
-		return
-	}
+		// 创建用户
+		user := model.User{
+			Email:        req.Email,
+			Username:     req.Username,
+			PasswordHash: string(hashedPassword),
+		}
 
-	// 创建用户
-	user := model.User{
-		Email:        req.Email,
-		Username:     req.Username,
-		PasswordHash: string(hashedPassword),
-	}
-
-	if err := repository.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "用户创建失败: " + err.Error()})
-		return
+		if err := repository.DB.Create(&user).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "用户创建失败: " + err.Error()})
+			return
+		}
+		existing = user
 	}
 
 	// 生成 JWT
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	token, err := utils.GenerateToken(existing.ID, existing.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "令牌生成失败"})
 		return
@@ -197,7 +212,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"msg":  "注册成功",
 		"data": gin.H{
 			"token": token,
-			"user":  user,
+			"user":  existing,
 		},
 	})
 }

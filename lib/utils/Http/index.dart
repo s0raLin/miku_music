@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myapp/components/Shared/app_toast.dart';
 import 'package:myapp/router/IndexRouter/index.dart';
@@ -119,7 +118,11 @@ class HttpUtils {
   void _handleError(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
-        debugPrint("连接超时");
+        AppToast.error(
+          appNavigatorKey.currentContext!,
+          message: "连接超时，请检查网络后重试",
+          title: "网络错误",
+        );
         break;
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
@@ -135,11 +138,27 @@ class HttpUtils {
             (route) => false,
           );
         } else {
-          debugPrint("服务器响应错误: $statusCode");
+          final msg = extractErrorMessage(e);
+          AppToast.error(
+            appNavigatorKey.currentContext!,
+            message: msg,
+            title: "请求失败",
+          );
         }
         break;
+      case DioExceptionType.connectionError:
+        AppToast.error(
+          appNavigatorKey.currentContext!,
+          message: "无法连接到服务器，请检查网络连接",
+          title: "网络错误",
+        );
+        break;
       default:
-        debugPrint("未知网络错误: ${e.message}");
+        AppToast.error(
+          appNavigatorKey.currentContext!,
+          message: e.message ?? "未知错误，请稍后重试",
+          title: "请求失败",
+        );
     }
   }
 }

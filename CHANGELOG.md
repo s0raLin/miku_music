@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.59.0](https://github.com/s0raLin/miku_music/compare/v1.58.0...v1.59.0) (2026-07-27)
+
+
+### Features
+
+* **auth:** 支持已注销用户重新注册并优化客户端错误提示 ([f8c31ff](https://github.com/s0raLin/miku_music/commit/f8c31ffe2803524cb3a4c7dd0df72dfd685ea996))
+* **auth:** 新增用户个性签名功能并延长 JWT 有效期 ([f4a1188](https://github.com/s0raLin/miku_music/commit/f4a1188f3a2a683c21aaff826bb4f402ec4e073a))
+
 ## [1.58.0](https://github.com/s0raLin/miku_music/compare/v1.57.1...v1.58.0) (2026-07-26)
 
 

@@ -70,14 +70,18 @@ class MainDrawer extends StatelessWidget {
                   _Section(
                     title: '偏好',
                     children: [
-                      SwitchListTile(
-                        title: const Text('夜间模式'),
-                        secondary: Icon(Icons.dark_mode_outlined),
-                        value: themeProvider.themeMode == ThemeMode.dark,
-                        onChanged: (_) => themeProvider.setThemeMode(
-                          themeProvider.themeMode == ThemeMode.dark
-                              ? ThemeMode.light
-                              : ThemeMode.dark,
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                        child: SwitchListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          secondary: Icon(Icons.dark_mode_outlined),
+                          title: const Text('夜间模式'),
+                          value: themeProvider.themeMode == ThemeMode.dark,
+                          onChanged: (_) => themeProvider.setThemeMode(
+                            themeProvider.themeMode == ThemeMode.dark
+                                ? ThemeMode.light
+                                : ThemeMode.dark,
+                          ),
                         ),
                       ),
                     ],

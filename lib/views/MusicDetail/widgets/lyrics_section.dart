@@ -136,7 +136,9 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
                   return LinearProgressIndicator(
                     value: val,
                     minHeight: 3,
-                    backgroundColor: widget.inactiveColor.withValues(alpha: 0.2),
+                    backgroundColor: widget.inactiveColor.withValues(
+                      alpha: 0.2,
+                    ),
                     valueColor: AlwaysStoppedAnimation(widget.activeColor),
                   );
                 },
@@ -151,8 +153,7 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
     final list = <Widget>[];
     final totalWords = widget.group.words.length;
     if (totalWords == 0) return list;
-    final double estimatedWordDuration =
-        widget.group.durationMs / totalWords;
+    final double estimatedWordDuration = widget.group.durationMs / totalWords;
 
     for (int i = 0; i < totalWords; i++) {
       final word = widget.group.words[i];
@@ -166,8 +167,7 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
       } else if (_currentPosMs < wordStart) {
         wordProgress = 0.0;
       } else {
-        wordProgress =
-            (_currentPosMs - wordStart) / (wordEnd - wordStart);
+        wordProgress = (_currentPosMs - wordStart) / (wordEnd - wordStart);
       }
 
       list.add(
@@ -506,7 +506,9 @@ class _LyricsSectionState extends State<LyricsSection>
         ? TextStyle(
             fontSize: isActive ? 23 : 18,
             fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-            color: isActive ? activeColor : inactiveColor.withValues(alpha: 0.9),
+            color: isActive
+                ? activeColor
+                : inactiveColor.withValues(alpha: 0.9),
             height: 1.45,
           )
         : TextStyle(
@@ -554,49 +556,49 @@ class _LyricsSectionState extends State<LyricsSection>
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  isActive && isCurrentPlaying
-                      ? _ActiveLyricItem(
-                          group: group,
-                          baseStyle: baseStyle,
-                          activeColor: activeColor,
-                          inactiveColor: inactiveColor,
-                          positionStream: mp.positionDataStream,
-                        )
-                      : Text(
-                          group.text,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                  if (group.hasTranslation) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      group.translation!,
-                      style: translationStyle,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (isActive && !isCurrentPlaying && group.durationMs > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: LinearProgressIndicator(
-                          value: group.getProgress(_positionMs),
-                          minHeight: 3,
-                          backgroundColor: activeColor.withValues(alpha: 0.2),
-                          valueColor: AlwaysStoppedAnimation(activeColor),
-                        ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                isActive && isCurrentPlaying
+                    ? _ActiveLyricItem(
+                        group: group,
+                        baseStyle: baseStyle,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                        positionStream: mp.positionDataStream,
+                      )
+                    : Text(
+                        group.text,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                if (group.hasTranslation) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    group.translation!,
+                    style: translationStyle,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (isActive && !isCurrentPlaying && group.durationMs > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: group.getProgress(_positionMs),
+                        minHeight: 3,
+                        backgroundColor: activeColor.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation(activeColor),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

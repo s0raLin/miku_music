@@ -6,27 +6,27 @@ import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-/// 合并了原始歌词和翻译歌词的内部数据结构
 class _LyricGroup {
   final int timeMs;
   final int durationMs;
   final String text;
   final String? translation;
   final List<LyricWord> words;
+  final bool isEmpty;
+  final bool isLongGap;
 
   bool get hasWordTiming => words.length > 1;
   bool get hasTranslation =>
       translation != null && translation!.trim().isNotEmpty;
-  bool get isEmpty =>
-      text.trim().isEmpty &&
-      (translation == null || translation!.trim().isEmpty);
 
   const _LyricGroup({
     required this.timeMs,
     this.durationMs = 0,
-    required this.text,
+    this.text = '',
     this.translation,
     this.words = const [],
+    this.isEmpty = false,
+    this.isLongGap = false,
   });
 
   double getProgress(int currentMs) {
@@ -38,9 +38,6 @@ class _LyricGroup {
   }
 }
 
-/// 优化版：局部高频平滑渲染组件
-/// 采用更高效的逐词微型 ShaderMask 解决多行同时高亮问题
-/// 借助 Implicit Animation 缓解快歌语速导致的跟不上、跳跃感
 class _ActiveLyricItem extends StatefulWidget {
   final _LyricGroup group;
   final TextStyle baseStyle;
@@ -108,11 +105,12 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         widget.group.hasWordTiming
             ? Wrap(
                 alignment: WrapAlignment.center,
-                runSpacing: 4, // 控制折行后的两行间距
+                runSpacing: 4,
                 children: _buildSpacedWords(),
               )
             : Text(
@@ -132,7 +130,7 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
                   begin: overallProgress,
                   end: overallProgress,
                 ),
-                duration: const Duration(milliseconds: 60), // 利用微小动画平滑突变进度
+                duration: const Duration(milliseconds: 60),
                 curve: Curves.linear,
                 builder: (context, val, child) {
                   return LinearProgressIndicator(
@@ -149,37 +147,33 @@ class _ActiveLyricItemState extends State<_ActiveLyricItem> {
     );
   }
 
-  /// 核心逻辑：将一整句话拆分为一个个独立的词或字组件，单独施加高亮
   List<Widget> _buildSpacedWords() {
     final list = <Widget>[];
     final totalWords = widget.group.words.length;
-
-    // 估算每个词的时间跨度（若模型 LyricWord 中本身带有精确时间，直接替换为 word.durationMs 更好）
-    final double estimatedWordDuration = widget.group.durationMs / totalWords;
+    if (totalWords == 0) return list;
+    final double estimatedWordDuration =
+        widget.group.durationMs / totalWords;
 
     for (int i = 0; i < totalWords; i++) {
       final word = widget.group.words[i];
-
-      // 计算当前词对应的绝对生命周期时间段
-      // 优先读取你的底层数据结构提供的时间，若无则使用均分估算
       final int wordStart =
           widget.group.timeMs + (i * estimatedWordDuration).toInt();
       final int wordEnd = wordStart + estimatedWordDuration.toInt();
 
       double wordProgress = 0.0;
       if (_currentPosMs >= wordEnd) {
-        wordProgress = 1.0; // 已唱完
+        wordProgress = 1.0;
       } else if (_currentPosMs < wordStart) {
-        wordProgress = 0.0; // 还没到
+        wordProgress = 0.0;
       } else {
-        // 正在唱当前词
-        wordProgress = (_currentPosMs - wordStart) / (wordEnd - wordStart);
+        wordProgress =
+            (_currentPosMs - wordStart) / (wordEnd - wordStart);
       }
 
       list.add(
         TweenAnimationBuilder<double>(
           tween: Tween<double>(begin: wordProgress, end: wordProgress),
-          duration: const Duration(milliseconds: 40), // 针对高频快速歌词进行的平滑插值
+          duration: const Duration(milliseconds: 40),
           curve: Curves.linear,
           builder: (context, progress, child) {
             return ShaderMask(
@@ -235,6 +229,8 @@ class _LyricsSectionState extends State<LyricsSection>
 
   late AnimationController _breatheController;
 
+  static const _longGapThreshold = 3000;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -249,7 +245,8 @@ class _LyricsSectionState extends State<LyricsSection>
   }
 
   static List<_LyricGroup> _mergeLyrics(List<LyricLine> lyrics) {
-    if (lyrics.isEmpty) return [];
+    if (lyrics.isEmpty) return const [];
+
     final merged = <_LyricGroup>[];
     int i = 0;
     while (i < lyrics.length) {
@@ -261,6 +258,9 @@ class _LyricsSectionState extends State<LyricsSection>
       } else {
         i += 1;
       }
+      final text = current.text.trim();
+      final transTrimmed = translation?.trim() ?? '';
+      final isEmpty = text.isEmpty && transTrimmed.isEmpty;
       merged.add(
         _LyricGroup(
           timeMs: current.timeMs,
@@ -268,10 +268,35 @@ class _LyricsSectionState extends State<LyricsSection>
           text: current.text,
           translation: translation,
           words: current.words,
+          isEmpty: isEmpty,
         ),
       );
     }
-    return merged;
+
+    final result = <_LyricGroup>[];
+    _LyricGroup? lastNonEmpty;
+    for (final group in merged) {
+      if (!group.isEmpty) {
+        result.add(group);
+        lastNonEmpty = group;
+      } else if (lastNonEmpty != null) {
+        final gap = group.timeMs - lastNonEmpty.timeMs;
+        if (gap >= _longGapThreshold) {
+          result.add(
+            _LyricGroup(
+              timeMs: group.timeMs,
+              durationMs: 0,
+              text: '',
+              translation: null,
+              words: const [],
+              isEmpty: true,
+              isLongGap: true,
+            ),
+          );
+        }
+      }
+    }
+    return result;
   }
 
   @override
@@ -407,7 +432,6 @@ class _LyricsSectionState extends State<LyricsSection>
 
     return Stack(
       children: [
-        // 主内容区
         if (currentLyricsEmpty)
           _buildEmptyState(mp, context)
         else
@@ -422,7 +446,6 @@ class _LyricsSectionState extends State<LyricsSection>
       ],
     );
   }
-
 
   Widget _buildEmptyState(MusicProvider mp, BuildContext context) {
     return AppEmptyState(
@@ -476,27 +499,20 @@ class _LyricsSectionState extends State<LyricsSection>
         ? (index - _focusedIndex).abs() == 1
         : (index - currentIndex).abs() == 1;
 
-    final activeColor = cs.onSurface; // 高强调：落在统一 scrim 上，对比稳定
+    final activeColor = cs.onSurface;
     final inactiveColor = cs.onSurfaceVariant;
 
-    final baseStyle = isActive
+    final baseStyle = isActive || isNear
         ? TextStyle(
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-            color: activeColor,
-            height: 1.45,
-          )
-        : isNear
-        ? TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: inactiveColor.withValues(alpha: 0.9),
+            fontSize: isActive ? 23 : 18,
+            fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+            color: isActive ? activeColor : inactiveColor.withValues(alpha: 0.9),
             height: 1.45,
           )
         : TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w400,
-            color: inactiveColor.withValues(alpha: 0.6),
+            color: inactiveColor.withValues(alpha: 0.75),
             height: 1.45,
           );
 
@@ -510,118 +526,94 @@ class _LyricsSectionState extends State<LyricsSection>
         : TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.w400,
-            color: inactiveColor.withValues(alpha: 0.55),
+            color: inactiveColor.withValues(alpha: 0.65),
             height: 1.4,
           );
 
-    if (group.isEmpty) {
-      return _buildEmptyLyricItem(group, isActive, cs);
+    if (group.isEmpty && !group.isLongGap) {
+      return const SizedBox.shrink();
+    }
+
+    if (group.isEmpty && group.isLongGap) {
+      return _buildLongGapItem(cs);
     }
 
     final mp = context.read<MusicProvider>();
+    final targetOpacity = isActive ? 1.0 : (isNear ? 0.9 : 0.7);
 
-    return InkWell(
-      onTap: () {
-        mp.player.seek(Duration(milliseconds: group.timeMs));
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            isActive && isCurrentPlaying
-                ? _ActiveLyricItem(
-                    group: group,
-                    baseStyle: baseStyle,
-                    activeColor: activeColor,
-                    inactiveColor: inactiveColor,
-                    positionStream: mp.positionDataStream,
-                  )
-                : Text(
-                    group.text,
-                    style: baseStyle,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-            if (group.hasTranslation) ...[
-              const SizedBox(height: 4),
-              Text(
-                group.translation!,
-                style: translationStyle,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeInOut,
+      opacity: targetOpacity,
+      child: DefaultTextStyle(
+        style: baseStyle,
+        child: InkWell(
+          onTap: () {
+            mp.player.seek(Duration(milliseconds: group.timeMs));
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  isActive && isCurrentPlaying
+                      ? _ActiveLyricItem(
+                          group: group,
+                          baseStyle: baseStyle,
+                          activeColor: activeColor,
+                          inactiveColor: inactiveColor,
+                          positionStream: mp.positionDataStream,
+                        )
+                      : Text(
+                          group.text,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                  if (group.hasTranslation) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      group.translation!,
+                      style: translationStyle,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (isActive && !isCurrentPlaying && group.durationMs > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: group.getProgress(_positionMs),
+                          minHeight: 3,
+                          backgroundColor: activeColor.withValues(alpha: 0.2),
+                          valueColor: AlwaysStoppedAnimation(activeColor),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ],
-            if (isActive && !isCurrentPlaying && group.durationMs > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: group.getProgress(_positionMs),
-                    minHeight: 3,
-                    backgroundColor: activeColor.withValues(alpha: 0.2),
-                    valueColor: AlwaysStoppedAnimation(activeColor),
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyLyricItem(
-    _LyricGroup group,
-    bool isActive,
-    ColorScheme cs,
-  ) {
-    return InkWell(
-      onTap: () {
-        context.read<MusicProvider>().player.seek(
-          Duration(milliseconds: group.timeMs),
-        );
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: AnimatedBuilder(
-          animation: _breatheController,
-          builder: (context, child) {
-            final scale = 0.96 + _breatheController.value * 0.08;
-            return Transform.scale(
-              scale: isActive ? scale : 1.0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.music_note_rounded,
-                    size: isActive ? 28 : 24,
-                    color: isActive
-                        ? cs.primary
-                        : cs.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "• • •",
-                    style: TextStyle(
-                      fontSize: isActive ? 24 : 19,
-                      letterSpacing: 8,
-                      fontWeight: isActive
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isActive
-                          ? cs.primary
-                          : cs.onSurfaceVariant.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+  Widget _buildLongGapItem(ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Center(
+        child: Container(
+          width: 4,
+          height: 4,
+          decoration: BoxDecoration(
+            color: cs.onSurfaceVariant.withValues(alpha: 0.35),
+            shape: BoxShape.circle,
+          ),
         ),
       ),
     );

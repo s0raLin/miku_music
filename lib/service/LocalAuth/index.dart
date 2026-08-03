@@ -28,55 +28,77 @@ class LocalAuth {
 
   /// 加密并保存 JWT token
   Future<void> saveToken(String token) async {
-    final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
-    final encrypted = encrypter.encrypt(token, iv: _iv);
-    await _storage.write(key: _tokenKey, value: encrypted.base64);
-    debugPrint('[LocalAuth] Token 已加密保存');
+    try {
+      final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
+      final encrypted = encrypter.encrypt(token, iv: _iv);
+      await _storage.write(key: _tokenKey, value: encrypted.base64);
+      debugPrint('[LocalAuth] Token 已加密保存');
+    } catch (e) {
+      debugPrint('[LocalAuth] Token 保存失败: $e');
+    }
   }
 
   /// 读取并解密 JWT token
   Future<String?> readToken() async {
-    final encrypted = await _storage.read(key: _tokenKey);
-    if (encrypted == null) return null;
-
     try {
-      final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
-      final decrypted = encrypter.decrypt64(encrypted, iv: _iv);
-      return decrypted;
+      final encrypted = await _storage.read(key: _tokenKey);
+      if (encrypted == null) return null;
+
+      try {
+        final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
+        final decrypted = encrypter.decrypt64(encrypted, iv: _iv);
+        return decrypted;
+      } catch (e) {
+        debugPrint('[LocalAuth] Token 解密失败: $e');
+        return null;
+      }
     } catch (e) {
-      debugPrint('[LocalAuth] Token 解密失败: $e');
+      debugPrint('[LocalAuth] Token 读取失败: $e');
       return null;
     }
   }
 
   /// 加密并保存用户信息 JSON
   Future<void> saveUser(Map<String, dynamic> userJson) async {
-    final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
-    final jsonStr = json.encode(userJson);
-    final encrypted = encrypter.encrypt(jsonStr, iv: _iv);
-    await _storage.write(key: _userKey, value: encrypted.base64);
-    debugPrint('[LocalAuth] 用户信息已加密保存');
+    try {
+      final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
+      final jsonStr = json.encode(userJson);
+      final encrypted = encrypter.encrypt(jsonStr, iv: _iv);
+      await _storage.write(key: _userKey, value: encrypted.base64);
+      debugPrint('[LocalAuth] 用户信息已加密保存');
+    } catch (e) {
+      debugPrint('[LocalAuth] 用户信息保存失败: $e');
+    }
   }
 
   /// 读取并解密用户信息
   Future<Map<String, dynamic>?> readUser() async {
-    final encrypted = await _storage.read(key: _userKey);
-    if (encrypted == null) return null;
-
     try {
-      final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
-      final decrypted = encrypter.decrypt64(encrypted, iv: _iv);
-      return json.decode(decrypted) as Map<String, dynamic>;
+      final encrypted = await _storage.read(key: _userKey);
+      if (encrypted == null) return null;
+
+      try {
+        final encrypter = encrypt.Encrypter(encrypt.AES(_encryptKey));
+        final decrypted = encrypter.decrypt64(encrypted, iv: _iv);
+        return json.decode(decrypted) as Map<String, dynamic>;
+      } catch (e) {
+        debugPrint('[LocalAuth] 用户信息解密失败: $e');
+        return null;
+      }
     } catch (e) {
-      debugPrint('[LocalAuth] 用户信息解密失败: $e');
+      debugPrint('[LocalAuth] 用户信息读取失败: $e');
       return null;
     }
   }
 
   /// 清除所有本地认证数据（登出时调用）
   Future<void> clearAll() async {
-    await _storage.delete(key: _tokenKey);
-    await _storage.delete(key: _userKey);
-    debugPrint('[LocalAuth] 已清除本地认证数据');
+    try {
+      await _storage.delete(key: _tokenKey);
+      await _storage.delete(key: _userKey);
+      debugPrint('[LocalAuth] 已清除本地认证数据');
+    } catch (e) {
+      debugPrint('[LocalAuth] 清除本地认证数据失败: $e');
+    }
   }
 }

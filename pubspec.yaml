@@ -17,7 +17,6 @@ dependencies:
   mime: ^2.0.0
   lrc_parser: ^0.0.1
   # audiotags: ^1.4.5
-  google_fonts: ^8.0.2
   just_audio: ^0.10.5
   rxdart: ^0.28.0
   just_audio_media_kit: ^2.1.0
@@ -94,6 +93,9 @@ flutter:
     - family: NiShiKiFont
       fonts:
         - asset: assets/fonts/nishiki-teki.ttf
+    - family: Noto Sans SC
+      fonts:
+        - asset: assets/fonts/NotoSansSC.ttf
 
 flutter_launcher_icons:
   android: true

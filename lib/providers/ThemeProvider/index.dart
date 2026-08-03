@@ -1,7 +1,6 @@
 // 桌面端无动画切换逻辑
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:material_color_utilities/blend/blend.dart';
 import 'package:myapp/service/Settings/index.dart';
 
@@ -161,7 +160,7 @@ class ThemeProvider extends ChangeNotifier {
       ),
 
       // Typography
-      textTheme: GoogleFonts.notoSansScTextTheme(base.textTheme)
+      textTheme: _applyFontFamily(base.textTheme, 'Noto Sans SC')
           .copyWith(
             headlineLarge: const TextStyle(
               letterSpacing: -0.8,
@@ -200,7 +199,8 @@ class ThemeProvider extends ChangeNotifier {
         elevation: 0,
         centerTitle: false,
         titleSpacing: 16,
-        titleTextStyle: GoogleFonts.notoSansSc(
+        titleTextStyle: TextStyle(
+          fontFamily: 'Noto Sans SC',
           fontSize: 16,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
@@ -378,6 +378,26 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Color _lerp(Color a, Color b, double t) => Color.lerp(a, b, t)!;
+
+  TextTheme _applyFontFamily(TextTheme theme, String fontFamily) {
+    return TextTheme(
+      displayLarge: theme.displayLarge?.copyWith(fontFamily: fontFamily),
+      displayMedium: theme.displayMedium?.copyWith(fontFamily: fontFamily),
+      displaySmall: theme.displaySmall?.copyWith(fontFamily: fontFamily),
+      headlineLarge: theme.headlineLarge?.copyWith(fontFamily: fontFamily),
+      headlineMedium: theme.headlineMedium?.copyWith(fontFamily: fontFamily),
+      headlineSmall: theme.headlineSmall?.copyWith(fontFamily: fontFamily),
+      titleLarge: theme.titleLarge?.copyWith(fontFamily: fontFamily),
+      titleMedium: theme.titleMedium?.copyWith(fontFamily: fontFamily),
+      titleSmall: theme.titleSmall?.copyWith(fontFamily: fontFamily),
+      bodyLarge: theme.bodyLarge?.copyWith(fontFamily: fontFamily),
+      bodyMedium: theme.bodyMedium?.copyWith(fontFamily: fontFamily),
+      bodySmall: theme.bodySmall?.copyWith(fontFamily: fontFamily),
+      labelLarge: theme.labelLarge?.copyWith(fontFamily: fontFamily),
+      labelMedium: theme.labelMedium?.copyWith(fontFamily: fontFamily),
+      labelSmall: theme.labelSmall?.copyWith(fontFamily: fontFamily),
+    );
+  }
 
   ThemeData get lightTheme => _buildTheme(Brightness.light);
   ThemeData get darkTheme => _buildTheme(Brightness.dark);

@@ -6,7 +6,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 
 // ============================================================================
-// M3 歌曲列表容器 — 包裹在圆角 Card.filled 内，用 Divider 分隔，紧凑间距
+// M3 歌曲列表容器 — 包裹在圆角 Card.filled 内，用 Divider 分隔
 // ============================================================================
 
 /// 单个歌曲条目数据
@@ -115,10 +115,10 @@ class M3SongList extends StatelessWidget {
       padding: padding,
       itemCount: songs.length,
       separatorBuilder: (_, __) => const Divider(
-        height: 1,
-        // ✨ 修改点 1：左右留出间距，不与封面图重叠
-        indent: 68.0,
-        endIndent: 16.0,
+        height: 1, // 精致紧凑的极细分割线
+        thickness: 0.5,
+        indent: 74.0, // 对齐：10px padding + 48px 封面 + 16px 间距
+        endIndent: 12.0,
       ),
       itemBuilder: (context, index) {
         final isFirst = index == 0;
@@ -161,17 +161,17 @@ class SliverM3SongList extends StatelessWidget {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
-    // 修复：使用 SliverList.builder 替代 shrinkWrap:true 的 ListView
-    // shrinkWrap 会强制一次性构建所有子元素来测量高度，阻塞 UI 线程，
-    // 导致底部导航栏图标/文字延迟渲染（与歌曲数量成正比）。
-    // SliverList 在 CustomScrollView 内按需懒加载构建，不阻塞帧。
     return SliverPadding(
       padding: padding,
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index.isOdd) {
-            // ✨ 修改点 2：同样在这里给分隔线加上间距
-            return const Divider(height: 1, indent: 68.0, endIndent: 16.0);
+            return const Divider(
+              height: 1,
+              thickness: 0.5,
+              indent: 74.0,
+              endIndent: 12.0,
+            );
           }
           final songIndex = index ~/ 2;
           final isFirst = songIndex == 0;
@@ -197,6 +197,7 @@ class _M3SongRow extends StatelessWidget {
   final bool isFirst;
   final bool isLast;
   final MusicProvider? coverLoader;
+
   const _M3SongRow({
     required this.entry,
     this.isFirst = false,
@@ -204,7 +205,7 @@ class _M3SongRow extends StatelessWidget {
     this.coverLoader,
   });
 
-  static const double _cornerRadius = 16; // 与 AppRadius.card 保持一致
+  static const double _cornerRadius = 16;
 
   BorderRadius _clipRadius() {
     if (isFirst && isLast) return BorderRadius.circular(_cornerRadius);
@@ -220,12 +221,10 @@ class _M3SongRow extends StatelessWidget {
   }
 
   Widget _buildCoverImage(ColorScheme colorScheme) {
-    // 1. 优先使用内存中的字节数据
     if (entry.coverBytes != null && entry.coverBytes!.isNotEmpty) {
       return Image.memory(entry.coverBytes!, fit: BoxFit.cover);
     }
 
-    // 2. 其次使用文件路径
     if (entry.coverPath != null && entry.coverPath!.isNotEmpty) {
       final file = File(entry.coverPath!);
       if (file.existsSync()) {
@@ -233,30 +232,25 @@ class _M3SongRow extends StatelessWidget {
       }
     }
 
-    // 3. 再次使用网络 URL（改用强大的 CachedNetworkImage）
     if (entry.coverUrl != null && entry.coverUrl!.isNotEmpty) {
-      // 确保有一个兜底的 User-Agent 防盗链请求头
       final Map<String, String> finalHeaders = {
         'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        ...?entry.coverHeaders, // 融合模型自带的 headers
+        ...?entry.coverHeaders,
       };
 
       return CachedNetworkImage(
         imageUrl: entry.coverUrl!,
         fit: BoxFit.cover,
-        httpHeaders: finalHeaders, // 携带伪装请求头请求图片
-        // 加载过程中的占位组件（可选，这里用一个微弱的骨架屏或图标代替）
+        httpHeaders: finalHeaders,
         placeholder: (context, url) => ColoredBox(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           child: const SizedBox.expand(),
         ),
-        // 报错兜底（403 或网络断开时触发）
         errorWidget: (_, __, ___) => _buildFallbackIcon(colorScheme),
       );
     }
 
-    // 4. 最终兜底图标
     return _buildFallbackIcon(colorScheme);
   }
 
@@ -279,7 +273,6 @@ class _M3SongRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final clipRadius = _clipRadius();
 
-    // 封面懒加载：当 coverBytes 为空且提供了 coverLoader 时，触发异步加载
     if ((entry.coverBytes == null || entry.coverBytes!.isEmpty) &&
         entry.coverUrl == null &&
         coverLoader != null) {
@@ -291,9 +284,9 @@ class _M3SongRow extends StatelessWidget {
       });
     }
 
-    // 选中行使用 secondaryContainer 圆角背景（MD3 风格独立卡片）
-    const hPadding = 8.0;
-    const vPadding = 2.0;
+    // 适配精致比例的尺寸与内边距配置
+    const hPadding = 10.0;
+    const vPadding = 5.0; // 黄金比例内边距：既不挤压文字，也不拉得太宽
     const highlightRadius = BorderRadius.all(Radius.circular(12));
 
     final effectiveRadius = entry.isHighlighted ? highlightRadius : clipRadius;
@@ -307,31 +300,30 @@ class _M3SongRow extends StatelessWidget {
         children: [
           // ---- 封面 / 图标 ----
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             child: SizedBox(
-              width: 48,
+              width: 48, // 标准 M3 歌曲封面比例
               height: 48,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   _buildCoverImage(colorScheme),
-                  // Network source badge
                   if (entry.isNetworkSource)
                     Positioned(
                       right: 0,
                       bottom: 0,
                       child: Container(
-                        width: 16,
-                        height: 16,
+                        width: 15,
+                        height: 15,
                         decoration: BoxDecoration(
                           color: colorScheme.primary.withValues(alpha: 0.9),
                           borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(6),
+                            topLeft: Radius.circular(5),
                           ),
                         ),
                         child: Icon(
                           Icons.cloud_rounded,
-                          size: 12,
+                          size: 11,
                           color: colorScheme.onPrimary,
                         ),
                       ),
@@ -340,7 +332,7 @@ class _M3SongRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           // ---- 标题 + 副标题 ----
           Expanded(
             child: Column(
@@ -354,13 +346,13 @@ class _M3SongRow extends StatelessWidget {
                   style: textTheme.bodyMedium?.copyWith(
                     fontWeight: entry.isHighlighted
                         ? FontWeight.w600
-                        : FontWeight.normal,
+                        : FontWeight.w500,
                     color: entry.isHighlighted
                         ? colorScheme.primary
                         : colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 2), // 微调间距
                 Text(
                   entry.subtitle,
                   maxLines: 1,

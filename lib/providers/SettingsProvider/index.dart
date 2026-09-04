@@ -91,4 +91,26 @@ class SettingsProvider extends ChangeNotifier {
     SettingService.setAppIcon(v);
     AppIconService.switchAppIcon(v);
   }
+
+  // String _neteaseCookie = '';
+  // String _neteaseUsername = '';
+
+  // bool get isNeteaseLoggedIn => _neteaseCookie.isNotEmpty;
+  // String get neteaseCookie => _neteaseCookie;
+  // String get neteaseUsername => _neteaseUsername;
+
+  // // 保存网易云登录 Cookie
+  // void saveNeteaseCookie(String cookie, String username) {
+  //   _neteaseCookie = cookie;
+  //   _neteaseUsername = username;
+  //   // TODO: 可在此处写入 SharedPreferences 进行持久化本地存储
+  //   notifyListeners();
+  // }
+
+  // // 退出登录
+  // void clearNeteaseAuth() {
+  //   _neteaseCookie = '';
+  //   _neteaseUsername = '';
+  //   notifyListeners();
+  // }
 }

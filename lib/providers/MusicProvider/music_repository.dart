@@ -206,7 +206,7 @@ class MusicRepository {
     try {
       final freshUrl = await NeteaseApi.getRealUrl(
         numericId,
-        source: 'netease',
+        // source: 'netease',
       );
       if (freshUrl != null && freshUrl.isNotEmpty) {
         updateNetworkUrl(musicId, freshUrl);

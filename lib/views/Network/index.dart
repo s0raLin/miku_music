@@ -8,19 +8,15 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/Netease/index.dart';
 import 'package:myapp/api/Model/NeteasePlaylist/index.dart';
 import 'package:myapp/api/Model/NeteaseSong/index.dart';
-import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/config/globals.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
+import 'package:myapp/providers/UserProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
-
-// ═══════════════════════════════════════════════════════════════
-//  NetworkSongPage  —  SegmentedButton + 搜索栏 + 内容区
-// ═══════════════════════════════════════════════════════════════
 
 enum _SortMode { defaultSort, name, artist }
 
@@ -38,7 +34,6 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   bool _showSearch = false;
   _SortMode _sortMode = _SortMode.defaultSort;
 
-  // 标志：当前激活的 tab 是否已执行过一次搜索
   final Map<int, bool> _hasSearched = {0: false, 1: false};
 
   @override
@@ -111,66 +106,83 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
 
     return Scaffold(
       backgroundColor: cs.surface,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          Header(
-            title: tabButtons,
-            pinned: true,
-            floating: false,
-            leading: IconButton(
-              onPressed: () {
-                rootScaffoldKey.currentState?.openDrawer();
-              },
-              icon: const Icon(Icons.menu),
-            ),
-            actions: [
-              IconButton(
-                icon: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    _showSearch
-                        ? Icons.search_off_rounded
-                        : Icons.search_rounded,
-                    key: ValueKey(_showSearch),
-                    size: 22,
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-                onPressed: () => setState(() => _showSearch = !_showSearch),
-                tooltip: _showSearch ? '关闭搜索' : '搜索',
-                visualDensity: VisualDensity.compact,
+      // 使用普通 AppBar，彻底避免 Sliver 问题
+      appBar: AppBar(
+        backgroundColor: cs.surface,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          onPressed: () {
+            rootScaffoldKey.currentState?.openDrawer();
+          },
+          icon: const Icon(Icons.menu),
+        ),
+        title: tabButtons,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+                key: ValueKey(_showSearch),
+                size: 22,
+                color: cs.onSurfaceVariant,
               ),
-            ],
+            ),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (_showSearch) {
+                  _searchFocus.requestFocus();
+                } else {
+                  _searchFocus.unfocus();
+                }
+              });
+            },
+            tooltip: _showSearch ? '关闭搜索' : '搜索',
+            visualDensity: VisualDensity.compact,
           ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SearchBarDelegate(
-              showSearch: _showSearch,
-              searchCtrl: _searchCtrl,
-              searchFocus: _searchFocus,
-              hasText: hasText,
-              isFirstTab: isFirstTab,
-              onSearch: _onSearch,
-              onClear: _onClear,
-              onSort: () => _showSortSheet(context),
+        ],
+      ),
+      body: Column(
+        children: [
+          // 搜索栏（普通 Widget）
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            child: _showSearch
+                ? _SearchBar(
+                    searchCtrl: _searchCtrl,
+                    searchFocus: _searchFocus,
+                    hasText: hasText,
+                    isFirstTab: isFirstTab,
+                    onSearch: _onSearch,
+                    onClear: _onClear,
+                    onSort: () => _showSortSheet(context),
+                  )
+                : const SizedBox.shrink(),
+          ),
+
+          // 内容区域
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: [
+                _SongSearchTab(
+                  searchCtrl: _searchCtrl,
+                  hasSearched: _hasSearched[0] ?? false,
+                  sortMode: _sortMode,
+                ),
+                _PlaylistSearchTab(
+                  searchCtrl: _searchCtrl,
+                  hasSearched: _hasSearched[1] ?? false,
+                  sortMode: _sortMode,
+                ),
+              ],
             ),
           ),
         ],
-        body: IndexedStack(
-          index: _currentIndex,
-          children: [
-            _SongSearchTab(
-              searchCtrl: _searchCtrl,
-              hasSearched: _hasSearched[0] ?? false,
-              sortMode: _sortMode,
-            ),
-            _PlaylistSearchTab(
-              searchCtrl: _searchCtrl,
-              hasSearched: _hasSearched[1] ?? false,
-              sortMode: _sortMode,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -240,7 +252,7 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  排序选项（带选中标记）
+//  排序选项
 // ═══════════════════════════════════════════════════════════════
 
 class _SortOption extends StatelessWidget {
@@ -279,11 +291,10 @@ class _SortOption extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  搜索栏 SliverPersistentHeader delegate（钉在 Header 下方）
+//  搜索栏
 // ═══════════════════════════════════════════════════════════════
 
-class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
-  final bool showSearch;
+class _SearchBar extends StatelessWidget {
   final TextEditingController searchCtrl;
   final FocusNode searchFocus;
   final bool hasText;
@@ -292,8 +303,7 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
   final VoidCallback onClear;
   final VoidCallback onSort;
 
-  const _SearchBarDelegate({
-    required this.showSearch,
+  const _SearchBar({
     required this.searchCtrl,
     required this.searchFocus,
     required this.hasText,
@@ -304,26 +314,7 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  double get minExtent => showSearch ? 60 : 0;
-
-  @override
-  double get maxExtent => showSearch ? 60 : 0;
-
-  @override
-  bool shouldRebuild(covariant _SearchBarDelegate oldDelegate) {
-    return showSearch != oldDelegate.showSearch ||
-        hasText != oldDelegate.hasText ||
-        isFirstTab != oldDelegate.isFirstTab;
-  }
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    if (!showSearch) return const SizedBox.shrink();
-
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -548,7 +539,6 @@ class _SongSearchTabState extends State<_SongSearchTab>
   List<NeteaseSong> _results = [];
   List<NeteaseSong> _sortedResults = [];
   bool _isSearching = false;
-  bool _isFiltering = false;
   String? _statusMsg;
   String _lastQueried = '';
 
@@ -583,19 +573,16 @@ class _SongSearchTabState extends State<_SongSearchTab>
   @override
   void didUpdateWidget(covariant _SongSearchTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 父级清除搜索时，重置子状态
     if (oldWidget.hasSearched && !widget.hasSearched) {
       setState(() {
         _lastQueried = '';
         _results = [];
         _sortedResults = [];
         _isSearching = false;
-        _isFiltering = false;
         _statusMsg = null;
       });
       return;
     }
-    // 仅在 hasSearched 从 false → true 时触发搜索（回车键场景）
     if (!oldWidget.hasSearched && widget.hasSearched) {
       final q = widget.searchCtrl.text.trim();
       if (q.isNotEmpty && !_isSearching) {
@@ -603,7 +590,6 @@ class _SongSearchTabState extends State<_SongSearchTab>
         _doSearch(q);
       }
     }
-    // 排序模式变化时重新排序
     if (oldWidget.sortMode != widget.sortMode && _results.isNotEmpty) {
       setState(() {
         _sortedResults = _sortResults(_results);
@@ -625,9 +611,8 @@ class _SongSearchTabState extends State<_SongSearchTab>
         _results = raw;
         _sortedResults = _sortResults(raw);
         _isSearching = false;
-        _statusMsg = '搜索到 ${raw.length} 首，正在过滤可播放链接...';
+        _statusMsg = raw.isEmpty ? '未搜索到相关歌曲' : '找到 ${raw.length} 首歌曲';
       });
-      await _filter();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -637,44 +622,50 @@ class _SongSearchTabState extends State<_SongSearchTab>
     }
   }
 
-  Future<void> _filter() async {
-    if (_results.isEmpty) {
-      setState(() {
-        _isFiltering = false;
-        _statusMsg = '未找到可播放的歌曲';
-      });
-      return;
-    }
-    setState(() => _isFiltering = true);
-    final ok = await NeteaseApi.filterAccessible(_results);
-    if (!mounted) return;
-    setState(() {
-      _results = ok;
-      _sortedResults = _sortResults(ok);
-      _isFiltering = false;
-      _statusMsg = ok.isEmpty ? '所有链接均无法访问' : '已找到 ${ok.length} 首可播放歌曲';
-    });
-  }
-
   Future<void> _play(NeteaseSong song) async {
     try {
+      AppToast.neutral(context, message: '正在解析播放链接...', title: '请稍候');
+
+      String? playUrl = song.url;
+      if (playUrl.isEmpty) {
+        // 从 UserProvider 获取网易云 Cookie
+        final neteaseCookie = context.read<UserProvider>().neteaseCookie;
+
+        playUrl = await NeteaseApi.getRealUrl(
+          song.id,
+          cookie: neteaseCookie, 
+        );
+      }
+
+      if (playUrl == null || playUrl.isEmpty) {
+        if (!mounted) return;
+        AppToast.error(
+          context,
+          message: '无法获取有效播放地址（可能无版权或需VIP账号）',
+          title: '播放失败',
+        );
+        return;
+      }
+
       final mp = context.read<MusicProvider>();
       final displayList = _sortedResults.isNotEmpty ? _sortedResults : _results;
-      final idx = displayList.indexOf(song);
+      final idx = displayList.indexWhere((s) => s.id == song.id);
       if (idx < 0) return;
-      final songMaps = displayList
-          .map(
-            (s) => <String, String?>{
-              'id': s.id,
-              'title': s.title,
-              'artist': s.author,
-              'url': s.url,
-              'coverUrl': s.pic,
-              'lyrics': mp.getCachedLyrics('net_${s.id}'),
-            },
-          )
-          .toList();
+
+      final songMaps = displayList.map((s) {
+        final currentUrl = s.id == song.id ? playUrl : s.url;
+        return <String, String?>{
+          'id': s.id,
+          'title': s.title,
+          'artist': s.author,
+          'url': currentUrl,
+          'coverUrl': s.pic,
+          'lyrics': mp.getCachedLyrics('net_${s.id}'),
+        };
+      }).toList();
+
       await mp.playNetworkSearchResults(songs: songMaps, startIndex: idx);
+
       final lr = await NeteaseApi.getLyric(song.id);
       if ((lr['lyric']?.isNotEmpty ?? false) && mounted) {
         await mp.setLyricsDirectly(lr['lyric']!);
@@ -692,6 +683,19 @@ class _SongSearchTabState extends State<_SongSearchTab>
 
   Future<void> _download(NeteaseSong song) async {
     try {
+      AppToast.neutral(context, message: '正在获取下载链接...', title: '请稍候');
+
+      String? downloadUrl = song.url;
+      if (downloadUrl.isEmpty) {
+        downloadUrl = await NeteaseApi.getRealUrl(song.id);
+      }
+
+      if (downloadUrl == null || downloadUrl.isEmpty) {
+        if (!mounted) return;
+        AppToast.error(context, message: '无法获取下载链接', title: '下载失败');
+        return;
+      }
+
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
       final safeTitle = song.title
@@ -704,11 +708,14 @@ class _SongSearchTabState extends State<_SongSearchTab>
         p.join(m3MusicDir.path, '$safeTitle - $safeArtist'),
       );
       if (!await songDir.exists()) await songDir.create(recursive: true);
-      String ext = p.url.extension(song.url);
+
+      String ext = p.url.extension(downloadUrl);
       if (ext.contains('?')) ext = ext.split('?').first;
       if (ext.isEmpty || ext.length > 5) ext = '.mp3';
+
       final audioPath = p.join(songDir.path, '$safeTitle - $safeArtist$ext');
-      final audioResult = await NeteaseApi.downloadSong(song.url, audioPath);
+      final audioResult = await NeteaseApi.downloadSong(downloadUrl, audioPath);
+
       String? lrcPath;
       try {
         final lyricMap = await NeteaseApi.getLyric(song.id);
@@ -718,6 +725,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
           await File(lrcPath).writeAsString(lc);
         }
       } catch (_) {}
+
       String? coverPath;
       try {
         if (song.pic.isNotEmpty) {
@@ -725,6 +733,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
           await NeteaseApi.downloadCover(song.pic, coverPath);
         }
       } catch (_) {}
+
       try {
         final meta = {
           'id': song.id,
@@ -739,9 +748,9 @@ class _SongSearchTabState extends State<_SongSearchTab>
           p.join(songDir.path, 'metadata.json'),
         ).writeAsString(const JsonEncoder.withIndent('  ').convert(meta));
       } catch (_) {}
+
       if (!mounted) return;
       if (audioResult != null) {
-        // Add downloaded song to music library for playlist/favorite support
         try {
           final mp = context.read<MusicProvider>();
           Uint8List? coverBytes;
@@ -758,16 +767,18 @@ class _SongSearchTabState extends State<_SongSearchTab>
               lyrics = await lrcFile.readAsString();
             }
           }
-          mp.addToLibrary(Music(
-            id: audioPath,
-            title: song.title,
-            artist: song.author,
-            duration: Duration.zero,
-            coverBytes: coverBytes,
-            lyrics: lyrics,
-            album: null,
-            source: MusicSource.local,
-          ));
+          mp.addToLibrary(
+            Music(
+              id: audioPath,
+              title: song.title,
+              artist: song.author,
+              duration: Duration.zero,
+              coverBytes: coverBytes,
+              lyrics: lyrics,
+              album: null,
+              source: MusicSource.local,
+            ),
+          );
         } catch (_) {}
         final buf = StringBuffer('已保存到: $audioPath');
         if (lrcPath != null) buf.write('\n歌词: $lrcPath');
@@ -791,9 +802,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
     final currentNetId = currentMusic?.id.startsWith('net_') == true
         ? currentMusic!.id.substring(4)
         : null;
-    final isLoading = _isSearching || _isFiltering;
     final displayList = _sortedResults.isNotEmpty ? _sortedResults : _results;
-
     final showEmpty = _lastQueried.isEmpty && _results.isEmpty && !_isSearching;
 
     if (showEmpty) {
@@ -810,7 +819,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
       );
     }
 
-    if (isLoading) {
+    if (_isSearching) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -818,18 +827,9 @@ class _SongSearchTabState extends State<_SongSearchTab>
             CircularProgressIndicator(color: cs.primary),
             const SizedBox(height: 16),
             Text(
-              _statusMsg ?? '',
+              _statusMsg ?? '正在搜索...',
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
-            if (_isFiltering) ...[
-              const SizedBox(height: 6),
-              Text(
-                '正在验证可播放链接...',
-                style: tt.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
           ],
         ),
       );
@@ -850,7 +850,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
             ),
             const SizedBox(height: 16),
             Text(
-              _statusMsg ?? '未找到可播放的歌曲',
+              _statusMsg ?? '未找到相关歌曲',
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
@@ -883,12 +883,11 @@ class _SongSearchTabState extends State<_SongSearchTab>
               onSelected: (v) {
                 if (v == 'play') {
                   _play(s);
-                } else if (v == 'detail')
-                  // ignore: curly_braces_in_flow_control_structures
+                } else if (v == 'detail') {
                   _openDetail(s);
-                else if (v == 'download')
-                  // ignore: curly_braces_in_flow_control_structures
+                } else if (v == 'download') {
                   _download(s);
+                }
               },
               itemBuilder: (_) => [
                 PopupMenuItem(
@@ -999,7 +998,6 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
   @override
   void didUpdateWidget(covariant _PlaylistSearchTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 父级清除搜索时，重置子状态
     if (oldWidget.hasSearched && !widget.hasSearched) {
       setState(() {
         _lastQueried = '';
@@ -1010,7 +1008,6 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       });
       return;
     }
-    // 仅在 hasSearched 从 false → true 时触发搜索（回车键场景）
     if (!oldWidget.hasSearched && widget.hasSearched) {
       final q = widget.searchCtrl.text.trim();
       if (q.isNotEmpty && !_isSearching) {
@@ -1018,7 +1015,6 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         _doSearch(q);
       }
     }
-    // 排序模式变化时重新排序
     if (oldWidget.sortMode != widget.sortMode && _playlists.isNotEmpty) {
       setState(() {
         _sortedPlaylists = _sortPlaylists(_playlists);

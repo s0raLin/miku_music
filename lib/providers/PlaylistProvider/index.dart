@@ -48,7 +48,10 @@ class PlaylistProvider extends ChangeNotifier {
   /// 由 ProxyProvider 驱动，结合当前内存中有效的全局乐库动态瘦身
   /// [musicProvider] is optional but recommended — network song IDs from the queue
   /// will be retained alongside local library IDs.
-  void updateActivePlaylists(Set<String> localSongIds, {MusicProvider? musicProvider}) {
+  void updateActivePlaylists(
+    Set<String> localSongIds, {
+    MusicProvider? musicProvider,
+  }) {
     // Build a combined set of valid IDs: local library + network songs currently in queue
     final validIds = <String>{};
     validIds.addAll(localSongIds);
@@ -94,9 +97,7 @@ class PlaylistProvider extends ChangeNotifier {
     _rawHistoryIds = await _dbService.getHistoryIds();
 
     // 构建有效 ID 集合：本地库 + 网络歌曲
-    final combinedIds = <String>{
-      ...currentLibrary.map((s) => s.id),
-    };
+    final combinedIds = <String>{...currentLibrary.map((s) => s.id)};
     if (musicProvider != null) {
       combinedIds.addAll(musicProvider.networkSongIds);
       for (final song in musicProvider.queue) {
@@ -184,7 +185,11 @@ class PlaylistProvider extends ChangeNotifier {
   }
 
   /// 重命名歌单（便捷方法，内部复用 updatePlaylist）
-  Future<void> renamePlaylist(String playlistId, String newName, {MusicProvider? musicProvider}) async {
+  Future<void> renamePlaylist(
+    String playlistId,
+    String newName, {
+    MusicProvider? musicProvider,
+  }) async {
     if (newName.trim().isEmpty) {
       debugPrint("警告: 歌单名称不能为空");
       return;
@@ -203,7 +208,11 @@ class PlaylistProvider extends ChangeNotifier {
   }
 
   /// 将歌曲添加到歌单（自动去重）
-  Future<void> addToPlaylist(String playlistId, Music music, {MusicProvider? musicProvider}) async {
+  Future<void> addToPlaylist(
+    String playlistId,
+    Music music, {
+    MusicProvider? musicProvider,
+  }) async {
     final playlist = getPlaylistById(playlistId);
     if (playlist == null) {
       debugPrint("警告: 歌单不存在, id=$playlistId");
@@ -217,12 +226,20 @@ class PlaylistProvider extends ChangeNotifier {
     await refreshFromDb(musicProvider: musicProvider);
   }
 
-  Future<void> removeFromPlaylist(String playlistId, String musicId, {MusicProvider? musicProvider}) async {
+  Future<void> removeFromPlaylist(
+    String playlistId,
+    String musicId, {
+    MusicProvider? musicProvider,
+  }) async {
     await _dbService.removeFromPlaylist(playlistId, musicId);
     await refreshFromDb(musicProvider: musicProvider);
   }
 
-  Future<void> addToHistory(Music music, int maxLimit, {MusicProvider? musicProvider}) async {
+  Future<void> addToHistory(
+    Music music,
+    int maxLimit, {
+    MusicProvider? musicProvider,
+  }) async {
     await _dbService.addMusicToHistory(music.id, maxLimit);
     await refreshFromDb(musicProvider: musicProvider);
   }
@@ -232,7 +249,10 @@ class PlaylistProvider extends ChangeNotifier {
     await refreshFromDb(musicProvider: musicProvider);
   }
 
-  Future<void> toggleMusicFavorite(Music music, {MusicProvider? musicProvider}) async {
+  Future<void> toggleMusicFavorite(
+    Music music, {
+    MusicProvider? musicProvider,
+  }) async {
     await _dbService.toggleMusicFavorite(music.id);
     await refreshFromDb(musicProvider: musicProvider);
   }
@@ -249,7 +269,11 @@ class PlaylistProvider extends ChangeNotifier {
     return _filteredPlaylists.firstWhereOrNull((p) => p.id == id);
   }
 
-  List<Music> getPlaylistSongs(String playlistId, List<Music> globalLibrary, {MusicProvider? musicProvider}) {
+  List<Music> getPlaylistSongs(
+    String playlistId,
+    List<Music> globalLibrary, {
+    MusicProvider? musicProvider,
+  }) {
     final playlist = getPlaylistById(playlistId);
     if (playlist == null) return [];
 
@@ -263,7 +287,11 @@ class PlaylistProvider extends ChangeNotifier {
         .toList();
   }
 
-  List<Music> getHistorySongs(List<Music> globalLibrary, {MusicProvider? musicProvider}) {
+
+  List<Music> getHistorySongs(
+    List<Music> globalLibrary, {
+    MusicProvider? musicProvider,
+  }) {
     return _filteredHistoryIds
         .map((id) {
           final local = globalLibrary.firstWhereOrNull((m) => m.id == id);

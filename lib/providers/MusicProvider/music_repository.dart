@@ -6,7 +6,9 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:myapp/api/Client/Music/index.dart';
 import 'package:myapp/api/Client/Netease/index.dart';
 import 'package:myapp/model/Music/index.dart';
+import 'package:myapp/providers/MusicProvider/music_queue.dart';
 import 'package:myapp/service/Music/index.dart';
+import 'package:myapp/service/MusicDb/index.dart';
 import 'package:myapp/service/NetworkSongStore/index.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -367,6 +369,82 @@ class MusicRepository {
 
     NetworkSongStore().upsertAll(storeMetas);
     return (musicList, storeMetas);
+  }
+
+ /// 将播放队列快照异步落盘到 Rust SQLite
+  Future<void> saveQueueSnapshot(QueueSnapshot snapshot) async {
+    try {
+      final songIds = snapshot.songs.map((s) => s.id).toList();
+      if (songIds.isEmpty) return;
+
+      // 如果是网络歌曲，确保元数据也已异步持久化到数据库中
+      for (final song in snapshot.songs) {
+        if (isNetworkSong(song.id)) {
+          final url = getNetworkUrl(song.id);
+          if (url != null) {
+            debouncePersistNetworkSong(
+              song,
+              url,
+              getCoverUrl(song.id),
+              getCachedLyrics(song.id),
+            );
+          }
+        }
+      }
+
+      await MusicDbService().saveQueueSnapshot(
+        snapshot,
+        songIds: songIds,
+        currentIndex: snapshot.currentIndex,
+      );
+    } catch (e) {
+      debugPrint('持久化队列快照失败: $e');
+    }
+  }
+
+
+  /// 删除单条历史快照持久化数据
+  Future<void> deleteQueueSnapshot(String snapshotId) async {
+    try {
+      await MusicDbService().deleteQueueSnapshot(snapshotId);
+    } catch (e) {
+      debugPrint('删除历史快照失败: $e');
+    }
+  }
+
+  /// 清空历史快照持久化数据
+  Future<void> clearQueueHistory() async {
+    try {
+      await MusicDbService().clearQueueHistory();
+    } catch (e) {
+      debugPrint('清空历史快照失败: $e');
+    }
+  }
+
+  /// 从 SQLite 数据库恢复历史快照列表，并自动映射解析 ID -> Music 实体
+  Future<List<QueueSnapshot>> loadQueueHistoryFromDb({
+    required List<Music> library,
+    required List<Music> currentQueue,
+  }) async {
+    try {
+      return await MusicDbService().getQueueHistory(
+        limit: 20,
+        songsFetcher: (ids) async {
+          final List<Music> fetchedSongs = [];
+          for (final id in ids) {
+            // 优先从本地乐库、当前队列或网络缓存中精准获取 Music 实体
+            final song = getSongById(id, library, currentQueue);
+            if (song != null) {
+              fetchedSongs.add(song);
+            }
+          }
+          return fetchedSongs;
+        },
+      );
+    } catch (e) {
+      debugPrint('加载数据库队列历史失败: $e');
+      return [];
+    }
   }
 
   // ── lifecycle ──

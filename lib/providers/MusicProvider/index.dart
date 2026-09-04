@@ -151,6 +151,10 @@ class MusicProvider extends ChangeNotifier {
     onProgress?.call('读取应用信息', '正在获取版本号');
     await _repository.loadAppInfo();
     _safeNotifyListeners();
+
+    // 4. 恢复历史播放队列快照
+    onProgress?.call('播放历史', '正在恢复历史播放队列...');
+    await loadQueueHistory();
   }
 
   /// 批量合并更新媒体库
@@ -279,10 +283,53 @@ class MusicProvider extends ChangeNotifier {
     _safeNotifyListeners();
   }
 
+  /// 删除指定的单条队列历史快照
+  void deleteQueueSnapshot(String snapshotId) {
+    _playbackQueue.removeHistoryById(snapshotId);
+    _safeNotifyListeners();
+
+    // 委托给 Repository 处理持久化，不直接操作 DbService
+    _repository.deleteQueueSnapshot(snapshotId);
+  }
+
   /// 清空所有的队列历史快照记录
   void clearQueueHistory() {
     _playbackQueue.clearHistory();
     _safeNotifyListeners();
+
+    // 委托给 Repository 处理持久化
+    _repository.clearQueueHistory();
+  }
+
+  /// 替换或保存当前播放队列并持久化
+  void saveCurrentQueueToHistory({String? queueName}) {
+    // 1. 更新内存状态，获取最新快照
+    final snapshot = _playbackQueue.saveCurrentToHistory(queueName: queueName);
+
+    if (snapshot != null) {
+      _safeNotifyListeners();
+      // 2. 触发异步持久化落盘
+      _repository.saveQueueSnapshot(snapshot);
+    }
+  }
+
+  // music_provider.dart
+
+  /// 启动时从 SQLite 数据库恢复历史播放队列列表
+  Future<void> loadQueueHistory() async {
+    // 1. 调用 repository 拉取 DB 数据并还原成 QueueSnapshot 实体列表
+    final snapshots = await _repository.loadQueueHistoryFromDb(
+      library: _library,
+      currentQueue: _playbackQueue.queue,
+    );
+
+    if (snapshots.isNotEmpty) {
+      // 2. 将数据灌入内存模型 MusicQueue
+      _playbackQueue.loadHistory(snapshots);
+
+      // 3. 通知 UI 刷新（例如 _QueueSheet 页面）
+      _safeNotifyListeners();
+    }
   }
 
   /// 替换当前播放队列（可选标记队列名称 [queueName]，并控制是否保存快照到历史记录）
@@ -294,6 +341,12 @@ class MusicProvider extends ChangeNotifier {
     bool saveToHistory = true,
   }) async {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) return;
+
+    // 1. 在替换前，先将当前旧队列自动存入历史快照
+    if (saveToHistory && queue.isNotEmpty) {
+      saveCurrentQueueToHistory();
+    }
+
     _playbackQueue.replace(
       songs,
       queueName: queueName,

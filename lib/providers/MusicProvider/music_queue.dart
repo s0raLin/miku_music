@@ -104,17 +104,17 @@ class MusicQueue {
   /// 根据歌曲 ID 检查当前队列中是否存在该歌曲
   bool contains(String id) => _queueIndexMap.containsKey(id);
 
-  /// 将当前队列作为快照保存到历史记录中
-  ///
-  /// [queueName] 可选参数，指定历史队列的名称
-  void saveCurrentToHistory({String? queueName}) {
-    if (_queue.isEmpty) return;
 
-    // ── 防重校验：如果当前队列与最新的历史快照完全一致，则无需重复保存 ──
+  /// 将当前队列作为快照保存到历史记录中
+  /// 返回创建的 QueueSnapshot 对象，若队列为空或与最新快照重复则返回 null
+  QueueSnapshot? saveCurrentToHistory({String? queueName}) {
+    if (_queue.isEmpty) return null;
+
+    // 防重校验：与最新快照完全一致则不重复保存
     if (_history.isNotEmpty) {
       final lastSnapshot = _history.first;
       if (_isQueueSame(lastSnapshot.songs, _queue)) {
-        return; // 队列内容未发生改变，直接拦截，避免产生重复快照
+        return null;
       }
     }
 
@@ -128,6 +128,18 @@ class MusicQueue {
     _history.insert(0, snapshot);
     if (_history.length > maxHistorySize) {
       _history.removeLast();
+    }
+
+    return snapshot; // 关键点：将快照返回给 Provider/Repository
+  }
+
+  /// 批量载入数据库历史快照（通常在 App 启动或初始化时调用）
+  void loadHistory(List<QueueSnapshot> snapshots) {
+    _history.clear();
+    _history.addAll(snapshots);
+    // 保持最大容量限制
+    if (_history.length > maxHistorySize) {
+      _history.removeRange(maxHistorySize, _history.length);
     }
   }
 
@@ -173,6 +185,12 @@ class MusicQueue {
         return _currentIndex; // 顺序播放到最后一首时，自动切歌维持在末尾（或由播放器停止）
     }
   }
+
+  /// 根据快照 ID 删除指定的历史队列记录
+  void removeHistoryById(String id) {
+    _history.removeWhere((snapshot) => snapshot.id == id);
+  }
+
 
   /// 计算上一首歌曲的索引位置
   int computePrevIndex() {

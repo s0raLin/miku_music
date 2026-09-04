@@ -2,6 +2,9 @@ pub mod favorites;
 pub mod history;
 pub mod playlists;
 pub mod songs;
+pub mod queue;
+
+use serde::{Deserialize, Serialize};
 
 use std::sync::Mutex;
 
@@ -33,6 +36,15 @@ pub struct PlaylistInfo {
     pub ids: Vec<String>,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+/// 队列快照模型
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QueueSnapshot {
+    pub id: String,
+    pub songs: Vec<String>,
+    pub current_index: i64,
+    pub created_at: i64,
 }
 
 impl DbManager {

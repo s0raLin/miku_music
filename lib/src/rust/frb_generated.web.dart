@@ -98,6 +98,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<QueueSnapshot> dco_decode_list_queue_snapshot(dynamic raw);
+
+  @protected
   LyricFormat dco_decode_lyric_format(dynamic raw);
 
   @protected
@@ -120,6 +123,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlaylistInfo dco_decode_playlist_info(dynamic raw);
+
+  @protected
+  QueueSnapshot dco_decode_queue_snapshot(dynamic raw);
 
   @protected
   SongMetadata dco_decode_song_metadata(dynamic raw);
@@ -209,6 +215,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<QueueSnapshot> sse_decode_list_queue_snapshot(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   LyricFormat sse_decode_lyric_format(SseDeserializer deserializer);
 
   @protected
@@ -233,6 +244,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlaylistInfo sse_decode_playlist_info(SseDeserializer deserializer);
+
+  @protected
+  QueueSnapshot sse_decode_queue_snapshot(SseDeserializer deserializer);
 
   @protected
   SongMetadata sse_decode_song_metadata(SseDeserializer deserializer);
@@ -346,6 +360,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_queue_snapshot(
+    List<QueueSnapshot> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_lyric_format(LyricFormat self, SseSerializer serializer);
 
   @protected
@@ -374,6 +394,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_playlist_info(PlaylistInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_queue_snapshot(QueueSnapshot self, SseSerializer serializer);
 
   @protected
   void sse_encode_song_metadata(SongMetadata self, SseSerializer serializer);

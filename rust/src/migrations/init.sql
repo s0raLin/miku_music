@@ -38,3 +38,20 @@ CREATE TABLE IF NOT EXISTS play_history (
     played_at INTEGER NOT NULL
 );
 
+
+-- 5. 队列快照历史主表
+CREATE TABLE IF NOT EXISTS queue_snapshots (
+    id TEXT PRIMARY KEY,
+    current_index INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+);
+-- 6. 队列快照 - 歌曲明细表（无外键约束）
+CREATE TABLE IF NOT EXISTS queue_snapshot_songs (
+    snapshot_id TEXT NOT NULL,
+    music_id TEXT NOT NULL,
+    sort_order INTEGER NOT NULL,
+    PRIMARY KEY (snapshot_id, sort_order)
+);
+-- 索引优化：加速按时间倒序查询历史快照与关联明细查找
+CREATE INDEX IF NOT EXISTS idx_queue_snapshots_created_at ON queue_snapshots(created_at);
+CREATE INDEX IF NOT EXISTS idx_queue_snapshot_songs_snapshot_id ON queue_snapshot_songs(snapshot_id);

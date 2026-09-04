@@ -71,7 +71,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -1563920506;
+  int get rustContentHash => 414178049;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -97,6 +97,10 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiAudioDbDbManagerClearHistory({required DbManager that});
 
+  Future<void> crateApiAudioDbDbManagerClearQueueHistory({
+    required DbManager that,
+  });
+
   Future<String> crateApiAudioDbDbManagerCreatePlaylist({
     required DbManager that,
     required String name,
@@ -108,6 +112,11 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiAudioDbDbManagerDeletePlaylist({
     required DbManager that,
     required String playlistId,
+  });
+
+  Future<void> crateApiAudioDbDbManagerDeleteQueueSnapshot({
+    required DbManager that,
+    required String snapshotId,
   });
 
   Future<void> crateApiAudioDbDbManagerDeleteSongCompletely({
@@ -125,6 +134,11 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<String>> crateApiAudioDbDbManagerGetPlayHistory({
     required DbManager that,
+  });
+
+  Future<List<QueueSnapshot>> crateApiAudioDbDbManagerGetQueueHistory({
+    required DbManager that,
+    required PlatformInt64 limit,
   });
 
   Future<MusicInfo?> crateApiAudioDbDbManagerGetSong({
@@ -163,6 +177,13 @@ abstract class RustLibApi extends BaseApi {
     required DbManager that,
     required String playlistId,
     required String musicId,
+  });
+
+  Future<String> crateApiAudioDbDbManagerSaveQueueSnapshot({
+    required DbManager that,
+    required List<String> songs,
+    required PlatformInt64 currentIndex,
+    required PlatformInt64 maxLimit,
   });
 
   Future<bool> crateApiAudioDbDbManagerToggleSongFavorite({
@@ -338,6 +359,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiAudioDbDbManagerClearQueueHistory({
+    required DbManager that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerClearQueueHistoryConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerClearQueueHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_clear_queue_history",
+        argNames: ["that"],
+      );
+
+  @override
   Future<String> crateApiAudioDbDbManagerCreatePlaylist({
     required DbManager that,
     required String name,
@@ -360,7 +417,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 5,
             port: port_,
           );
         },
@@ -398,7 +455,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -420,6 +477,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiAudioDbDbManagerDeleteQueueSnapshot({
+    required DbManager that,
+    required String snapshotId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_String(snapshotId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 7,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerDeleteQueueSnapshotConstMeta,
+        argValues: [that, snapshotId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerDeleteQueueSnapshotConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_delete_queue_snapshot",
+        argNames: ["that", "snapshotId"],
+      );
+
+  @override
   Future<void> crateApiAudioDbDbManagerDeleteSongCompletely({
     required DbManager that,
     required String musicId,
@@ -436,7 +531,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 8,
             port: port_,
           );
         },
@@ -472,7 +567,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 9,
             port: port_,
           );
         },
@@ -508,7 +603,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 10,
             port: port_,
           );
         },
@@ -544,7 +639,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 11,
             port: port_,
           );
         },
@@ -566,6 +661,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<List<QueueSnapshot>> crateApiAudioDbDbManagerGetQueueHistory({
+    required DbManager that,
+    required PlatformInt64 limit,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_i_64(limit, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_queue_snapshot,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerGetQueueHistoryConstMeta,
+        argValues: [that, limit],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerGetQueueHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_get_queue_history",
+        argNames: ["that", "limit"],
+      );
+
+  @override
   Future<MusicInfo?> crateApiAudioDbDbManagerGetSong({
     required DbManager that,
     required String id,
@@ -582,7 +715,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 13,
             port: port_,
           );
         },
@@ -620,7 +753,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 14,
             port: port_,
           );
         },
@@ -658,7 +791,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 15,
             port: port_,
           );
         },
@@ -696,7 +829,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 16,
             port: port_,
           );
         },
@@ -734,7 +867,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 17,
             port: port_,
           );
         },
@@ -772,7 +905,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 18,
             port: port_,
           );
         },
@@ -803,7 +936,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 19,
             port: port_,
           );
         },
@@ -841,7 +974,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 20,
             port: port_,
           );
         },
@@ -863,6 +996,48 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<String> crateApiAudioDbDbManagerSaveQueueSnapshot({
+    required DbManager that,
+    required List<String> songs,
+    required PlatformInt64 currentIndex,
+    required PlatformInt64 maxLimit,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDbManager(
+            that,
+            serializer,
+          );
+          sse_encode_list_String(songs, serializer);
+          sse_encode_i_64(currentIndex, serializer);
+          sse_encode_i_64(maxLimit, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 21,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiAudioDbDbManagerSaveQueueSnapshotConstMeta,
+        argValues: [that, songs, currentIndex, maxLimit],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAudioDbDbManagerSaveQueueSnapshotConstMeta =>
+      const TaskConstMeta(
+        debugName: "DbManager_save_queue_snapshot",
+        argNames: ["that", "songs", "currentIndex", "maxLimit"],
+      );
+
+  @override
   Future<bool> crateApiAudioDbDbManagerToggleSongFavorite({
     required DbManager that,
     required String musicId,
@@ -879,7 +1054,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 22,
             port: port_,
           );
         },
@@ -923,7 +1098,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 23,
             port: port_,
           );
         },
@@ -956,7 +1131,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 24,
             port: port_,
           );
         },
@@ -989,7 +1164,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 25,
             port: port_,
           );
         },
@@ -1020,7 +1195,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 26,
             port: port_,
           );
         },
@@ -1050,7 +1225,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 27,
             port: port_,
           );
         },
@@ -1081,7 +1256,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 28,
             port: port_,
           );
         },
@@ -1108,7 +1283,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 25,
+            funcId: 29,
             port: port_,
           );
         },
@@ -1138,7 +1313,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 26,
+              funcId: 30,
               port: port_,
             );
           },
@@ -1168,7 +1343,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 27,
+            funcId: 31,
             port: port_,
           );
         },
@@ -1196,7 +1371,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 28,
+            funcId: 32,
             port: port_,
           );
         },
@@ -1229,7 +1404,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 29,
+              funcId: 33,
               port: port_,
             );
           },
@@ -1405,6 +1580,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<QueueSnapshot> dco_decode_list_queue_snapshot(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_queue_snapshot).toList();
+  }
+
+  @protected
   LyricFormat dco_decode_lyric_format(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return LyricFormat.values[raw as int];
@@ -1488,6 +1669,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ids: dco_decode_list_String(arr[5]),
       createdAt: dco_decode_i_64(arr[6]),
       updatedAt: dco_decode_i_64(arr[7]),
+    );
+  }
+
+  @protected
+  QueueSnapshot dco_decode_queue_snapshot(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return QueueSnapshot(
+      id: dco_decode_String(arr[0]),
+      songs: dco_decode_list_String(arr[1]),
+      currentIndex: dco_decode_i_64(arr[2]),
+      createdAt: dco_decode_i_64(arr[3]),
     );
   }
 
@@ -1728,6 +1923,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<QueueSnapshot> sse_decode_list_queue_snapshot(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <QueueSnapshot>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_queue_snapshot(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   LyricFormat sse_decode_lyric_format(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
@@ -1836,6 +2045,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ids: var_ids,
       createdAt: var_createdAt,
       updatedAt: var_updatedAt,
+    );
+  }
+
+  @protected
+  QueueSnapshot sse_decode_queue_snapshot(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_songs = sse_decode_list_String(deserializer);
+    var var_currentIndex = sse_decode_i_64(deserializer);
+    var var_createdAt = sse_decode_i_64(deserializer);
+    return QueueSnapshot(
+      id: var_id,
+      songs: var_songs,
+      currentIndex: var_currentIndex,
+      createdAt: var_createdAt,
     );
   }
 
@@ -2087,6 +2311,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_queue_snapshot(
+    List<QueueSnapshot> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_queue_snapshot(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_lyric_format(LyricFormat self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
@@ -2172,6 +2408,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_queue_snapshot(QueueSnapshot self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_list_String(self.songs, serializer);
+    sse_encode_i_64(self.currentIndex, serializer);
+    sse_encode_i_64(self.createdAt, serializer);
+  }
+
+  @protected
   void sse_encode_song_metadata(SongMetadata self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
@@ -2250,6 +2495,9 @@ class DbManagerImpl extends RustOpaque implements DbManager {
   Future<void> clearHistory() =>
       RustLib.instance.api.crateApiAudioDbDbManagerClearHistory(that: this);
 
+  Future<void> clearQueueHistory() => RustLib.instance.api
+      .crateApiAudioDbDbManagerClearQueueHistory(that: this);
+
   /// 创建一个新歌单（让 Rust 自动生成唯一 ID 并返回给前端）
   Future<String> createPlaylist({
     required String name,
@@ -2270,6 +2518,12 @@ class DbManagerImpl extends RustOpaque implements DbManager {
       RustLib.instance.api.crateApiAudioDbDbManagerDeletePlaylist(
         that: this,
         playlistId: playlistId,
+      );
+
+  Future<void> deleteQueueSnapshot({required String snapshotId}) =>
+      RustLib.instance.api.crateApiAudioDbDbManagerDeleteQueueSnapshot(
+        that: this,
+        snapshotId: snapshotId,
       );
 
   /// 核心逻辑：从媒体库彻底删除歌曲
@@ -2293,6 +2547,13 @@ class DbManagerImpl extends RustOpaque implements DbManager {
   /// 获取最近播放的歌曲 ID 列表（按播放时间倒序）
   Future<List<String>> getPlayHistory() =>
       RustLib.instance.api.crateApiAudioDbDbManagerGetPlayHistory(that: this);
+
+  /// 获取队列快照历史列表
+  Future<List<QueueSnapshot>> getQueueHistory({required PlatformInt64 limit}) =>
+      RustLib.instance.api.crateApiAudioDbDbManagerGetQueueHistory(
+        that: this,
+        limit: limit,
+      );
 
   /// 获取单首歌曲
   Future<MusicInfo?> getSong({required String id}) =>
@@ -2337,6 +2598,18 @@ class DbManagerImpl extends RustOpaque implements DbManager {
     that: this,
     playlistId: playlistId,
     musicId: musicId,
+  );
+
+  /// 保存一个新的队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）
+  Future<String> saveQueueSnapshot({
+    required List<String> songs,
+    required PlatformInt64 currentIndex,
+    required PlatformInt64 maxLimit,
+  }) => RustLib.instance.api.crateApiAudioDbDbManagerSaveQueueSnapshot(
+    that: this,
+    songs: songs,
+    currentIndex: currentIndex,
+    maxLimit: maxLimit,
   );
 
   /// 2. 切换收藏状态 (Toggle 逻辑)

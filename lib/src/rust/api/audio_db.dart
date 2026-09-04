@@ -6,7 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DbManager>>
 abstract class DbManager implements RustOpaqueInterface {
@@ -25,6 +25,8 @@ abstract class DbManager implements RustOpaqueInterface {
   /// 清空播放历史
   Future<void> clearHistory();
 
+  Future<void> clearQueueHistory();
+
   /// 创建一个新歌单（让 Rust 自动生成唯一 ID 并返回给前端）
   Future<String> createPlaylist({
     required String name,
@@ -36,6 +38,8 @@ abstract class DbManager implements RustOpaqueInterface {
   /// 删除指定歌单
   /// ⚠️ 无外键约束，必须手动用事务清除该歌单下的关联映射记录
   Future<void> deletePlaylist({required String playlistId});
+
+  Future<void> deleteQueueSnapshot({required String snapshotId});
 
   /// 核心逻辑：从媒体库彻底删除歌曲
   /// ⚠️ 由于无外键约束，需要手动清理交叉连接表和播放历史
@@ -51,6 +55,9 @@ abstract class DbManager implements RustOpaqueInterface {
 
   /// 获取最近播放的歌曲 ID 列表（按播放时间倒序）
   Future<List<String>> getPlayHistory();
+
+  /// 获取队列快照历史列表
+  Future<List<QueueSnapshot>> getQueueHistory({required PlatformInt64 limit});
 
   /// 获取单首歌曲
   Future<MusicInfo?> getSong({required String id});
@@ -79,6 +86,13 @@ abstract class DbManager implements RustOpaqueInterface {
   Future<void> removeSongFromPlaylist({
     required String playlistId,
     required String musicId,
+  });
+
+  /// 保存一个新的队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）
+  Future<String> saveQueueSnapshot({
+    required List<String> songs,
+    required PlatformInt64 currentIndex,
+    required PlatformInt64 maxLimit,
   });
 
   /// 2. 切换收藏状态 (Toggle 逻辑)
@@ -186,4 +200,33 @@ class PlaylistInfo {
           ids == other.ids &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt;
+}
+
+/// 队列快照模型
+class QueueSnapshot {
+  final String id;
+  final List<String> songs;
+  final PlatformInt64 currentIndex;
+  final PlatformInt64 createdAt;
+
+  const QueueSnapshot({
+    required this.id,
+    required this.songs,
+    required this.currentIndex,
+    required this.createdAt,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ songs.hashCode ^ currentIndex.hashCode ^ createdAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QueueSnapshot &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          songs == other.songs &&
+          currentIndex == other.currentIndex &&
+          createdAt == other.createdAt;
 }

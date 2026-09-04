@@ -307,7 +307,7 @@ class _CapsuleProgressBar extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  播放队列 & 历史快照 Bottom Sheet
+//  播放队列 & 历史快照 Bottom Sheet（美化版 & 支持单项删除）
 // ════════════════════════════════════════════════════════════════
 class _QueueSheet extends StatelessWidget {
   const _QueueSheet();
@@ -324,6 +324,15 @@ class _QueueSheet extends StatelessWidget {
     PlayMode.repeat => '单曲循环',
   };
 
+  /// 格式化时间戳显示（例：MM-dd HH:mm）
+  String _formatDateTime(DateTime dt) {
+    final month = dt.month.toString().padLeft(2, '0');
+    final day = dt.day.toString().padLeft(2, '0');
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '$month-$day $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -338,43 +347,60 @@ class _QueueSheet extends StatelessWidget {
       length: 2,
       child: SafeArea(
         child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.6,
+          height: MediaQuery.sizeOf(context).height * 0.68,
           child: Column(
             children: [
-              // 顶端 Handle 抓手标志
+              // 1. 顶端 Handle 抓手标志与标题栏
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
                 child: Center(
                   child: Container(
-                    width: 36,
+                    width: 32,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
               ),
 
-              // Tab 切换栏
+              // 2. Tab 切换栏（优化 MD3 药丸形状指示器）
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TabBar(
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: tt.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  unselectedLabelStyle: tt.titleSmall,
-                  tabs: [
-                    Tab(text: '当前队列 (${songs.length})'),
-                    Tab(text: '历史快照 (${historyList.length})'),
-                  ],
+                  child: TabBar(
+                    dividerColor: Colors.transparent,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: BoxDecoration(
+                      color: cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    labelColor: cs.onPrimaryContainer,
+                    unselectedLabelColor: cs.onSurfaceVariant,
+                    labelStyle: tt.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    unselectedLabelStyle: tt.labelLarge,
+                    tabs: [
+                      Tab(text: '当前队列 (${songs.length})'),
+                      Tab(text: '历史快照 (${historyList.length})'),
+                    ],
+                  ),
                 ),
               ),
-              const Divider(height: 1, thickness: 0.5),
 
-              // Tab 页面内容展示
+              const SizedBox(height: 8),
+
+              // 3. Tab 页面内容展示
               Expanded(
                 child: TabBarView(
                   children: [
@@ -411,39 +437,74 @@ class _QueueSheet extends StatelessWidget {
   ) {
     if (songs.isEmpty) {
       return Center(
-        child: Text(
-          '播放队列为空',
-          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.queue_music_rounded, size: 48, color: cs.outlineVariant),
+            const SizedBox(height: 12),
+            Text(
+              '播放队列为空',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          ],
         ),
       );
     }
 
     return Column(
       children: [
-        // 队列操作工具栏
+        // 队列顶部操作栏
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 12, 4),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              IconButton(
-                onPressed: mp.togglePlayMode,
-                tooltip: modeTooltip(mp.playMode),
-                icon: Icon(modeIcon(mp.playMode)),
-                color: cs.onSurfaceVariant,
+              Text(
+                '播放模式',
+                style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant),
               ),
-              IconButton(
-                tooltip: '清空队列',
-                icon: const Icon(Icons.delete_outline_rounded),
+              const SizedBox(width: 8),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: mp.togglePlayMode,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(modeIcon(mp.playMode), size: 18, color: cs.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        modeTooltip(mp.playMode),
+                        style: tt.labelMedium?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
                 onPressed: mp.clearQueue,
-                color: cs.onSurfaceVariant,
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                label: const Text('清空'),
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.error,
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
             ],
           ),
         ),
+        const Divider(height: 1, thickness: 0.5),
+
         Expanded(
           child: ReorderableListView.builder(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 16, top: 4),
             itemCount: songs.length,
             onReorder: mp.reorderQueue,
             buildDefaultDragHandles: false,
@@ -460,14 +521,20 @@ class _QueueSheet extends StatelessWidget {
                 leading: ReorderableDragStartListener(
                   index: index,
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? cs.primaryContainer
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
                     alignment: Alignment.center,
                     child: isCurrent
                         ? Icon(
                             Icons.volume_up_rounded,
                             size: 20,
-                            color: cs.primary,
+                            color: cs.onPrimaryContainer,
                           )
                         : Icon(
                             Icons.drag_handle_rounded,
@@ -482,7 +549,7 @@ class _QueueSheet extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: tt.bodyLarge?.copyWith(
                     color: isCurrent ? cs.primary : cs.onSurface,
-                    fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 subtitle: Text(
@@ -511,7 +578,7 @@ class _QueueSheet extends StatelessWidget {
     );
   }
 
-  /// 历史快照列表构件
+  /// 历史快照列表构件（集成美化卡片、队列名称、预览曲目与侧滑/按钮删除）
   Widget _buildQueueHistory(
     BuildContext context,
     MusicProvider mp,
@@ -521,69 +588,226 @@ class _QueueSheet extends StatelessWidget {
   ) {
     if (history.isEmpty) {
       return Center(
-        child: Text(
-          '暂无队列历史记录',
-          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history_rounded, size: 48, color: cs.outlineVariant),
+            const SizedBox(height: 12),
+            Text(
+              '暂无队列历史记录',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          ],
         ),
       );
     }
 
     return Column(
       children: [
-        // 历史栏操作栏
+        // 历史栏顶部操作栏
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 12, 4),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                tooltip: '清空历史快照',
-                icon: const Icon(Icons.delete_sweep_rounded),
-                onPressed: mp.clearQueueHistory,
-                color: cs.onSurfaceVariant,
+              Text(
+                '包含自动保存的播放快照',
+                style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('清空历史'),
+                      content: const Text('确定要清空所有队列历史快照吗？'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('取消'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('清空'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    mp.clearQueueHistory();
+                  }
+                },
+                icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+                label: const Text('全部清空'),
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.error,
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
             ],
           ),
         ),
+        const Divider(height: 1, thickness: 0.5),
+
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             itemCount: history.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final snapshot = history[index];
-              final titleName = snapshot.name;
+              final titleName = snapshot.name; // 👈 显式展示 queue 的名字
+              final songCount = snapshot.songs.length;
+              final timeStr = _formatDateTime(snapshot.createdAt);
 
-              return Card(
-                elevation: 0,
-                color: cs.surfaceContainer,
-                margin: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              // 提取前两首歌曲标题作为卡片预览
+              final previewSongs = snapshot.songs
+                  .take(2)
+                  .map((m) => m.title)
+                  .join(' / ');
+
+              return Dismissible(
+                key: ValueKey('history_snapshot_${snapshot.id}'),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                    color: cs.errorContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.delete_outline_rounded,
+                    color: cs.onErrorContainer,
+                  ),
                 ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  title: Text(
-                    titleName,
-                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    '包含 ${snapshot.songs.length} 首歌曲',
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-                  trailing: FilledButton.tonal(
-                    onPressed: () {
-                      mp.restoreQueueFromHistory(snapshot);
-                      Navigator.of(context).pop();
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      visualDensity: VisualDensity.compact,
+                onDismissed: (_) {
+                  // 👈 侧滑删除调用
+                  mp.deleteQueueSnapshot(snapshot.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('已删除: $titleName'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
                     ),
-                    child: const Text('恢复并播放'),
+                  );
+                },
+                child: Card(
+                  elevation: 0,
+                  color: cs.surfaceContainerLow,
+                  margin: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(
+                      color: cs.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 卡片 Header：快照图标、队列名字、时间和独立删除按钮
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.playlist_play_rounded,
+                              size: 20,
+                              color: cs.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                titleName, // 👈 Queue 名字展示
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tt.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              timeStr,
+                              style: tt.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            // 👈 卡片内部独立的删除按钮
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 16),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              color: cs.onSurfaceVariant,
+                              tooltip: '删除此记录',
+                              onPressed: () {
+                                mp.deleteQueueSnapshot(snapshot.id);
+                              },
+                            ),
+                          ],
+                        ),
+
+                        if (previewSongs.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          // 曲目预览列表
+                          Text(
+                            previewSongs,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tt.bodyMedium?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 10),
+
+                        // 卡片 Footer：总首数 Chip 与恢复播放按钮
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '$songCount 首曲目',
+                                style: tt.labelSmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            FilledButton.tonalIcon(
+                              onPressed: () {
+                                mp.restoreQueueFromHistory(snapshot);
+                                Navigator.of(context).pop();
+                              },
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              icon: const Icon(
+                                Icons.play_arrow_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('恢复并播放'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

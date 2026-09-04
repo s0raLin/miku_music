@@ -290,7 +290,7 @@ class NeteaseApi {
 
     final response = await _dio.get(
       '/api/search',
-      queryParameters: {'keyword': keyword, 'type': 'playlist', 'limit': 50},
+      queryParameters: {'keyword': keyword, 'type': 1000, 'limit': 50},
     );
 
     if (response.statusCode == 200 && response.data['code'] == 200) {

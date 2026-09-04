@@ -443,46 +443,50 @@ class _PlaylistQuickCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    return SizedBox(
-      width: 92,
-      height: 92,
-      child: Card.filled(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondaryContainer,
-                    borderRadius: AppRadius.innerBR,
-                  ),
-                  child: SizedBox(
-                    width: 46, // 校正：与上方 SizedBox 匹配，确保正方形容器
-                    height: 46,
-                    child: Icon(
-                      icon,
-                      color: colorScheme.onSecondaryContainer,
-                      size: 24,
-                    ),
-                  ),
+
+    return Material(
+      color: colorScheme.surfaceContainerHigh, // M3 容器层级色彩
+      borderRadius: BorderRadius.circular(20), // 提升圆角至 20px，极致圆润
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: colorScheme.primary.withOpacity(0.1), // M3 按压水波纹
+        highlightColor: colorScheme.primary.withOpacity(0.05),
+        child: Container(
+          width: 92,
+          height: 92,
+          padding: const EdgeInsets.all(10), // 内边距调至 10px，比例更协调
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 图标容器：使用 14px 圆角，与外层 20px 同心呼应
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer, // M3 次要容器色
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  title,
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    letterSpacing: -0.1,
-                    color: colorScheme.onSurface,
-                  ),
+                child: Icon(
+                  icon,
+                  color: colorScheme.onSecondaryContainer,
+                  size: 22,
                 ),
-              ],
-            ),
+              ),
+
+              // 文本：应用 M3 labelMedium 规范
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.1,
+                  color: colorScheme.onSurface, // 确保文本对比度
+                ),
+              ),
+            ],
           ),
         ),
       ),

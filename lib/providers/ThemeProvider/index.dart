@@ -124,18 +124,25 @@ class ThemeProvider extends ChangeNotifier {
 
     final surfaceColors = _createSurfaceColors(soft.surface, desatTarget);
 
+    final softOnSurface = _lerp(soft.onSurface, neutralBase, 0.15);
+    final softOnSurfaceVariant = _lerp(
+      soft.onSurfaceVariant,
+      neutralBase,
+      0.35,
+    );
+    final softOutline = _lerp(soft.outline, desatTarget, 0.25);
+
     final s = soft.copyWith(
       surface: finalSurface,
+      onSurface: softOnSurface,
+      onSurfaceVariant: softOnSurfaceVariant,
+      outline: softOutline,
       surfaceContainerLowest: surfaceColors.lowest,
       surfaceContainerLow: surfaceColors.low,
       surfaceContainer: surfaceColors.medium,
       surfaceContainerHigh: surfaceColors.high,
       surfaceContainerHighest: surfaceColors.highest,
     );
-
-    final softOnSurface = _lerp(s.onSurface, neutralBase, 0.15);
-    final softOnSurfaceVariant = _lerp(s.onSurfaceVariant, neutralBase, 0.35);
-    final softOutline = _lerp(s.outline, desatTarget, 0.25);
 
     final pill = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(999),
@@ -159,37 +166,41 @@ class ThemeProvider extends ChangeNotifier {
         },
       ),
 
-      // Typography
-      textTheme: _applyFontFamily(base.textTheme, 'Noto Sans SC')
-          .copyWith(
-            headlineLarge: const TextStyle(
-              letterSpacing: -0.8,
-              fontWeight: FontWeight.w600,
-            ),
-            headlineMedium: const TextStyle(
-              letterSpacing: -0.5,
-              fontWeight: FontWeight.w600,
-            ),
-            titleLarge: const TextStyle(
-              letterSpacing: -0.3,
-              fontWeight: FontWeight.w600,
-            ),
-            titleMedium: const TextStyle(
-              letterSpacing: -0.2,
-              fontWeight: FontWeight.w500,
-            ),
-            bodyLarge: const TextStyle(letterSpacing: 0.1),
-            bodyMedium: const TextStyle(letterSpacing: 0.1),
-            labelLarge: const TextStyle(
-              letterSpacing: 0.6,
-              fontWeight: FontWeight.w600,
-            ),
-            labelMedium: const TextStyle(letterSpacing: 0.4),
-            labelSmall: const TextStyle(letterSpacing: 0.3),
-          )
-          .apply(bodyColor: softOnSurface, displayColor: softOnSurface),
+      // Typography - 使用安全的样式构建（已移除强行指定的 Noto Sans SC，避免字体加载失败变透明）
+      textTheme: base.textTheme.copyWith(
+        headlineLarge: TextStyle(
+          letterSpacing: -0.8,
+          fontWeight: FontWeight.w600,
+          color: softOnSurface,
+        ),
+        headlineMedium: TextStyle(
+          letterSpacing: -0.5,
+          fontWeight: FontWeight.w600,
+          color: softOnSurface,
+        ),
+        titleLarge: TextStyle(
+          letterSpacing: -0.3,
+          fontWeight: FontWeight.w600,
+          color: softOnSurface,
+        ),
+        titleMedium: TextStyle(
+          letterSpacing: -0.2,
+          fontWeight: FontWeight.w500,
+          color: softOnSurface,
+        ),
+        bodyLarge: TextStyle(letterSpacing: 0.1, color: softOnSurface),
+        bodyMedium: TextStyle(letterSpacing: 0.1, color: softOnSurface),
+        bodySmall: TextStyle(color: softOnSurfaceVariant),
+        labelLarge: TextStyle(
+          letterSpacing: 0.6,
+          fontWeight: FontWeight.w600,
+          color: softOnSurface,
+        ),
+        labelMedium: TextStyle(letterSpacing: 0.4, color: softOnSurface),
+        labelSmall: TextStyle(letterSpacing: 0.3, color: softOnSurfaceVariant),
+      ),
 
-      // AppBar (compact)
+      // AppBar
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
         toolbarHeight: 48,
@@ -200,11 +211,30 @@ class ThemeProvider extends ChangeNotifier {
         centerTitle: false,
         titleSpacing: 16,
         titleTextStyle: TextStyle(
-          fontFamily: 'Noto Sans SC',
           fontSize: 16,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
           color: softOnSurface,
+        ),
+      ),
+
+      // TabBar Theme (完整适配 M3 动画与文本继承)
+      tabBarTheme: TabBarThemeData(
+        labelColor: s.primary,
+        unselectedLabelColor: softOnSurfaceVariant,
+        indicatorColor: s.primary,
+        overlayColor: WidgetStateProperty.all(
+          s.primary.withValues(alpha: 0.08),
+        ),
+        labelStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: s.primary,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+          color: softOnSurfaceVariant,
         ),
       ),
 
@@ -218,7 +248,7 @@ class ThemeProvider extends ChangeNotifier {
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
       ),
 
-      // NavigationBar (compact)
+      // NavigationBar
       navigationBarTheme: NavigationBarThemeData(
         height: 64,
         backgroundColor: finalSurface,
@@ -232,12 +262,16 @@ class ThemeProvider extends ChangeNotifier {
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           return states.contains(WidgetState.selected)
-              ? const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)
-              : const TextStyle(fontSize: 11);
+              ? TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: softOnSurface,
+                )
+              : TextStyle(fontSize: 11, color: softOnSurfaceVariant);
         }),
       ),
 
-      // Buttons (compact)
+      // Buttons
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           foregroundColor: s.onPrimary,
@@ -316,7 +350,7 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
 
-      // Other common themes
+      // ListTile
       listTileTheme: ListTileThemeData(
         dense: _listDensity == "compact",
         contentPadding: _listDensity == "compact"
@@ -378,26 +412,6 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Color _lerp(Color a, Color b, double t) => Color.lerp(a, b, t)!;
-
-  TextTheme _applyFontFamily(TextTheme theme, String fontFamily) {
-    return TextTheme(
-      displayLarge: theme.displayLarge?.copyWith(fontFamily: fontFamily),
-      displayMedium: theme.displayMedium?.copyWith(fontFamily: fontFamily),
-      displaySmall: theme.displaySmall?.copyWith(fontFamily: fontFamily),
-      headlineLarge: theme.headlineLarge?.copyWith(fontFamily: fontFamily),
-      headlineMedium: theme.headlineMedium?.copyWith(fontFamily: fontFamily),
-      headlineSmall: theme.headlineSmall?.copyWith(fontFamily: fontFamily),
-      titleLarge: theme.titleLarge?.copyWith(fontFamily: fontFamily),
-      titleMedium: theme.titleMedium?.copyWith(fontFamily: fontFamily),
-      titleSmall: theme.titleSmall?.copyWith(fontFamily: fontFamily),
-      bodyLarge: theme.bodyLarge?.copyWith(fontFamily: fontFamily),
-      bodyMedium: theme.bodyMedium?.copyWith(fontFamily: fontFamily),
-      bodySmall: theme.bodySmall?.copyWith(fontFamily: fontFamily),
-      labelLarge: theme.labelLarge?.copyWith(fontFamily: fontFamily),
-      labelMedium: theme.labelMedium?.copyWith(fontFamily: fontFamily),
-      labelSmall: theme.labelSmall?.copyWith(fontFamily: fontFamily),
-    );
-  }
 
   ThemeData get lightTheme => _buildTheme(Brightness.light);
   ThemeData get darkTheme => _buildTheme(Brightness.dark);

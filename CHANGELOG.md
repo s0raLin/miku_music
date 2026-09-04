@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.60.0](https://github.com/s0raLin/miku_music/compare/v1.59.0...v1.60.0) (2026-09-04)
+
+
+### Features
+
+* **auth:** 实现网易云扫码登录功能并支持 Cookie 持久化 ([7cf4f82](https://github.com/s0raLin/miku_music/commit/7cf4f82562272cd78a2bdc9e8ea393e746f771e9))
+* **music:** 实现播放队列快照的持久化存储与 UI 交互增强 ([28454c0](https://github.com/s0raLin/miku_music/commit/28454c04e426d141819f2995902518118b53b168))
+* **theme:** 优化主题颜色计算逻辑并修复字体样式应用问题 ([31d8882](https://github.com/s0raLin/miku_music/commit/31d888251e41f6085e2bae953d568ef20423f5a8))
+
+
+### Bug Fixes
+
+* **netease:** 修正搜索接口的类型参数 ([3860afa](https://github.com/s0raLin/miku_music/commit/3860afacd2ba9f071b6c91d4e45a231765f24941))
+
 ## [1.59.0](https://github.com/s0raLin/miku_music/compare/v1.58.0...v1.59.0) (2026-07-27)
 
 

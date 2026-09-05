@@ -360,6 +360,7 @@ class _MediaGridItem extends StatelessWidget {
               extra: {"albumName": entry.key},
             );
           },
+          source: MusicSource.local, // 透传 source 字段
         );
       },
     );

@@ -631,10 +631,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
         // 从 UserProvider 获取网易云 Cookie
         final neteaseCookie = context.read<UserProvider>().neteaseCookie;
 
-        playUrl = await NeteaseApi.getRealUrl(
-          song.id,
-          cookie: neteaseCookie, 
-        );
+        playUrl = await NeteaseApi.getRealUrl(song.id, cookie: neteaseCookie);
       }
 
       if (playUrl == null || playUrl.isEmpty) {
@@ -1485,6 +1482,8 @@ class _PlaylistCover extends StatelessWidget {
                   'Referer': 'https://music.163.com/',
                   'User-Agent': 'Mozilla/5.0',
                 },
+                // 关键点：使用缓存 Key 避免重新解密/下载
+                
                 placeholder: (_, __) =>
                     Container(color: cs.surfaceContainerHighest),
                 errorWidget: (_, __, ___) => Icon(

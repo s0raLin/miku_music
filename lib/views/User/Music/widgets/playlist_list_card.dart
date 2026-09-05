@@ -12,6 +12,7 @@ class PlaylistListCard extends StatelessWidget {
   final List<Music> recentSongs;
   final bool showSongList;
   final VoidCallback onTap;
+  final MusicSource source; // 2. 新增 source 字段
 
   const PlaylistListCard({
     super.key,
@@ -22,6 +23,7 @@ class PlaylistListCard extends StatelessWidget {
     this.recentSongs = const [],
     this.showSongList = false,
     required this.onTap,
+    this.source = MusicSource.local, // 3. 默认设为 local 保证向下兼容
   });
 
   @override
@@ -45,6 +47,7 @@ class PlaylistListCard extends StatelessWidget {
             onTap: null,
             isLoading: false,
             borderRadius: BorderRadius.circular(AppRadius.card),
+            source: source, // 4. 透传给 MediaOverlayCard
           ),
           const SizedBox(height: 6),
           if (showSongList && recentSongs.isNotEmpty)

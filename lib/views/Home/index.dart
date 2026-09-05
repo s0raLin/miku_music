@@ -377,22 +377,43 @@ class _MusicSection extends StatelessWidget {
                   itemCount: songs.take(6).length,
                   itemBuilder: (context, index) {
                     final song = songs[index];
+                    final isNetwork = song.source == MusicSource.network;
+                    final coverUrl = isNetwork
+                        ? musicProvider.getCoverUrl(song.id)
+                        : null;
+
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: SizedBox(
                         width: cardSize,
                         height: cardSize,
                         child: MediaOverlayCard(
+                          key: ValueKey('song_card_${song.id}'),
                           title: song.title,
                           subtitle: song.artist,
+
+                          // 传入 source 类型
+                          source: song.source,
+
+                          // 本地图片仅使用 coverBytes（已移除 coverPath）
                           coverBytes: song.coverBytes,
-                          coverUrl: song.source == MusicSource.network
-                              ? musicProvider.getCoverUrl(song.id)
+
+                          // 网络图片传 URL 和 Headers
+                          coverUrl: coverUrl,
+                          coverHeaders: isNetwork
+                              ? const {'Referer': 'https://music.163.com/'}
                               : null,
-                          coverHeaders: song.source == MusicSource.network
-                              ? {'Referer': 'https://music.163.com/'}
-                              : null,
+
                           fallbackIcon: Icons.music_note_rounded,
+
+                          // 精准校验 isLoading
+                          isLoading: isNetwork
+                              ? (coverUrl == null &&
+                                    musicProvider.isCoverLoading(song.id))
+                              : (song.coverBytes == null &&
+                                    musicProvider.isCoverLoading(song.id)),
+
+                          borderRadius: BorderRadius.circular(32),
                           onTap: () async {
                             await musicProvider.replaceQueue(
                               songs,
@@ -403,11 +424,6 @@ class _MusicSection extends StatelessWidget {
                               context.push('/music-detail');
                             }
                           },
-                          isLoading:
-                              (song.coverBytes == null ||
-                                  song.coverBytes!.isEmpty) &&
-                              musicProvider.isCoverLoading(song.id),
-                          borderRadius: BorderRadius.circular(32),
                           badge: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,

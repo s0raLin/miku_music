@@ -12,24 +12,15 @@ import 'package:myapp/service/MusicDb/index.dart';
 import 'package:myapp/service/NetworkSongStore/index.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class _NetworkSongMeta {
-  final String url;
-  final String title;
-  final String artist;
-  final String? coverUrl;
-  String? lyricContent;
-
-  _NetworkSongMeta({
-    required this.url,
-    required this.title,
-    required this.artist,
-    this.coverUrl,
-  });
-}
-
 class MusicRepository {
-  // ── network song metadata cache ──
-  final Map<String, _NetworkSongMeta> _networkMeta = {};
+  // ── 必须设为单例，防止跨页面或重新 Build 时内存 Map 被重置 ──
+  MusicRepository._internal();
+  static final MusicRepository _instance = MusicRepository._internal();
+  factory MusicRepository() => _instance;
+
+  // ── network song storage (以 Music 为单源数据，配合独立的 URL 缓存) ──
+  final Map<String, Music> _networkSongs = {};
+  final Map<String, String> _networkUrls = {};
 
   // ── cover cache ──
   final Map<String, String> _safeCoverCache = {};
@@ -51,13 +42,13 @@ class MusicRepository {
 
   // ── public network meta accessors ──
 
-  String? getCoverUrl(String musicId) => _networkMeta[musicId]?.coverUrl;
-  String? getNetworkUrl(String musicId) => _networkMeta[musicId]?.url;
-  String? getCachedLyrics(String musicId) =>
-      _networkMeta[musicId]?.lyricContent;
-  bool isNetworkSong(String musicId) => _networkMeta.containsKey(musicId);
-  Set<String> get networkSongIds => _networkMeta.keys.toSet();
+  String? getCoverUrl(String musicId) => _networkSongs[musicId]?.coverUrl;
+  String? getNetworkUrl(String musicId) => _networkUrls[musicId];
+  String? getCachedLyrics(String musicId) => _networkSongs[musicId]?.lyrics;
+  bool isNetworkSong(String musicId) => _networkSongs.containsKey(musicId);
+  Set<String> get networkSongIds => _networkSongs.keys.toSet();
 
+  /// 根据 ID 精准获取 Music 实体（对于网络歌曲直接返回内存中的单例，避免重复创建）
   Music? getSongById(String id, List<Music> library, List<Music> queue) {
     final local = library.where((m) => m.id == id).firstOrNull;
     if (local != null) return local;
@@ -65,22 +56,69 @@ class MusicRepository {
     final queued = queue.where((m) => m.id == id).firstOrNull;
     if (queued != null) return queued;
 
-    final netMeta = _networkMeta[id];
-    if (netMeta != null) {
-      return Music(
-        id: id,
-        title: netMeta.title,
-        artist: netMeta.artist,
-        duration: Duration.zero,
-        coverBytes: null,
-        lyrics: netMeta.lyricContent,
-        album: null,
-        source: MusicSource.network,
-      );
-    }
-    return null;
+    return _networkSongs[id];
   }
 
+  /// 批量导入搜索结果时，优先复用已有的内存实例
+  (List<Music>, List<NetworkSongMeta>) importNetworkSearchResults(
+    List<Map<String, String?>> songs,
+  ) {
+    final List<Music> musicList = [];
+    final List<NetworkSongMeta> storeMetas = [];
+
+    for (final s in songs) {
+      final musicId = 'net_${s['id']}';
+      final title = s['title'] ?? '';
+      final artist = s['artist'] ?? '';
+      final url = s['url'] ?? '';
+      final coverUrl = s['coverUrl'];
+      final lyrics = s['lyrics'];
+
+      // 1. 先尝试获取内存中已有的对象
+      var music = _networkSongs[musicId];
+
+      if (music != null) {
+        // 如果对象已存在，仅在关键信息更新时增量刷新
+        if ((coverUrl != null && music.coverUrl != coverUrl) ||
+            (lyrics != null && music.lyrics != lyrics)) {
+          music = music.copyWith(
+            coverUrl: coverUrl ?? music.coverUrl,
+            lyrics: lyrics ?? music.lyrics,
+          );
+          _networkSongs[musicId] = music;
+        }
+      } else {
+        // 2. 内存中不存在才注册新建
+        registerNetworkSong(
+          musicId: musicId,
+          url: url,
+          title: title,
+          artist: artist,
+          coverUrl: coverUrl,
+          lyricContent: lyrics,
+        );
+        music = _networkSongs[musicId]!;
+      }
+
+      storeMetas.add(
+        NetworkSongMeta(
+          id: musicId,
+          title: music.title,
+          artist: music.artist,
+          url: url,
+          coverUrl: music.coverUrl,
+          lyrics: music.lyrics,
+          durationMs: music.duration.inMilliseconds,
+        ),
+      );
+
+      musicList.add(music);
+    }
+
+    NetworkSongStore().upsertAll(storeMetas);
+    return (musicList, storeMetas);
+  }
+  
   // ── cover helpers ──
 
   bool isCoverLoading(String musicId) => _loadingCoverIds.contains(musicId);
@@ -175,28 +213,41 @@ class MusicRepository {
     String? coverUrl,
     String? lyricContent,
   }) {
-    _networkMeta[musicId] = _NetworkSongMeta(
-      url: url,
-      title: title,
-      artist: artist,
-      coverUrl: coverUrl,
-    )..lyricContent = lyricContent;
-  }
+    _networkUrls[musicId] = url;
 
-  void updateNetworkUrl(String musicId, String freshUrl) {
-    final meta = _networkMeta[musicId];
-    if (meta != null) {
-      _networkMeta[musicId] = _NetworkSongMeta(
-        url: freshUrl,
-        title: meta.title,
-        artist: meta.artist,
-        coverUrl: meta.coverUrl,
-      )..lyricContent = meta.lyricContent;
+    // 如果已存在该网络歌曲对象，通过 copyWith 增量更新；否则新建
+    final existing = _networkSongs[musicId];
+    if (existing != null) {
+      _networkSongs[musicId] = existing.copyWith(
+        title: title,
+        artist: artist,
+        coverUrl: coverUrl ?? existing.coverUrl,
+        lyrics: lyricContent ?? existing.lyrics,
+      );
+    } else {
+      _networkSongs[musicId] = Music(
+        id: musicId,
+        title: title,
+        artist: artist,
+        duration: Duration.zero,
+        coverBytes: null,
+        coverUrl: coverUrl,
+        lyrics: lyricContent,
+        album: null,
+        source: MusicSource.network,
+      );
     }
   }
 
+  void updateNetworkUrl(String musicId, String freshUrl) {
+    _networkUrls[musicId] = freshUrl;
+  }
+
   void updateLyricContent(String musicId, String lyricContent) {
-    _networkMeta[musicId]?.lyricContent = lyricContent;
+    final existing = _networkSongs[musicId];
+    if (existing != null) {
+      _networkSongs[musicId] = existing.copyWith(lyrics: lyricContent);
+    }
   }
 
   /// Refresh netease song URL and return the fresh one.
@@ -239,8 +290,8 @@ class MusicRepository {
         music.lyrics = lrc;
         _debouncePersistNetworkSong(
           music,
-          _networkMeta[music.id]?.url ?? '',
-          _networkMeta[music.id]?.coverUrl,
+          getNetworkUrl(music.id) ?? '',
+          getCoverUrl(music.id),
           lrc,
         );
         return lrc;
@@ -292,15 +343,14 @@ class MusicRepository {
     try {
       final metas = await NetworkSongStore().loadAll();
       for (final meta in metas) {
-        _networkMeta[meta.id] = _NetworkSongMeta(
+        registerNetworkSong(
+          musicId: meta.id,
           url: meta.url,
           title: meta.title,
           artist: meta.artist,
           coverUrl: meta.coverUrl,
+          lyricContent: meta.lyrics,
         );
-        if (meta.lyrics != null && meta.lyrics!.isNotEmpty) {
-          _networkMeta[meta.id]?.lyricContent = meta.lyrics;
-        }
       }
       debugPrint('Loaded ${metas.length} persisted network songs');
     } catch (e) {
@@ -314,64 +364,7 @@ class MusicRepository {
     _appInfo = await PackageInfo.fromPlatform();
   }
 
-  // ── bulk network songs import (for search results) ──
-
-  /// Import a batch of network search result songs.
-  /// Returns (musicList, storeMetas) so the provider can build the queue.
-  (List<Music>, List<NetworkSongMeta>) importNetworkSearchResults(
-    List<Map<String, String?>> songs,
-  ) {
-    final List<Music> musicList = [];
-    final List<NetworkSongMeta> storeMetas = [];
-
-    for (final s in songs) {
-      final musicId = 'net_${s['id']}';
-      final title = s['title'] ?? '';
-      final artist = s['artist'] ?? '';
-      final url = s['url'] ?? '';
-      final coverUrl = s['coverUrl'];
-      final lyrics = s['lyrics'];
-
-      final music = Music(
-        id: musicId,
-        title: title,
-        artist: artist,
-        duration: Duration.zero,
-        coverBytes: null,
-        lyrics: lyrics,
-        album: null,
-        source: MusicSource.network,
-      );
-
-      registerNetworkSong(
-        musicId: musicId,
-        url: url,
-        title: title,
-        artist: artist,
-        coverUrl: coverUrl,
-        lyricContent: lyrics,
-      );
-
-      storeMetas.add(
-        NetworkSongMeta(
-          id: musicId,
-          title: title,
-          artist: artist,
-          url: url,
-          coverUrl: coverUrl,
-          lyrics: lyrics,
-          durationMs: 0,
-        ),
-      );
-
-      musicList.add(music);
-    }
-
-    NetworkSongStore().upsertAll(storeMetas);
-    return (musicList, storeMetas);
-  }
-
- /// 将播放队列快照异步落盘到 Rust SQLite
+  /// 将播放队列快照异步落盘到 Rust SQLite
   Future<void> saveQueueSnapshot(QueueSnapshot snapshot) async {
     try {
       final songIds = snapshot.songs.map((s) => s.id).toList();
@@ -401,7 +394,6 @@ class MusicRepository {
       debugPrint('持久化队列快照失败: $e');
     }
   }
-
 
   /// 删除单条历史快照持久化数据
   Future<void> deleteQueueSnapshot(String snapshotId) async {

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.0](https://github.com/s0raLin/miku_music/compare/v1.60.0...v1.61.0) (2026-09-05)
+
+
+### Features
+
+* **settings:** 完善网易云账号管理功能 ([90418da](https://github.com/s0raLin/miku_music/commit/90418da7e9d13b3effff2f4143a247c4798153d0))
+
 ## [1.60.0](https://github.com/s0raLin/miku_music/compare/v1.59.0...v1.60.0) (2026-09-04)
 
 

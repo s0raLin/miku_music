@@ -86,16 +86,7 @@ flutter:
     - assets/app_icon/
     - assets/
     - assets/icons/
-    - assets/background/
     - assets/Equalizer.json
-
-  fonts:
-    - family: NiShiKiFont
-      fonts:
-        - asset: assets/fonts/nishiki-teki.ttf
-    - family: Noto Sans SC
-      fonts:
-        - asset: assets/fonts/NotoSansSC.ttf
 
 flutter_launcher_icons:
   android: true

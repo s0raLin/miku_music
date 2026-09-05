@@ -5,7 +5,8 @@ import https from 'https';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
+// const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
+import NeteaseCloudMusicApi from 'NeteaseCloudMusicApi';
 
 const app = express();
 
@@ -248,7 +249,8 @@ app.get('/api/playlist', async (req, res) => {
     res.status(500).json({ code: 500, message: err.message });
   }
 });
+const PORT = process.env.PORT || 3000;
 
-app.listen(3000, () => {
-  console.log('🚀 服务已成功运行在 http://localhost:3000');
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 服务已成功运行在 http://0.0.0.0:${PORT}`);
 });

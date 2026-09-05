@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myapp/api/Model/NeteaseSong/index.dart';
 import 'package:myapp/api/Model/NeteasePlaylist/index.dart';
-import 'package:myapp/providers/UserProvider/index.dart';
 
 class NeteaseApi {
   // 注入 Cookie 的回调函数（可以设为全局赋值，例如在 main.dart 中初始化）

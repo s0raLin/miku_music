@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.61.0](https://github.com/s0raLin/miku_music/compare/v1.60.0...v1.61.0) (2026-09-06)
+
+
+### Features
+
+* **playlist:** 优化歌单封面管理逻辑并改进缓存清理机制 ([8d7f942](https://github.com/s0raLin/miku_music/commit/8d7f9422f0e9cce987df81bb3165a830666da9b6))
+* **settings:** 增强目录管理功能并优化更新页面展示 ([3b55dce](https://github.com/s0raLin/miku_music/commit/3b55dce858ba754b3b0146c71dff04a6e5f4cb76))
+* **settings:** 完善网易云账号管理功能 ([90418da](https://github.com/s0raLin/miku_music/commit/90418da7e9d13b3effff2f4143a247c4798153d0))
+* **ui:** 增强歌单详情与最近播放页面的搜索及排序功能 ([778909a](https://github.com/s0raLin/miku_music/commit/778909ac8cc135605369b040f48d3d1c2e1a3d18))
+
+
+### Bug Fixes
+
+* **network:** 修复歌曲与歌单详情跳转时的异步执行逻辑 ([05f9126](https://github.com/s0raLin/miku_music/commit/05f9126f16757ca04d84d1442143882c0badca49))
+
 ## [1.60.0](https://github.com/s0raLin/miku_music/compare/v1.59.0...v1.60.0) (2026-09-04)
 
 

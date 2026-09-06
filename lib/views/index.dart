@@ -25,23 +25,25 @@ class _MainPageState extends State<MainPage> with WindowListener {
   @override
   void initState() {
     super.initState();
-    windowManager.addListener(this); // 注册监听
+    windowManager.addListener(this);
   }
 
-  // 拦截关闭事件
   @override
   void onWindowClose() async {
-    await windowManager.hide(); // 隐藏到托盘
+    await windowManager.hide();
   }
 
   @override
   void dispose() {
-    windowManager.removeListener(this); // 清理
+    windowManager.removeListener(this);
     super.dispose();
   }
 
   void onTabChanged(int idx) {
-    widget.navigationShell.goBranch(idx);
+    widget.navigationShell.goBranch(
+      idx,
+      initialLocation: idx == widget.navigationShell.currentIndex,
+    );
   }
 
   @override
@@ -50,10 +52,13 @@ class _MainPageState extends State<MainPage> with WindowListener {
     showNavigationDrawer = MediaQuery.of(context).size.width >= 450;
   }
 
+  /// 稳定准确的 Root 路径判断，不再触发帧时序导致的错判抖动
   bool get _isRootBranch {
-    return widget.navigationShell.shellRouteContext.navigatorKey.currentState
-            ?.canPop() ==
-        false;
+    final navKey = widget.navigationShell.shellRouteContext.navigatorKey;
+    final state = navKey.currentState;
+    // 如果 state 还未初始化，默认必然是 Root
+    if (state == null) return true;
+    return !state.canPop();
   }
 
   @override
@@ -65,9 +70,11 @@ class _MainPageState extends State<MainPage> with WindowListener {
 
   Widget _buildDrawerScaffold(BuildContext context) {
     final nav = context.watch<NavProvider>();
-    final currentIndex = nav.shell?.currentIndex ?? 0;
+    final currentIndex =
+        nav.shell?.currentIndex ?? widget.navigationShell.currentIndex;
     final mp = context.watch<MusicProvider>();
     final isMiniMode = mp.isMiniMode;
+
     return Scaffold(
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
@@ -75,13 +82,11 @@ class _MainPageState extends State<MainPage> with WindowListener {
         children: [
           SideBar(currentIndex: currentIndex, onTap: onTabChanged),
           const VerticalDivider(thickness: 1, width: 1),
-
-          // 主内容区
           Expanded(
             child: Column(
               children: [
                 Expanded(child: widget.navigationShell),
-                if (!isMiniMode)
+                if (!isMiniMode && mp.currentMusic != null)
                   Padding(
                     padding: EdgeInsets.only(
                       bottom: MediaQuery.of(context).padding.bottom,
@@ -93,23 +98,18 @@ class _MainPageState extends State<MainPage> with WindowListener {
           ),
         ],
       ),
-      floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,
+      floatingActionButton: isMiniMode ? const NowPlayingMiniFab() : null,
     );
   }
 
   Widget _buildBottomBarScaffold(BuildContext context) {
     final mp = context.watch<MusicProvider>();
     final nav = context.watch<NavProvider>();
-    final currentIndex = nav.shell?.currentIndex ?? 0;
+    final currentIndex =
+        nav.shell?.currentIndex ?? widget.navigationShell.currentIndex;
     final isMiniMode = mp.isMiniMode;
-
-    // 直接使用 _isRootBranch，不再需要 _stableIsRoot 延迟机制。
-    // StatefulShellRoute.indexedStack 在 root 级别页面切换时不会触发
-    // navigationStack 变化，因此 _isRootBranch 始终为 true，
-    // AnimatedContainer 的 height 保持不变，不会产生动画。
     final isRoot = _isRootBranch;
 
-    // 计算底部栏完整的设计高度
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
     final double totalBottomBarHeight =
         kBottomNavigationBarHeight + bottomPadding + 8;
@@ -120,24 +120,30 @@ class _MainPageState extends State<MainPage> with WindowListener {
       body: Column(
         children: [
           Expanded(child: widget.navigationShell),
-          if (!isMiniMode) ...[
-            NowPlayingBar(),
-            // 当导航栏隐藏时，填入底部安全区高度，将胶囊栏托举在安全区上方
+          if (!isMiniMode && mp.currentMusic != null) ...[
+            const NowPlayingBar(),
             AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.fastOutSlowIn,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
               height: isRoot ? 0.0 : bottomPadding,
             ),
           ],
         ],
       ),
-      floatingActionButton: isMiniMode ? NowPlayingMiniFab() : null,
-      // ── 底部导航栏高度动画（不使用 AnimatedSlide，因为后者不释放布局空间） ──
+      floatingActionButton: isMiniMode ? const NowPlayingMiniFab() : null,
+
+      // 使用 SingleChildScrollView 防裁剪 + 固化子项 RenderBox 高度，防止高度变动时触发子组件抖动重绘
       bottomNavigationBar: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.fastOutSlowIn,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
         height: isRoot ? totalBottomBarHeight : 0.0,
-        child: BottomBar(currentIndex: currentIndex, onTap: onTabChanged),
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: SizedBox(
+            height: totalBottomBarHeight,
+            child: BottomBar(currentIndex: currentIndex, onTap: onTabChanged),
+          ),
+        ),
       ),
     );
   }

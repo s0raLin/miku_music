@@ -70,6 +70,42 @@ class MusicService {
     );
   }
 
+  /// 优先读取同目录下的 metadata.json，取其中的 lyric_path 直接加载歌词；
+  /// 如果 metadata.json 不存在、解析失败，或 lyric_path 指向的文件不存在，
+  /// 则退回到"同名 .ttml/.lrc"的兜底匹配。
+  static Future<String> _findLyricsInSameDir(String audioPath) async {
+    final dir = Directory(p.dirname(audioPath));
+
+    // 1. 优先尝试读取 metadata.json
+    try {
+      final metaFile = File(p.join(dir.path, 'metadata.json'));
+      if (await metaFile.exists()) {
+        final raw = await metaFile.readAsString();
+        final meta = jsonDecode(raw) as Map<String, dynamic>;
+        final lyricPath = meta['lyric_path'] as String?;
+        if (lyricPath != null && lyricPath.isNotEmpty) {
+          final lyricFile = File(lyricPath);
+          if (await lyricFile.exists()) {
+            return await lyricFile.readAsString();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("读取 metadata.json 失败: $e");
+    }
+
+    // 2. 兜底：严格匹配同名歌词文件（.ttml 优先于 .lrc）
+    final baseName = p.withoutExtension(audioPath);
+    for (final ext in ['.ttml', '.lrc']) {
+      final lyricFile = File("$baseName$ext");
+      if (await lyricFile.exists()) {
+        return await lyricFile.readAsString();
+      }
+    }
+
+    return "";
+  }
+
   static Stream<ScanProgress> scanDirectories(
     List<String> selectedDirectories,
   ) async* {
@@ -86,15 +122,7 @@ class MusicService {
 
         try {
           // 3. 补全 Dart 端的业务逻辑：查找外部歌词（优先 .ttml，其次 .lrc）
-          String lyrics = "";
-          final baseName = p.withoutExtension(rustMeta.path);
-          for (final ext in ['.ttml', '.lrc']) {
-            final lyricFile = File("$baseName$ext");
-            if (await lyricFile.exists()) {
-              lyrics = await lyricFile.readAsString();
-              break;
-            }
-          }
+          final lyrics = await _findLyricsInSameDir(rustMeta.path);
 
           // 4. 组装成前端需要的 Music
           final music = Music(

@@ -474,145 +474,339 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
-
-// ── 网易云账号详情弹窗组件 (Material 3 Column 布局) ───────────────────────────
+// ── 网易云账号详情弹窗组件 ───────────────────────────
 
 class NeteaseAccountDetailDialog extends StatelessWidget {
-  final VoidCallback onSwitchAccount; // 1. 去掉下划线私有修饰或直接声明为公开字段
+  final VoidCallback onSwitchAccount;
 
   const NeteaseAccountDetailDialog({
     super.key,
-    required this.onSwitchAccount, // 2. 使用 this.onSwitchAccount 语法自动初始化
+    required this.onSwitchAccount,
   });
 
   @override
   Widget build(BuildContext context) {
-    final up = context.watch<UserProvider>();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final userProvider = context.watch<UserProvider>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+
+    final rawName = userProvider.neteaseUsername;
+    final hasName = rawName != null && rawName.trim().isNotEmpty;
+    final username = hasName ? rawName : "网易云用户";
 
     return AlertDialog(
+      elevation: 6,
+      shadowColor: cs.shadow.withValues(alpha: 0.2),
+      surfaceTintColor: cs.surfaceTint,
+      backgroundColor: cs.surfaceContainerHigh,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-
-      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 头像 / 图标容器
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: cs.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.account_circle_rounded,
-              size: 48,
-              color: cs.onPrimaryContainer,
-            ),
-          ),
+          // 1. 头像区域
+          _buildAvatar(cs, tt, username, hasName),
           const SizedBox(height: 16),
 
-          // 账号名称与状态
+          // 2. 账号名称与状态标牌
           Text(
-            // ✅ 修复方案
-            (up.neteaseUsername ?? '').isNotEmpty
-                ? up.neteaseUsername!
-                : "网易云用户",
-            style: tt.titleLarge?.copyWith(
+            username,
+            style: tt.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: cs.onSurface,
+              letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
-          Text(
-            "已绑定网易云音乐账号",
-            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-          ),
+          const SizedBox(height: 6),
+          _buildStatusChip(cs, tt),
           const SizedBox(height: 24),
 
-          // 灰底容器封装操作区域
+          // 3. 操作选项卡片组
           Container(
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(16),
+              color: cs.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.4),
+                width: 1,
+              ),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                // 切换账号选项
-                ListTile(
-                  dense: true,
-                  leading: Icon(Icons.swap_horiz_rounded, color: cs.primary),
-                  title: Text(
-                    "切换账号",
-                    style: tt.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
+                _buildActionItem(
+                  context: context,
+                  icon: Icons.swap_horiz_rounded,
+                  iconBgColor: cs.primaryContainer,
+                  iconColor: cs.onPrimaryContainer,
+                  title: "切换账号",
+                  subtitle: "清除当前凭据并重新扫码",
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
-                  subtitle: Text(
-                    "清除当前凭据并重新扫码",
-                    style: tt.bodySmall?.copyWith(color: cs.outline),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, size: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    onSwitchAccount(); // 直接调用字段
-                  },
+                  onTap: () => _confirmSwitchAccount(context),
                 ),
-                const Divider(height: 8, indent: 8, endIndent: 8),
-                // 退出登录选项
-                ListTile(
-                  dense: true,
-                  leading: Icon(Icons.logout_rounded, color: cs.error),
-                  title: Text(
-                    "退出登录",
-                    style: tt.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: cs.error,
-                    ),
-                  ),
-                  subtitle: Text(
-                    "解绑账号并恢复为游客状态",
-                    style: tt.bodySmall?.copyWith(
-                      color: cs.error.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onTap: () async {
-                    await up.clearNeteaseAuth();
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text("已退出网易云账号"),
-                          backgroundColor: cs.secondary,
-                        ),
-                      );
-                    }
-                  },
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: cs.outlineVariant.withValues(alpha: 0.3),
+                ),
+                _buildActionItem(
+                  context: context,
+                  icon: Icons.logout_rounded,
+                  iconBgColor: cs.errorContainer.withValues(alpha: 0.6),
+                  iconColor: cs.error,
+                  title: "退出登录",
+                  subtitle: "解绑账号并恢复为游客状态",
+                  titleColor: cs.error,
+                  onTap: () => _confirmLogout(context, userProvider, cs),
                 ),
               ],
             ),
           ),
         ],
       ),
+      actionsPadding: const EdgeInsets.only(right: 20, bottom: 16),
       actions: [
         TextButton(
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('关闭'),
+          child: Text(
+            '关闭',
+            style: tt.labelLarge?.copyWith(
+              color: cs.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ],
     );
+  }
+
+  /// 构建圆角头像
+  Widget _buildAvatar(
+    ColorScheme cs,
+    TextTheme tt,
+    String name,
+    bool hasName,
+  ) {
+    return Container(
+      width: 76,
+      height: 76,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: cs.primaryContainer,
+        border: Border.all(
+          color: cs.surfaceContainerLowest,
+          width: 3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: hasName
+            ? Text(
+                name.characters.first.toUpperCase(),
+                style: tt.headlineMedium?.copyWith(
+                  color: cs.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : Icon(
+                Icons.account_circle_rounded,
+                size: 48,
+                color: cs.onPrimaryContainer,
+              ),
+      ),
+    );
+  }
+
+  /// 绑定状态徽章
+  Widget _buildStatusChip(ColorScheme cs, TextTheme tt) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_rounded, size: 14, color: cs.secondary),
+          const SizedBox(width: 4),
+          Text(
+            "已绑定网易云音乐",
+            style: tt.labelSmall?.copyWith(
+              color: cs.onSecondaryContainer,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 操作项组件
+  Widget _buildActionItem({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconBgColor,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color? titleColor,
+    Widget? trailing,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: cs.primary.withValues(alpha: 0.08),
+        highlightColor: cs.primary.withValues(alpha: 0.04),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: titleColor ?? cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: tt.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 切换账号确认弹窗
+  Future<void> _confirmSwitchAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("确认切换账号"),
+        content: const Text("切换账号将清除当前登录状态并打开重新扫码界面，确定要继续吗？"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("取消"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("确认切换"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      Navigator.of(context).pop(); // 关闭当前账号详情弹窗
+      onSwitchAccount(); // 执行切换回调
+    }
+  }
+
+  /// 退出登录确认弹窗及逻辑
+  Future<void> _confirmLogout(
+    BuildContext context,
+    UserProvider userProvider,
+    ColorScheme cs,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("确认退出登录"),
+        content: const Text("解绑后将恢复为游客状态，确定要退出登录吗？"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("取消"),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: cs.error,
+              foregroundColor: cs.onError,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("退出登录"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await userProvider.clearNeteaseAuth();
+      if (context.mounted) {
+        Navigator.of(context).pop(); // 关闭当前账号详情弹窗
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text("已退出网易云账号"),
+              ],
+            ),
+            backgroundColor: cs.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
   }
 }
 

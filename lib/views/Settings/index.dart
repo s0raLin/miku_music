@@ -301,9 +301,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         "$ver ($bld)",
                         style: tt.bodyMedium?.copyWith(color: cs.outline),
                       ),
-                      onTap: () {
-                        
-                      },
+                      onTap: () {},
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
                     ListTile(
@@ -418,7 +416,7 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("清除缓存"),
-        content: const Text("将清除专辑封面、歌词等临时缓存文件，不会影响您的音乐库和播放列表。"),
+        content: const Text("将清除网络封面、歌词等临时缓存文件，不会影响您的音乐库和自定义歌单封面。"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -432,19 +430,35 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
     if (ok != true || !mounted) return;
+
     try {
-      final tmp = await getTemporaryDirectory();
-      if (await tmp.exists()) await tmp.delete(recursive: true);
-      final cache = await getApplicationCacheDirectory();
-      if (await cache.exists()) {
-        await for (final e in cache.list(recursive: true)) {
-          if (e is File) {
-            try {
-              await e.delete();
-            } catch (_) {}
+      // 安全地清理某个目录下的所有子项，但不删除根目录本身
+      Future<void> cleanDirectoryContents(Directory dir) async {
+        if (!await dir.exists()) return;
+
+        final entities = dir.list(recursive: false, followLinks: false);
+        await for (final entity in entities) {
+          try {
+            if (entity is File) {
+              await entity.delete();
+            } else if (entity is Directory) {
+              await entity.delete(recursive: true);
+            }
+          } catch (e) {
+            // 忽略某些系统占用或写保护文件导致的异常
+            debugPrint("清理缓存项失败: ${entity.path}, error: $e");
           }
         }
       }
+
+      // 1. 清理临时目录子项 (getTemporaryDirectory)
+      final tmpDir = await getTemporaryDirectory();
+      await cleanDirectoryContents(tmpDir);
+
+      // 2. 清理缓存目录子项 (getApplicationCacheDirectory)
+      final cacheDir = await getApplicationCacheDirectory();
+      await cleanDirectoryContents(cacheDir);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -481,10 +495,7 @@ class _SettingsPageState extends State<SettingsPage> {
 class NeteaseAccountDetailDialog extends StatelessWidget {
   final VoidCallback onSwitchAccount;
 
-  const NeteaseAccountDetailDialog({
-    super.key,
-    required this.onSwitchAccount,
-  });
+  const NeteaseAccountDetailDialog({super.key, required this.onSwitchAccount});
 
   @override
   Widget build(BuildContext context) {
@@ -600,22 +611,14 @@ class NeteaseAccountDetailDialog extends StatelessWidget {
   }
 
   /// 构建圆角头像
-  Widget _buildAvatar(
-    ColorScheme cs,
-    TextTheme tt,
-    String name,
-    bool hasName,
-  ) {
+  Widget _buildAvatar(ColorScheme cs, TextTheme tt, String name, bool hasName) {
     return Container(
       width: 76,
       height: 76,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: cs.primaryContainer,
-        border: Border.all(
-          color: cs.surfaceContainerLowest,
-          width: 3,
-        ),
+        border: Border.all(color: cs.surfaceContainerLowest, width: 3),
         boxShadow: [
           BoxShadow(
             color: cs.shadow.withValues(alpha: 0.08),

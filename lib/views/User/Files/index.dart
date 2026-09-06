@@ -8,6 +8,7 @@ import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
+
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
@@ -26,10 +27,11 @@ class _FilesPageState extends State<FilesPage>
   List<Music> _scannedSongs = [];
   StreamSubscription? _scanSubscription;
 
-  // 本地状态，不持久化
+  // 本地密集/宽松视图状态，不持久化
   bool _isCompact = false;
 
-  // 缓存分组数据，避免每次 build 都重新执行 for 循环
+  // 缓存分组数据及上一次处理的歌单引用，避免频繁在 build() 内部跑循环
+  List<Music>? _lastSongsReference;
   Map<String, List<Music>> _folderGroups = {};
   Map<String, List<Music>> _albumGroups = {};
   Map<String, List<Music>> _artistGroups = {};
@@ -105,29 +107,49 @@ class _FilesPageState extends State<FilesPage>
   }
 
   // ==========================================
-  // 数据分组算法（引入缓存机制）
+  // 数据分组算法（高效率缓存机制）
   // ==========================================
 
   void _updateGroupsIfNeeded(List<Music> currentSongs) {
+    // 只有当歌曲列表内存引用改变时，才重新计算分组
+    if (identical(_lastSongsReference, currentSongs)) return;
+    _lastSongsReference = currentSongs;
+
     final folders = <String, List<Music>>{};
     final albums = <String, List<Music>>{};
     final artists = <String, List<Music>>{};
 
     for (final song in currentSongs) {
-      folders.putIfAbsent(p.dirname(song.id), () => []).add(song);
+      // 提取文件夹路径
+      final dir = p.dirname(song.id);
+      folders.putIfAbsent(dir, () => []).add(song);
 
+      // 提取专辑名
       final albumName = song.album?.trim();
       final albumKey = (albumName != null && albumName.isNotEmpty)
           ? albumName
           : '未知专辑';
       albums.putIfAbsent(albumKey, () => []).add(song);
 
-      artists.putIfAbsent(song.artist, () => []).add(song);
+      // 提取艺术家
+      final artistName = song.artist.trim();
+      final artistKey = artistName.isNotEmpty ? artistName : '未知艺术家';
+      artists.putIfAbsent(artistKey, () => []).add(song);
     }
 
     _folderGroups = folders;
     _albumGroups = albums;
     _artistGroups = artists;
+  }
+
+  /// 文件夹路径转换：确保只提取最末一级文件名/目录名，防止路径过长溢出
+  String _buildFolderTitle(String fullPath) {
+    final cleanPath = p.normalize(fullPath);
+    final basename = p.basename(cleanPath);
+    if (basename.isEmpty || basename == '.' || basename == '/') {
+      return cleanPath;
+    }
+    return basename;
   }
 
   // ==========================================
@@ -140,16 +162,16 @@ class _FilesPageState extends State<FilesPage>
 
     final songs = context.select<MusicProvider, List<Music>>((p) => p.library);
 
+    // 仅在数据发生真正变更时才计算分组
     _updateGroupsIfNeeded(songs);
-
-    final isDesktop =
-        Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
     if (_isPathsLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator.adaptive()),
       );
     }
+
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: DefaultTabController(
@@ -160,31 +182,28 @@ class _FilesPageState extends State<FilesPage>
               pinned: true,
               title: const Text("文件"),
               actions: [
-                if (isDesktop)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: SegmentedButton<bool>(
-                      segments: const [
-                        ButtonSegment<bool>(
-                          value: false,
-                          icon: Icon(Icons.grid_view_rounded),
-                        ),
-                        ButtonSegment<bool>(
-                          value: true,
-                          icon: Icon(Icons.view_compact_rounded),
-                        ),
-                      ],
-                      selected: {_isCompact},
-                      onSelectionChanged: (Set<bool> v) {
-                        setState(() => _isCompact = v.first);
-                      },
-                      showSelectedIcon: false,
-                      style: const ButtonStyle(
-                        visualDensity: VisualDensity.compact,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                // 取消桌面端限制，移动端与桌面端统一显示显示密度切换按钮
+                Tooltip(
+                  message: _isCompact ? "切换到大图模式" : "切换到紧凑模式",
+                  child: IconButton(
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, anim) =>
+                          ScaleTransition(scale: anim, child: child),
+                      child: Icon(
+                        _isCompact
+                            ? Icons.view_compact_rounded
+                            : Icons.grid_view_rounded,
+                        key: ValueKey<bool>(_isCompact),
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
+                    onPressed: () {
+                      setState(() => _isCompact = !_isCompact);
+                    },
                   ),
+                ),
+                const SizedBox(width: 8),
               ],
               bottom: const TabBar(
                 isScrollable: true,
@@ -203,7 +222,7 @@ class _FilesPageState extends State<FilesPage>
                 groups: _folderGroups,
                 emptyIcon: Icons.folder_open_rounded,
                 emptySubtitle: "添加目录后，这里会展示扫描到的内容",
-                titleBuilder: (entry) => p.basename(entry.key),
+                titleBuilder: (entry) => _buildFolderTitle(entry.key),
                 isCompact: _isCompact,
               ),
               _buildTabContent(
@@ -247,10 +266,10 @@ class _FilesPageState extends State<FilesPage>
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
 
-        // 紧凑模式用更小的 item 尺寸，宽松用更大的
+        // 根据屏幕宽度与当前模式动态计算单元格的最大宽度限制
         final double maxExtent = isCompact
-            ? (width > 1200 ? 140.0 : (width > 800 ? 150.0 : 160.0))
-            : (width > 1200 ? 180.0 : (width > 800 ? 190.0 : 210.0));
+            ? (width > 1200 ? 130.0 : (width > 600 ? 140.0 : 145.0))
+            : (width > 1200 ? 180.0 : (width > 600 ? 190.0 : 200.0));
 
         final double spacing = isCompact ? 10.0 : 16.0;
 
@@ -258,6 +277,7 @@ class _FilesPageState extends State<FilesPage>
           onRefresh: () async => _startScan(_paths),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               if (useSliverEmpty)
                 SliverFillRemaining(
@@ -284,7 +304,7 @@ class _FilesPageState extends State<FilesPage>
                     spacing,
                     spacing / 2,
                     spacing,
-                    80,
+                    96, // 预留底部 PlayerBar 空间
                   ),
                   sliver: SliverGrid.builder(
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -329,11 +349,13 @@ class _MediaGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 优先选取包含封面的歌曲作为展示图
     final coverSong = entry.value.firstWhere(
       (song) => song.coverBytes != null && song.coverBytes!.isNotEmpty,
       orElse: () => entry.value.first,
     );
 
+    // 延时异步加载封面
     if (coverSong.coverBytes == null || coverSong.coverBytes!.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
@@ -360,7 +382,7 @@ class _MediaGridItem extends StatelessWidget {
               extra: {"albumName": entry.key},
             );
           },
-          source: MusicSource.local, // 透传 source 字段
+          source: MusicSource.local,
         );
       },
     );

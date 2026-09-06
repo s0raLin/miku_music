@@ -33,7 +33,6 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   final FocusNode _searchFocus = FocusNode();
   bool _showSearch = false;
   _SortMode _sortMode = _SortMode.defaultSort;
-
   final Map<int, bool> _hasSearched = {0: false, 1: false};
 
   @override
@@ -70,54 +69,37 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
     final hasText = _searchCtrl.text.trim().isNotEmpty;
     final isFirstTab = _currentIndex == 0;
 
-    final tabButtons = ToggleButtons(
-      isSelected: [_currentIndex == 0, _currentIndex == 1],
-      onPressed: (i) => setState(() => _currentIndex = i),
-      borderRadius: BorderRadius.circular(12),
-      selectedColor: cs.onPrimary,
-      fillColor: cs.primary,
-      color: cs.onSurfaceVariant,
-      constraints: const BoxConstraints(minWidth: 72, minHeight: 36),
-      children: const [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.music_note_rounded, size: 18),
-              SizedBox(width: 4),
-              Text('歌曲'),
-            ],
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.queue_music_rounded, size: 18),
-              SizedBox(width: 4),
-              Text('歌单'),
-            ],
-          ),
-        ),
-      ],
-    );
-
     return Scaffold(
       backgroundColor: cs.surface,
-      // 使用普通 AppBar，彻底避免 Sliver 问题
       appBar: AppBar(
         backgroundColor: cs.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          onPressed: () {
-            rootScaffoldKey.currentState?.openDrawer();
-          },
-          icon: const Icon(Icons.menu),
+          onPressed: () => rootScaffoldKey.currentState?.openDrawer(),
+          icon: const Icon(Icons.menu_rounded),
         ),
-        title: tabButtons,
+        title: SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(
+              value: 0,
+              icon: Icon(Icons.music_note_rounded, size: 18),
+              label: Text('歌曲'),
+            ),
+            ButtonSegment(
+              value: 1,
+              icon: Icon(Icons.queue_music_rounded, size: 18),
+              label: Text('歌单'),
+            ),
+          ],
+          selected: {_currentIndex},
+          onSelectionChanged: (set) =>
+              setState(() => _currentIndex = set.first),
+          style: ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
@@ -127,7 +109,6 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
                 _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
                 key: ValueKey(_showSearch),
                 size: 22,
-                color: cs.onSurfaceVariant,
               ),
             ),
             onPressed: () {
@@ -141,13 +122,11 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
               });
             },
             tooltip: _showSearch ? '关闭搜索' : '搜索',
-            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
       body: Column(
         children: [
-          // 搜索栏（普通 Widget）
           AnimatedSize(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeInOut,
@@ -163,8 +142,6 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
                   )
                 : const SizedBox.shrink(),
           ),
-
-          // 内容区域
           Expanded(
             child: IndexedStack(
               index: _currentIndex,
@@ -202,7 +179,7 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 24, bottom: 8),
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 12),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -251,10 +228,9 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  排序选项
-// ═══════════════════════════════════════════════════════════════
-
+// ────────────────────────────────────────────────
+// 排序选项
+// ────────────────────────────────────────────────
 class _SortOption extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -290,10 +266,9 @@ class _SortOption extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  搜索栏
-// ═══════════════════════════════════════════════════════════════
-
+// ────────────────────────────────────────────────
+// 搜索栏
+// ────────────────────────────────────────────────
 class _SearchBar extends StatelessWidget {
   final TextEditingController searchCtrl;
   final FocusNode searchFocus;
@@ -320,7 +295,7 @@ class _SearchBar extends StatelessWidget {
 
     return Container(
       color: cs.surface,
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 6, 12, 10),
       child: Row(
         children: [
           Expanded(
@@ -342,10 +317,7 @@ class _SearchBar extends StatelessWidget {
                     color: cs.onSurfaceVariant,
                     size: 20,
                   ),
-                  prefixIconConstraints: const BoxConstraints(
-                    minWidth: 40,
-                    minHeight: 40,
-                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 42),
                   suffixIcon: hasText
                       ? IconButton(
                           icon: Icon(
@@ -354,20 +326,12 @@ class _SearchBar extends StatelessWidget {
                             color: cs.onSurfaceVariant,
                           ),
                           onPressed: onClear,
-                          padding: EdgeInsets.zero,
                           visualDensity: VisualDensity.compact,
                         )
-                      : const SizedBox(width: 40),
-                  suffixIconConstraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
+                      : null,
                   filled: true,
                   fillColor: cs.surfaceContainerHigh,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 0,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -380,16 +344,11 @@ class _SearchBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           IconButton(
-            icon: Icon(
-              Icons.sort_rounded,
-              size: 22,
-              color: cs.onSurfaceVariant,
-            ),
+            icon: const Icon(Icons.sort_rounded, size: 22),
             onPressed: onSort,
             tooltip: '排序',
-            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -397,10 +356,9 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  推荐标签 Chip
-// ═══════════════════════════════════════════════════════════════
-
+// ────────────────────────────────────────────────
+// 推荐标签
+// ────────────────────────────────────────────────
 class _SuggestionChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -411,13 +369,13 @@ class _SuggestionChip extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
         ),
         child: Text(
           label,
@@ -430,10 +388,9 @@ class _SuggestionChip extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  空态页
-// ═══════════════════════════════════════════════════════════════
-
+// ────────────────────────────────────────────────
+// 空状态
+// ────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
@@ -441,6 +398,7 @@ class _EmptyState extends StatelessWidget {
   final String subtitle;
   final List<String> tags;
   final void Function(String tag) onTagTap;
+
   const _EmptyState({
     required this.icon,
     this.iconColor,
@@ -455,40 +413,41 @@ class _EmptyState extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final color = iconColor ?? cs.primary;
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
       children: [
         Center(
           child: Container(
-            width: 64,
-            height: 64,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(icon, size: 32, color: color),
+            child: Icon(icon, size: 34, color: color),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Text(
           title,
           style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           subtitle,
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 28),
         Row(
           children: [
             Expanded(
               child: Divider(color: cs.outlineVariant.withValues(alpha: 0.5)),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Text(
                 '推荐搜索',
                 style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
@@ -499,10 +458,11 @@ class _EmptyState extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.center,
           children: tags
               .map((t) => _SuggestionChip(label: t, onTap: () => onTagTap(t)))
               .toList(),
@@ -512,10 +472,9 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  Tab 1 — 歌曲搜索
-// ═══════════════════════════════════════════════════════════════
-
+// ────────────────────────────────────────────────
+// Tab 1 — 歌曲搜索
+// ────────────────────────────────────────────────
 class _SongSearchTab extends StatefulWidget {
   final TextEditingController searchCtrl;
   final bool hasSearched;
@@ -539,6 +498,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
   List<NeteaseSong> _results = [];
   List<NeteaseSong> _sortedResults = [];
   bool _isSearching = false;
+  bool _isPreparing = false;
   String? _statusMsg;
   String _lastQueried = '';
 
@@ -558,12 +518,12 @@ class _SongSearchTabState extends State<_SongSearchTab>
   List<NeteaseSong> _sortResults(List<NeteaseSong> source) {
     switch (widget.sortMode) {
       case _SortMode.name:
-        final sorted = List.of(source);
-        sorted.sort((a, b) => a.title.compareTo(b.title));
+        final sorted = List.of(source)
+          ..sort((a, b) => a.title.compareTo(b.title));
         return sorted;
       case _SortMode.artist:
-        final sorted = List.of(source);
-        sorted.sort((a, b) => a.author.compareTo(b.author));
+        final sorted = List.of(source)
+          ..sort((a, b) => a.author.compareTo(b.author));
         return sorted;
       case _SortMode.defaultSort:
         return source;
@@ -591,9 +551,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
       }
     }
     if (oldWidget.sortMode != widget.sortMode && _results.isNotEmpty) {
-      setState(() {
-        _sortedResults = _sortResults(_results);
-      });
+      setState(() => _sortedResults = _sortResults(_results));
     }
   }
 
@@ -623,14 +581,15 @@ class _SongSearchTabState extends State<_SongSearchTab>
   }
 
   Future<void> _play(NeteaseSong song) async {
+    if (_isPreparing) return;
+    setState(() => _isPreparing = true);
+
     try {
       AppToast.neutral(context, message: '正在解析播放链接...', title: '请稍候');
 
       String? playUrl = song.url;
       if (playUrl.isEmpty) {
-        // 从 UserProvider 获取网易云 Cookie
         final neteaseCookie = context.read<UserProvider>().neteaseCookie;
-
         playUrl = await NeteaseApi.getRealUrl(song.id, cookie: neteaseCookie);
       }
 
@@ -670,6 +629,8 @@ class _SongSearchTabState extends State<_SongSearchTab>
     } catch (e) {
       if (!mounted) return;
       AppToast.error(context, message: '播放失败: $e', title: '错误');
+    } finally {
+      if (mounted) setState(() => _isPreparing = false);
     }
   }
 
@@ -687,7 +648,6 @@ class _SongSearchTabState extends State<_SongSearchTab>
       if (downloadUrl.isEmpty) {
         downloadUrl = await NeteaseApi.getRealUrl(song.id);
       }
-
       if (downloadUrl == null || downloadUrl.isEmpty) {
         if (!mounted) return;
         AppToast.error(context, message: '无法获取下载链接', title: '下载失败');
@@ -696,6 +656,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
 
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
+
       final safeTitle = song.title
           .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
           .trim();
@@ -754,16 +715,13 @@ class _SongSearchTabState extends State<_SongSearchTab>
           Uint8List? coverBytes;
           if (coverPath != null) {
             final coverFile = File(coverPath);
-            if (await coverFile.exists()) {
+            if (await coverFile.exists())
               coverBytes = await coverFile.readAsBytes();
-            }
           }
           String? lyrics;
           if (lrcPath != null) {
             final lrcFile = File(lrcPath);
-            if (await lrcFile.exists()) {
-              lyrics = await lrcFile.readAsString();
-            }
+            if (await lrcFile.exists()) lyrics = await lrcFile.readAsString();
           }
           mp.addToLibrary(
             Music(
@@ -778,6 +736,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
             ),
           );
         } catch (_) {}
+
         final buf = StringBuffer('已保存到: $audioPath');
         if (lrcPath != null) buf.write('\n歌词: $lrcPath');
         if (coverPath != null) buf.write('\n封面: $coverPath');
@@ -862,65 +821,63 @@ class _SongSearchTabState extends State<_SongSearchTab>
       );
     }
 
-    final entries = displayList
-        .map(
-          (s) => M3SongEntry(
-            id: 'net_${s.id}',
-            title: s.title,
-            subtitle: '${s.author}  ·  ${s.source.toUpperCase()}',
-            coverUrl: s.pic,
-            coverHeaders: const {'Referer': 'https://music.163.com/'},
-            fallbackIcon: Icons.music_note_rounded,
-            isHighlighted: currentNetId == s.id,
-            trailing: PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                size: 18,
-                color: cs.onSurfaceVariant,
-              ),
-              onSelected: (v) {
-                if (v == 'play') {
-                  _play(s);
-                } else if (v == 'detail') {
-                  _openDetail(s);
-                } else if (v == 'download') {
-                  _download(s);
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'play',
-                  child: ListTile(
-                    leading: Icon(Icons.play_arrow_rounded, color: cs.primary),
-                    title: const Text('在线收听'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'detail',
-                  child: ListTile(
-                    leading: Icon(Icons.album_rounded, color: cs.secondary),
-                    title: const Text('查看详情'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'download',
-                  child: ListTile(
-                    leading: Icon(Icons.download_rounded, color: cs.tertiary),
-                    title: const Text('下载到本地'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ],
-            ),
-            onTap: () => _openDetail(s),
+    final entries = displayList.map((s) {
+      return M3SongEntry(
+        id: 'net_${s.id}',
+        title: s.title,
+        subtitle: '${s.author}  ·  ${s.source.toUpperCase()}',
+        coverUrl: s.pic,
+        coverHeaders: const {'Referer': 'https://music.163.com/'},
+        fallbackIcon: Icons.music_note_rounded,
+        isHighlighted: currentNetId == s.id,
+        trailing: PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert_rounded,
+            size: 18,
+            color: cs.onSurfaceVariant,
           ),
-        )
-        .toList();
+          onSelected: (v) {
+            if (v == 'play') {
+              _play(s);
+            } else if (v == 'detail') {
+              _openDetail(s);
+            } else if (v == 'download') {
+              _download(s);
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: 'play',
+              child: ListTile(
+                leading: Icon(Icons.play_arrow_rounded, color: cs.primary),
+                title: const Text('在线收听'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'detail',
+              child: ListTile(
+                leading: Icon(Icons.album_rounded, color: cs.secondary),
+                title: const Text('查看详情'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'download',
+              child: ListTile(
+                leading: Icon(Icons.download_rounded, color: cs.tertiary),
+                title: const Text('下载到本地'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+        onTap: () => _openDetail(s),
+      );
+    }).toList();
 
     return Column(
       children: [
@@ -931,10 +888,9 @@ class _SongSearchTabState extends State<_SongSearchTab>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  Tab 2 — 歌单搜索
-// ═══════════════════════════════════════════════════════════════
-
+// ────────────────────────────────────────────────
+// Tab 2 — 歌单搜索
+// ────────────────────────────────────────────────
 class _PlaylistSearchTab extends StatefulWidget {
   final TextEditingController searchCtrl;
   final bool hasSearched;
@@ -958,6 +914,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
   List<NeteasePlaylistItem> _playlists = [];
   List<NeteasePlaylistItem> _sortedPlaylists = [];
   bool _isSearching = false;
+  bool _isPreparing = false;
   String? _statusMsg;
   String _lastQueried = '';
 
@@ -981,12 +938,12 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
   List<NeteasePlaylistItem> _sortPlaylists(List<NeteasePlaylistItem> source) {
     switch (widget.sortMode) {
       case _SortMode.name:
-        final sorted = List.of(source);
-        sorted.sort((a, b) => a.title.compareTo(b.title));
+        final sorted = List.of(source)
+          ..sort((a, b) => a.title.compareTo(b.title));
         return sorted;
       case _SortMode.artist:
-        final sorted = List.of(source);
-        sorted.sort((a, b) => a.creator.compareTo(b.creator));
+        final sorted = List.of(source)
+          ..sort((a, b) => a.creator.compareTo(b.creator));
         return sorted;
       case _SortMode.defaultSort:
         return source;
@@ -1014,9 +971,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       }
     }
     if (oldWidget.sortMode != widget.sortMode && _playlists.isNotEmpty) {
-      setState(() {
-        _sortedPlaylists = _sortPlaylists(_playlists);
-      });
+      setState(() => _sortedPlaylists = _sortPlaylists(_playlists));
     }
   }
 
@@ -1078,8 +1033,11 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
   }
 
   Future<void> _playPlaylistFrom(int startIndex) async {
+    if (_isPreparing) return;
     final songs = _detail?.songs;
     if (songs == null || songs.isEmpty) return;
+
+    setState(() => _isPreparing = true);
     try {
       final mp = context.read<MusicProvider>();
       final songMaps = songs
@@ -1094,10 +1052,12 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
             },
           )
           .toList();
+
       await mp.playNetworkSearchResults(
         songs: songMaps,
         startIndex: startIndex,
       );
+
       final lr = await NeteaseApi.getLyric(songs[startIndex].id);
       if ((lr['lyric']?.isNotEmpty ?? false) && mounted) {
         await mp.setLyricsDirectly(lr['lyric']!);
@@ -1105,6 +1065,8 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     } catch (e) {
       if (!mounted) return;
       AppToast.error(context, message: '播放失败: $e', title: '错误');
+    } finally {
+      if (mounted) setState(() => _isPreparing = false);
     }
   }
 
@@ -1119,6 +1081,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     try {
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
+
       final safeTitle = song.title
           .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
           .trim();
@@ -1129,11 +1092,14 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         p.join(m3MusicDir.path, '$safeTitle - $safeArtist'),
       );
       if (!await songDir.exists()) await songDir.create(recursive: true);
+
       String ext = p.url.extension(song.url);
       if (ext.contains('?')) ext = ext.split('?').first;
       if (ext.isEmpty || ext.length > 5) ext = '.mp3';
+
       final audioPath = p.join(songDir.path, '$safeTitle - $safeArtist$ext');
       final audioResult = await NeteaseApi.downloadSong(song.url, audioPath);
+
       if (!mounted) return;
       if (audioResult != null) {
         AppToast.success(context, message: '已保存到: $audioPath', title: '下载完成');
@@ -1151,11 +1117,9 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     super.build(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-
     final displayList = _sortedPlaylists.isNotEmpty
         ? _sortedPlaylists
         : _playlists;
-
     final showEmpty =
         _lastQueried.isEmpty && _playlists.isEmpty && !_isSearching;
 
@@ -1228,13 +1192,13 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.4)),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
             itemCount: displayList.length,
             itemBuilder: (ctx, i) {
               final item = displayList[i];
               final isOpen = _openedPlaylist?.id == item.id;
               return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: _PlaylistCard(
                   item: item,
                   isOpen: isOpen,
@@ -1257,10 +1221,9 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  歌单卡片（可展开）
-// ═══════════════════════════════════════════════════════════════
-
+// ────────────────────────────────────────────────
+// 歌单卡片
+// ────────────────────────────────────────────────
 class _PlaylistCard extends StatelessWidget {
   final NeteasePlaylistItem item;
   final bool isOpen;
@@ -1299,9 +1262,9 @@ class _PlaylistCard extends StatelessWidget {
 
     return Material(
       color: isOpen
-          ? cs.primaryContainer.withValues(alpha: 0.08)
+          ? cs.primaryContainer.withValues(alpha: 0.12)
           : cs.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1309,11 +1272,11 @@ class _PlaylistCard extends StatelessWidget {
           InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
               child: Row(
                 children: [
-                  _PlaylistCover(pic: item.pic, size: 44),
-                  const SizedBox(width: 10),
+                  _PlaylistCover(pic: item.pic, size: 48),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1322,16 +1285,16 @@ class _PlaylistCard extends StatelessWidget {
                           item.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.bodySmall?.copyWith(
+                          style: tt.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(
                               Icons.person_outline_rounded,
-                              size: 11,
+                              size: 13,
                               color: cs.onSurfaceVariant,
                             ),
                             const SizedBox(width: 3),
@@ -1342,7 +1305,6 @@ class _PlaylistCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: tt.labelSmall?.copyWith(
                                   color: cs.onSurfaceVariant,
-                                  fontSize: 11,
                                 ),
                               ),
                             ),
@@ -1352,7 +1314,7 @@ class _PlaylistCard extends StatelessWidget {
                               label: _fmt(item.playCount),
                               color: cs.primary,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             _StatChip(
                               icon: Icons.music_note_rounded,
                               label: '${item.trackCount}首',
@@ -1363,23 +1325,22 @@ class _PlaylistCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   Container(
-                    width: 24,
-                    height: 24,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
                       color: isOpen
-                          ? cs.primary.withValues(alpha: 0.12)
+                          ? cs.primary.withValues(alpha: 0.15)
                           : cs.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: AnimatedRotation(
                       turns: isOpen ? 0.5 : 0,
                       duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        size: 16,
+                        size: 18,
                         color: isOpen ? cs.primary : cs.onSurfaceVariant,
                       ),
                     ),
@@ -1400,26 +1361,19 @@ class _PlaylistCard extends StatelessWidget {
                         color: cs.outlineVariant.withValues(alpha: 0.3),
                       ),
                       if (isLoadingDetail)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 28),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
                               SizedBox(
-                                width: 24,
-                                height: 24,
+                                width: 26,
+                                height: 26,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: cs.primary,
+                                  strokeWidth: 2.2,
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              Text(
-                                '加载歌单中...',
-                                style: tt.bodySmall?.copyWith(
-                                  color: cs.onSurfaceVariant,
-                                ),
-                              ),
+                              SizedBox(height: 12),
+                              Text('加载歌单中...'),
                             ],
                           ),
                         )
@@ -1430,7 +1384,7 @@ class _PlaylistCard extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.error_outline_rounded,
-                                size: 16,
+                                size: 18,
                                 color: cs.error,
                               ),
                               const SizedBox(width: 8),
@@ -1472,7 +1426,7 @@ class _PlaylistCover extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       child: SizedBox(
         width: size,
         height: size,
@@ -1484,11 +1438,9 @@ class _PlaylistCover extends StatelessWidget {
                   'Referer': 'https://music.163.com/',
                   'User-Agent': 'Mozilla/5.0',
                 },
-
-                // 关键点：使用缓存 Key 避免重新解密/下载
-                placeholder: (_, __) =>
+                placeholder: (_, _) =>
                     Container(color: cs.surfaceContainerHighest),
-                errorWidget: (_, __, ___) => Icon(
+                errorWidget: (_, _, _) => Icon(
                   Icons.queue_music_rounded,
                   size: size * 0.4,
                   color: cs.onSurfaceVariant,
@@ -1520,9 +1472,9 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -1544,6 +1496,9 @@ class _StatChip extends StatelessWidget {
   }
 }
 
+// ────────────────────────────────────────────────
+// 歌单详情面板
+// ────────────────────────────────────────────────
 class _PlaylistDetailPanel extends StatefulWidget {
   final NeteasePlaylistDetail detail;
   final dynamic currentMusic;
@@ -1598,12 +1553,15 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
           child: Row(
             children: [
               Text(
                 '${songs.length} 首歌曲',
-                style: tt.labelLarge?.copyWith(color: cs.primary),
+                style: tt.labelLarge?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Spacer(),
               FilledButton.tonalIcon(
@@ -1612,13 +1570,12 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
                 label: const Text('播放全部'),
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 4,
+                    vertical: 6,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
@@ -1692,7 +1649,7 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
         ),
         if (hasMore)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: TextButton.icon(
               onPressed: () => setState(() => _visibleCount = nextBatch),
               icon: Icon(
@@ -1701,7 +1658,7 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
                 color: cs.primary,
               ),
               label: Text(
-                '加载更多 ($_visibleCount/$nextBatch)',
+                '加载更多 ($_visibleCount / $nextBatch)',
                 style: tt.labelMedium?.copyWith(color: cs.primary),
               ),
             ),

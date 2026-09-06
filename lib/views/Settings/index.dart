@@ -301,7 +301,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         "$ver ($bld)",
                         style: tt.bodyMedium?.copyWith(color: cs.outline),
                       ),
-                      onTap: () {},
+                      onTap: () {
+                        
+                      },
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
                     ListTile(

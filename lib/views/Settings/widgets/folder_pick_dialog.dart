@@ -9,7 +9,6 @@ import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:provider/provider.dart';
 
-/// M3 scan-directory management dialog — refined card list + scan progress.
 class FolderPickDialog extends StatefulWidget {
   final List<String> initialPaths;
   final ValueChanged<List<String>> onPathsChanged;
@@ -28,7 +27,6 @@ class _FolderPickDialogState extends State<FolderPickDialog> {
   late List<String> _tmpPaths;
   bool _isScanning = false;
   int _scannedCount = 0;
-  int _foundCount = 0;
   String? _error;
   StreamSubscription? _scanSub;
   final List<Music> _scannedSongs = [];
@@ -47,7 +45,22 @@ class _FolderPickDialogState extends State<FolderPickDialog> {
   }
 
   void _deletePath(int index) {
-    setState(() => _tmpPaths.removeAt(index));
+    setState(() {
+      _tmpPaths.removeAt(index);
+      _hasScanned = false;
+    });
+  }
+
+  Future<void> _addDirectory() async {
+    final p = await FilePicker.getDirectoryPath();
+    if (p != null && mounted) {
+      if (!_tmpPaths.contains(p)) {
+        setState(() {
+          _tmpPaths.add(p);
+          _hasScanned = false;
+        });
+      }
+    }
   }
 
   Future<void> _startScan() async {
@@ -62,7 +75,6 @@ class _FolderPickDialogState extends State<FolderPickDialog> {
     setState(() {
       _isScanning = true;
       _scannedCount = 0;
-      _foundCount = 0;
       _scannedSongs.clear();
       _error = null;
       _hasScanned = false;
@@ -75,16 +87,21 @@ class _FolderPickDialogState extends State<FolderPickDialog> {
         if (progress.music != null) _scannedSongs.add(progress.music!);
         setState(() {
           _scannedCount++;
-          _foundCount = _scannedSongs.length;
         });
       },
       onDone: () {
         if (!mounted) return;
-        setState(() { _isScanning = false; _hasScanned = true; });
+        setState(() {
+          _isScanning = false;
+          _hasScanned = true;
+        });
       },
       onError: (err) {
         if (!mounted) return;
-        setState(() { _isScanning = false; _error = '扫描出错: $err'; });
+        setState(() {
+          _isScanning = false;
+          _error = '扫描出错: $err';
+        });
       },
     );
   }
@@ -102,248 +119,300 @@ class _FolderPickDialogState extends State<FolderPickDialog> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final width = (MediaQuery.of(context).size.width * 0.88).clamp(0.0, 520.0);
 
-    return AlertDialog(
+    return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-      actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-      title: Row(children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: cs.primaryContainer.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(Icons.folder_special_rounded, color: cs.primary, size: 22),
-        ),
-        const SizedBox(width: 14),
-        Text("管理扫描目录", style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-      ]),
-      content: SizedBox(
-        width: width,
-        child: SingleChildScrollView(
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Add folder button ────────────────────────────────────────
-              FilledButton.tonalIcon(
-                onPressed: _isScanning ? null : () async {
-                  final p = await FilePicker.getDirectoryPath();
-                  if (p != null && mounted) {
-                    setState(() { _tmpPaths.add(p); _hasScanned = false; });
-                  }
-                },
-                icon: const Icon(Icons.create_new_folder_rounded, size: 18),
-                label: const Text("添加新扫描目录"),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
+              // ── Header ──────────────────────────────────────────────
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.folder_special_rounded,
+                      color: cs.onPrimaryContainer,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "管理扫描目录",
+                          style: tt.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "选择本地媒体文件包含路径",
+                          style: tt.bodySmall?.copyWith(color: cs.outline),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
 
-              // ── Directory list ───────────────────────────────────────────
-              if (_tmpPaths.isEmpty)
-                _buildEmptyDirectoryHint(cs, tt)
-              else
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 280),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: _tmpPaths.length,
-                    separatorBuilder: (_, __) => Divider(
-                      height: 1, indent: 60, endIndent: 16,
-                      color: cs.outlineVariant.withValues(alpha: 0.25),
-                    ),
-                    itemBuilder: (context, index) {
-                      final path = _tmpPaths[index];
-                      final folder = path.split(Platform.pathSeparator).last;
-                      return ListTile(
-                        dense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                        leading: Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(
-                            color: cs.primaryContainer.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(Icons.folder_rounded, color: cs.primary, size: 20),
-                        ),
-                        title: Text(folder, maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-                        subtitle: Text(path, maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: tt.bodySmall?.copyWith(color: cs.outline, fontSize: 11)),
-                        trailing: _isScanning ? null : IconButton(
-                          icon: Icon(Icons.remove_circle_outline_rounded, color: cs.error, size: 20),
-                          onPressed: () => _deletePath(index),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              const SizedBox(height: 20),
-
-              // ── Scan action area ─────────────────────────────────────────
+              // ── Dynamic Content ──────────────────────────────────────
               AnimatedSize(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeInOut,
-                child: Column(children: [
-                  if (_isScanning)
-                    _ScanningStatus(cs: cs, tt: tt, scanned: _scannedCount, found: _foundCount)
-                  else if (_tmpPaths.isNotEmpty && !_hasScanned)
-                    FilledButton.icon(
-                      onPressed: _startScan,
-                      icon: const Icon(Icons.manage_search_rounded, size: 20),
-                      label: const Text("开始扫描歌曲"),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.fastOutSlowIn,
+                child: _buildBodyContent(cs, tt),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Actions ─────────────────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (!_isScanning)
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("取消"),
                     ),
-                  if (!_isScanning && _hasScanned)
-                    _ScanSuccess(cs: cs, tt: tt, count: _foundCount),
-                  if (_error != null)
-                    _ScanError(cs: cs, tt: tt, message: _error!),
-                ]),
+                  const SizedBox(width: 8),
+                  if (!_hasScanned)
+                    FilledButton.icon(
+                      onPressed: (_tmpPaths.isEmpty || _isScanning)
+                          ? null
+                          : _startScan,
+                      icon: _isScanning
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.search_rounded, size: 18),
+                      label: Text(_isScanning ? "扫描中..." : "开始扫描"),
+                    )
+                  else
+                    FilledButton(
+                      onPressed: _handleConfirm,
+                      child: const Text("保存并应用"),
+                    ),
+                ],
               ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(onPressed: _isScanning ? null : () => Navigator.pop(context), child: const Text("取消")),
-        const SizedBox(width: 8),
-        FilledButton(
-          onPressed: _isScanning ? null : _handleConfirm,
-          child: Text(_hasScanned ? "完成" : "确定"),
+    );
+  }
+
+  Widget _buildBodyContent(ColorScheme cs, TextTheme tt) {
+    if (_isScanning) {
+      return _buildScanningState(cs, tt);
+    }
+
+    if (_hasScanned && _error == null) {
+      return _buildSuccessState(cs, tt);
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_error != null) _buildErrorBanner(cs, tt),
+
+        // 路径列表
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 220),
+          child: _tmpPaths.isEmpty
+              ? _buildEmptyState(cs, tt)
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _tmpPaths.length,
+                  itemBuilder: (context, index) {
+                    final path = _tmpPaths[index];
+                    final folder = path
+                        .split(Platform.pathSeparator)
+                        .lastWhere((e) => e.isNotEmpty, orElse: () => path);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Material(
+                        color: cs.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        child: ListTile(
+                          dense: true,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          leading: Icon(
+                            Icons.folder_rounded,
+                            color: cs.primary,
+                            size: 22,
+                          ),
+                          title: Text(
+                            folder,
+                            style: tt.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            path,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.outline,
+                              fontSize: 11,
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: cs.outline,
+                              size: 18,
+                            ),
+                            onPressed: () => _deletePath(index),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // 添加目录按钮 (虚线边框样式感)
+        OutlinedButton.icon(
+          onPressed: _addDirectory,
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text("添加新扫描目录"),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(44),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            side: BorderSide(
+              color: cs.outlineVariant,
+              style: BorderStyle.solid,
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildEmptyDirectoryHint(ColorScheme cs, TextTheme tt) {
+  Widget _buildEmptyState(ColorScheme cs, TextTheme tt) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24.0),
+      child: Column(
+        children: [
+          Icon(
+            Icons.folder_open_rounded,
+            size: 40,
+            color: cs.outline.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 8),
+          Text("暂未添加任何扫描路径", style: tt.bodyMedium?.copyWith(color: cs.outline)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanningState(ColorScheme cs, TextTheme tt) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 44),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
       ),
-      child: Column(children: [
-        Icon(Icons.folder_off_rounded, size: 44, color: cs.outline.withValues(alpha: 0.5)),
-        const SizedBox(height: 14),
-        Text("暂无扫描目录\n点击上方按钮添加",
-            textAlign: TextAlign.center,
-            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-      ]),
+      child: Column(
+        children: [
+          LinearProgressIndicator(borderRadius: BorderRadius.circular(4)),
+          const SizedBox(height: 20),
+          Text(
+            "正在扫描本地音乐...",
+            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "已检索 $_scannedCount 个文件 · 找到 ${_scannedSongs.length} 首歌曲",
+            style: tt.bodySmall?.copyWith(color: cs.outline),
+          ),
+        ],
+      ),
     );
   }
-}
 
-class _ScanningStatus extends StatelessWidget {
-  final ColorScheme cs;
-  final TextTheme tt;
-  final int scanned;
-  final int found;
-  const _ScanningStatus({required this.cs, required this.tt, required this.scanned, required this.found});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSuccessState(ColorScheme cs, TextTheme tt) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.12),
+        color: cs.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(3),
-          child: const LinearProgressIndicator(minHeight: 5),
-        ),
-        const SizedBox(height: 16),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(width: 18, height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2.5, color: cs.primary)),
-          const SizedBox(width: 12),
-          Text("正在扫描…", style: tt.titleSmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
-        ]),
-        const SizedBox(height: 10),
-        Text("已检查 $scanned 个文件 · 找到 $found 首音乐",
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-      ]),
-    );
-  }
-}
-
-class _ScanSuccess extends StatelessWidget {
-  final ColorScheme cs;
-  final TextTheme tt;
-  final int count;
-  const _ScanSuccess({required this.cs, required this.tt, required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
-      ),
-      child: Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: cs.primary.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: cs.primary,
+            radius: 20,
+            child: Icon(Icons.check_rounded, color: cs.onPrimary, size: 22),
           ),
-          child: Icon(Icons.check_rounded, color: cs.primary, size: 22),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text("扫描完成", style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-            Text("成功导入 $count 首歌曲",
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-          ]),
-        ),
-      ]),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "扫描完成",
+                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  "成功找到 ${_scannedSongs.length} 首歌曲，点击下方按钮应用并保存",
+                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
-}
 
-class _ScanError extends StatelessWidget {
-  final ColorScheme cs;
-  final TextTheme tt;
-  final String message;
-  const _ScanError({required this.cs, required this.tt, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildErrorBanner(ColorScheme cs, TextTheme tt) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: cs.errorContainer.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.error.withValues(alpha: 0.2)),
+        color: cs.errorContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(children: [
-        Icon(Icons.error_outline_rounded, color: cs.error, size: 24),
-        const SizedBox(width: 14),
-        Expanded(child: Text(message,
-            style: tt.bodyMedium?.copyWith(color: cs.onErrorContainer))),
-      ]),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: cs.error, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _error!,
+              style: tt.bodySmall?.copyWith(color: cs.onErrorContainer),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

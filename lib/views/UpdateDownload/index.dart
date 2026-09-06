@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:myapp/components/Shared/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,16 +16,11 @@ class UpdateDownloadPage extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return PopScope(
-      canPop: true,
-      child: Scaffold(
-        body: CustomScrollView(
+    return Scaffold(
+      body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          SliverAppBar.large(
-            title: const Text('获取更新'),
-            centerTitle: false,
-          ),
+          const SliverAppBar.large(title: Text('获取更新'), centerTitle: false),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             sliver: SliverList.list(
@@ -34,7 +30,7 @@ class UpdateDownloadPage extends StatelessWidget {
                   tagName: releaseInfo.tagName,
                   description: releaseInfo.description,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
                 // ── 下载方式标题 ──
                 Padding(
@@ -47,14 +43,14 @@ class UpdateDownloadPage extends StatelessWidget {
                   ),
                 ),
 
-                // ── GitHub 发布页卡片（仅在提供 htmlUrl 时显示）──
+                // ── GitHub 发布页卡片 ──
                 if (releaseInfo.htmlUrl.isNotEmpty)
                   _DownloadCard(
                     icon: Icons.code_rounded,
                     iconBg: colorScheme.primaryContainer,
                     iconColor: colorScheme.onPrimaryContainer,
-                    title: 'GitHub 发布页',
-                    subtitle: '前往 GitHub Releases 下载最新版本',
+                    title: 'GitHub Releases',
+                    subtitle: '前往 GitHub 获取官方完整 Build 构件',
                     buttonLabel: '前往下载',
                     onTap: () async {
                       final url = Uri.parse(releaseInfo.htmlUrl);
@@ -76,32 +72,28 @@ class UpdateDownloadPage extends StatelessWidget {
                     iconBg: colorScheme.tertiaryContainer,
                     iconColor: colorScheme.onTertiaryContainer,
                     title: '网盘下载',
-                    subtitle: '通过网盘获取 APK 安装包',
+                    subtitle: '通过镜像网盘快速获取 APK 安装包',
                     url: releaseInfo.cloudDriveUrl,
                     password: releaseInfo.cloudDrivePassword,
                   ),
                 ],
               ],
             ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 版本信息头部
+// 版本信息头部 (支持完整的 Markdown 排版)
 // ─────────────────────────────────────────────────────────────────────────────
 class _VersionHeader extends StatelessWidget {
   final String tagName;
   final String description;
 
-  const _VersionHeader({
-    required this.tagName,
-    required this.description,
-  });
+  const _VersionHeader({required this.tagName, required this.description});
 
   @override
   Widget build(BuildContext context) {
@@ -111,76 +103,113 @@ class _VersionHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 版本标签
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(AppRadius.inner),
-              ),
-              child: Icon(
-                Icons.system_update_rounded,
-                color: colorScheme.primary,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '新版本可用',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
+        // 版本 Header 头部
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  tagName,
-                  style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Icon(
+                  Icons.system_update_rounded,
+                  color: colorScheme.onPrimaryContainer,
+                  size: 26,
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '新版本可用',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      tagName,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 20),
 
-        // 更新内容
+        // 更新日志列表 (Markdown 格式化)
         if (description.isNotEmpty) ...[
-          Text(
-            '更新内容',
-            style: textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              '更新日志',
+              style: textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
           ),
-          const SizedBox(height: 10),
           Container(
             width: double.infinity,
-            constraints: const BoxConstraints(maxHeight: 300),
-            padding: const EdgeInsets.all(14),
+            constraints: const BoxConstraints(maxHeight: 320),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(AppRadius.inner),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
-            child: SingleChildScrollView(
-              child: Text(
-                description,
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              child: Markdown(
+                data: description,
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(16),
+                selectable: true,
+                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                    .copyWith(
+                      p: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                      h1: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      h2: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      h3: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      listBullet: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      code: textTheme.bodySmall?.copyWith(
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        color: colorScheme.onSurfaceVariant,
+                        fontFamily: 'monospace',
+                      ),
+                      codeblockDecoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
               ),
             ),
           ),
@@ -217,66 +246,56 @@ class _DownloadCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.cardBR),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 26),
+    return Material(
+      color: colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                onPressed: onTap,
-                icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                label: Text(buttonLabel),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: colorScheme.outline,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -284,7 +303,7 @@ class _DownloadCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 网盘下载卡片（含密码复制功能）
+// 网盘下载卡片（解决抖动与尺寸不一致问题）
 // ─────────────────────────────────────────────────────────────────────────────
 class _CloudDriveCard extends StatefulWidget {
   final IconData icon;
@@ -332,92 +351,96 @@ class _CloudDriveCardState extends State<_CloudDriveCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.cardBR),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: widget.iconBg,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(widget.icon, color: widget.iconColor, size: 26),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.subtitle,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // 提取码行
-            if (widget.password.isNotEmpty) ...[
-              const SizedBox(height: 16),
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(AppRadius.inner),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
+                  color: widget.iconBg,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
+                child: Icon(widget.icon, color: widget.iconColor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.key_rounded,
-                      size: 18,
-                      color: colorScheme.tertiary,
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      '提取码',
+                      widget.title,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle,
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.password,
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                          letterSpacing: 1.5,
-                        ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // 提取码高亮模块
+          if (widget.password.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.only(
+                left: 12,
+                right: 4,
+                top: 4,
+                bottom: 4,
+              ),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.key_rounded,
+                    size: 16,
+                    color: colorScheme.tertiary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '提取码',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      widget.password,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                    AnimatedSwitcher(
+                  ),
+                  // 修复布局抖动的核心：固定 36x36 级别的约束容器
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
                       child: _passwordCopied
                           ? Icon(
@@ -435,34 +458,31 @@ class _CloudDriveCardState extends State<_CloudDriveCard> {
                               ),
                               onPressed: _copyPassword,
                               padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
+                              visualDensity: VisualDensity.compact,
                             ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 18),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                onPressed: _openUrl,
-                icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                label: const Text('前往网盘'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
                   ),
-                ),
+                ],
               ),
             ),
           ],
-        ),
+
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: _openUrl,
+              icon: const Icon(Icons.open_in_new_rounded, size: 16),
+              label: const Text('前往网盘下载'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

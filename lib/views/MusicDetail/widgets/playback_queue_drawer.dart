@@ -6,25 +6,11 @@ import 'package:provider/provider.dart';
 class PlaybackQueueDrawer extends StatelessWidget {
   const PlaybackQueueDrawer({super.key});
 
-  IconData modeIcon(PlayMode mode) => switch (mode) {
-    PlayMode.sequence => Icons.repeat_rounded,
-    PlayMode.shuffle => Icons.shuffle_rounded,
-    PlayMode.repeat => Icons.repeat_one_rounded,
-  };
-
-  String modeTooltip(PlayMode mode) => switch (mode) {
-    PlayMode.sequence => "顺序播放",
-    PlayMode.shuffle => "随机播放",
-    PlayMode.repeat => "单曲循环",
-  };
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
-    // 让侧边栏在手机上占屏幕 85%，在宽屏/平板上固定最大 360 像素
-    final double drawerWidth = MediaQuery.of(context).size.width * 0.85;
-    final double finalWidth = drawerWidth.clamp(280.0, 360.0);
+    final width = MediaQuery.sizeOf(context).width * 0.85;
+    final finalWidth = width.clamp(280.0, 360.0);
 
     return SizedBox(
       width: finalWidth,
@@ -35,133 +21,57 @@ class PlaybackQueueDrawer extends StatelessWidget {
         backgroundColor: cs.surface,
         child: SafeArea(
           child: Consumer<MusicProvider>(
-            builder: (context, mp, child) {
-              // 💡 关键点 1：每次 notifyListeners 被调用时，Consumer 会在这里精准拿到排序后的最新 queue
+            builder: (context, mp, _) {
               final songs = mp.queue;
-              final currentMusic = mp.currentMusic;
+              final currentId = mp.currentMusic?.id;
 
               return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. 头部标题栏
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "当前播放",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "共 ${songs.length} 首歌曲",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (songs.isNotEmpty)
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: mp.togglePlayMode,
-                                tooltip: modeTooltip(mp.playMode),
-                                icon: Icon(modeIcon(mp.playMode)),
-                              ),
-                              IconButton(
-                                tooltip: '清空队列',
-                                icon: const Icon(Icons.delete_outline_rounded),
-                                onPressed: () => mp.clearQueue(),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
+                  _QueueHeader(
+                    count: songs.length,
+                    playMode: mp.playMode,
+                    onToggleMode: mp.togglePlayMode,
+                    onClear: songs.isEmpty ? null : mp.clearQueue,
                   ),
                   const Divider(height: 1),
-
-                  // 2. 完美的排序列表
                   Expanded(
                     child: songs.isEmpty
-                        ? Center(
-                            child: Text(
-                              "播放队列为空",
-                              style: TextStyle(color: cs.onSurfaceVariant),
-                            ),
-                          )
+                        ? const _EmptyQueue()
                         : ReorderableListView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
                             itemCount: songs.length,
-                            onReorderItem: (int oldIndex, int newIndex) {
-                              mp.reorderQueue(oldIndex, newIndex);
+                            onReorderItem: mp.reorderQueue,
+                            buildDefaultDragHandles: false, // 关掉默认右边拖拽手柄
+                            proxyDecorator: (child, index, animation) {
+                              return AnimatedBuilder(
+                                animation: animation,
+                                builder: (context, child) {
+                                  final elevation = Tween<double>(
+                                    begin: 0,
+                                    end: 6,
+                                  ).animate(animation).value;
+                                  return Material(
+                                    elevation: elevation,
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: cs.surfaceContainerHigh,
+                                    child: child,
+                                  );
+                                },
+                                child: child,
+                              );
                             },
                             itemBuilder: (context, index) {
                               final song = songs[index];
-                              final isPlaying = currentMusic?.id == song.id;
+                              final isPlaying = currentId == song.id;
 
-                              return ListTile(
-                                // 升级复合稳定 Key，混入 index，杜绝同歌多加时的渲染混乱
+                              return _QueueTile(
                                 key: ValueKey('queue_${song.id}_$index'),
-                                dense: true,
-                                selected: isPlaying,
-                                selectedTileColor: cs.primaryContainer
-                                    .withValues(alpha: 0.25),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-
-                                title: Text(
-                                  song.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontWeight: isPlaying
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isPlaying
-                                        ? cs.primary
-                                        : cs.onSurface,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  song.artist,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isPlaying
-                                        ? cs.primary.withValues(alpha: 0.7)
-                                        : cs.onSurfaceVariant,
-                                  ),
-                                ),
-                                leading: Icon(
-                                  isPlaying
-                                      ? Icons.volume_up_rounded
-                                      : Icons.music_note_rounded,
-                                  color: isPlaying
-                                      ? cs.primary
-                                      : cs.onSurfaceVariant,
-                                  size: 20,
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(
-                                    Icons.close_rounded,
-                                    size: 16,
-                                  ),
-                                  onPressed: () {
-                                    mp.removeFromQueue(index);
-                                  },
-                                ),
+                                index: index,
+                                title: song.title,
+                                artist: song.artist,
+                                isPlaying: isPlaying,
                                 onTap: () => mp.playByIndex(index),
+                                onRemove: () => mp.removeFromQueue(index),
                               );
                             },
                           ),
@@ -171,6 +81,231 @@ class PlaybackQueueDrawer extends StatelessWidget {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Header
+// ─────────────────────────────────────────────────────────────
+class _QueueHeader extends StatelessWidget {
+  const _QueueHeader({
+    required this.count,
+    required this.playMode,
+    required this.onToggleMode,
+    required this.onClear,
+  });
+
+  final int count;
+  final PlayMode playMode;
+  final VoidCallback onToggleMode;
+  final VoidCallback? onClear;
+
+  IconData get _modeIcon => switch (playMode) {
+    PlayMode.sequence => Icons.repeat_rounded,
+    PlayMode.shuffle => Icons.shuffle_rounded,
+    PlayMode.repeat => Icons.repeat_one_rounded,
+  };
+
+  String get _modeTooltip => switch (playMode) {
+    PlayMode.sequence => '顺序播放',
+    PlayMode.shuffle => '随机播放',
+    PlayMode.repeat => '单曲循环',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 8, 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '当前播放',
+                  style: tt.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '共 $count 首',
+                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onToggleMode,
+            tooltip: _modeTooltip,
+            icon: Icon(_modeIcon, size: 22),
+            visualDensity: VisualDensity.compact,
+          ),
+          if (onClear != null)
+            IconButton(
+              onPressed: onClear,
+              tooltip: '清空队列',
+              icon: const Icon(Icons.delete_outline_rounded, size: 22),
+              visualDensity: VisualDensity.compact,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// List Tile
+// ─────────────────────────────────────────────────────────────
+class _QueueTile extends StatelessWidget {
+  const _QueueTile({
+    super.key,
+    required this.index,
+    required this.title,
+    required this.artist,
+    required this.isPlaying,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final int index;
+  final String title;
+  final String artist;
+  final bool isPlaying;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: isPlaying
+            ? cs.primaryContainer.withValues(alpha: 0.35)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+            child: Row(
+              children: [
+                // 左侧拖拽手柄（唯一）
+                ReorderableDragStartListener(
+                  index: index,
+                  child: SizedBox(
+                    width: 28,
+                    child: Icon(
+                      isPlaying
+                          ? Icons.equalizer_rounded
+                          : Icons.drag_handle_rounded,
+                      size: 20,
+                      color: isPlaying
+                          ? cs.primary
+                          : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 标题 + 歌手
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isPlaying
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: isPlaying ? cs.primary : cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isPlaying
+                              ? cs.primary.withValues(alpha: 0.75)
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 移除按钮
+                IconButton(
+                  onPressed: onRemove,
+                  tooltip: '移除',
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Empty State
+// ─────────────────────────────────────────────────────────────
+class _EmptyQueue extends StatelessWidget {
+  const _EmptyQueue();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.queue_music_rounded,
+            size: 48,
+            color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '播放队列为空',
+            style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '添加歌曲后会显示在这里',
+            style: TextStyle(
+              fontSize: 13,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -309,6 +309,9 @@ class _CapsuleProgressBar extends StatelessWidget {
 // ════════════════════════════════════════════════════════════════
 //  播放队列 & 历史快照 Bottom Sheet（美化版 & 支持单项删除）
 // ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+//  播放队列 & 历史快照 Bottom Sheet（优化版）
+// ════════════════════════════════════════════════════════════════
 class _QueueSheet extends StatelessWidget {
   const _QueueSheet();
 
@@ -324,7 +327,6 @@ class _QueueSheet extends StatelessWidget {
     PlayMode.repeat => '单曲循环',
   };
 
-  /// 格式化时间戳显示（例：MM-dd HH:mm）
   String _formatDateTime(DateTime dt) {
     final month = dt.month.toString().padLeft(2, '0');
     final day = dt.day.toString().padLeft(2, '0');
@@ -350,12 +352,12 @@ class _QueueSheet extends StatelessWidget {
           height: MediaQuery.sizeOf(context).height * 0.68,
           child: Column(
             children: [
-              // 1. 顶端 Handle 抓手标志与标题栏
+              // 顶部拖拽指示条
               Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                padding: const EdgeInsets.only(top: 10, bottom: 6),
                 child: Center(
                   child: Container(
-                    width: 32,
+                    width: 36,
                     height: 4,
                     decoration: BoxDecoration(
                       color: cs.onSurfaceVariant.withValues(alpha: 0.3),
@@ -365,7 +367,7 @@ class _QueueSheet extends StatelessWidget {
                 ),
               ),
 
-              // 2. Tab 切换栏（优化 MD3 药丸形状指示器）
+              // Tab 切换（MD3 药丸风格）
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -387,7 +389,7 @@ class _QueueSheet extends StatelessWidget {
                     labelColor: cs.onPrimaryContainer,
                     unselectedLabelColor: cs.onSurfaceVariant,
                     labelStyle: tt.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                     unselectedLabelStyle: tt.labelLarge,
                     tabs: [
@@ -398,13 +400,11 @@ class _QueueSheet extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
-              // 3. Tab 页面内容展示
               Expanded(
                 child: TabBarView(
                   children: [
-                    // ── Tab 1: 当前播放队列 ──
                     _buildCurrentQueue(
                       context,
                       mp,
@@ -413,8 +413,6 @@ class _QueueSheet extends StatelessWidget {
                       cs,
                       tt,
                     ),
-
-                    // ── Tab 2: 队列历史快照 ──
                     _buildQueueHistory(context, mp, historyList, cs, tt),
                   ],
                 ),
@@ -426,7 +424,9 @@ class _QueueSheet extends StatelessWidget {
     );
   }
 
-  /// 当前队列列表构件
+  // ────────────────────────────────────────────────
+  // 当前播放队列
+  // ────────────────────────────────────────────────
   Widget _buildCurrentQueue(
     BuildContext context,
     MusicProvider mp,
@@ -438,13 +438,20 @@ class _QueueSheet extends StatelessWidget {
     if (songs.isEmpty) {
       return Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.queue_music_rounded, size: 48, color: cs.outlineVariant),
             const SizedBox(height: 12),
             Text(
               '播放队列为空',
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '添加歌曲后会显示在这里',
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -453,9 +460,9 @@ class _QueueSheet extends StatelessWidget {
 
     return Column(
       children: [
-        // 队列顶部操作栏
+        // 顶部操作栏
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          padding: const EdgeInsets.fromLTRB(20, 4, 12, 4),
           child: Row(
             children: [
               Text(
@@ -469,7 +476,7 @@ class _QueueSheet extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 4,
+                    vertical: 6,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -500,76 +507,121 @@ class _QueueSheet extends StatelessWidget {
             ],
           ),
         ),
-        const Divider(height: 1, thickness: 0.5),
+        const Divider(height: 1),
 
         Expanded(
           child: ReorderableListView.builder(
-            padding: const EdgeInsets.only(bottom: 16, top: 4),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
             itemCount: songs.length,
-            onReorder: mp.reorderQueue,
             buildDefaultDragHandles: false,
+            onReorderItem: mp.reorderQueue,
+            proxyDecorator: (child, index, animation) {
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (context, child) {
+                  final t = Curves.easeOut.transform(animation.value);
+                  return Material(
+                    elevation: 6 * t,
+                    borderRadius: BorderRadius.circular(14),
+                    color: cs.surfaceContainerHigh,
+                    child: child,
+                  );
+                },
+                child: child,
+              );
+            },
             itemBuilder: (context, index) {
               final m = songs[index];
               final isCurrent = currentMusic?.id == m.id;
 
-              return ListTile(
+              return Padding(
                 key: ValueKey('queue_${m.id}_$index'),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 2,
-                ),
-                leading: ReorderableDragStartListener(
-                  index: index,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isCurrent
-                          ? cs.primaryContainer
-                          : Colors.transparent,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: isCurrent
-                        ? Icon(
-                            Icons.volume_up_rounded,
-                            size: 20,
-                            color: cs.onPrimaryContainer,
-                          )
-                        : Icon(
-                            Icons.drag_handle_rounded,
-                            size: 20,
-                            color: cs.onSurfaceVariant,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Material(
+                  color: isCurrent
+                      ? cs.primaryContainer.withValues(alpha: 0.35)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    onTap: () => mp.playByIndex(index),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 10, 4, 10),
+                      child: Row(
+                        children: [
+                          // 拖拽手柄
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: SizedBox(
+                              width: 32,
+                              child: Icon(
+                                isCurrent
+                                    ? Icons.equalizer_rounded
+                                    : Icons.drag_handle_rounded,
+                                size: 20,
+                                color: isCurrent
+                                    ? cs.primary
+                                    : cs.onSurfaceVariant.withValues(
+                                        alpha: 0.5,
+                                      ),
+                              ),
+                            ),
                           ),
+                          const SizedBox(width: 6),
+                          // 标题 + 歌手
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  m.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isCurrent
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: isCurrent
+                                        ? cs.primary
+                                        : cs.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  m.artist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isCurrent
+                                        ? cs.primary.withValues(alpha: 0.75)
+                                        : cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // 移除
+                          IconButton(
+                            onPressed: () => mp.removeFromQueue(index),
+                            tooltip: '移除',
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                            ),
+                            visualDensity: VisualDensity.compact,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                title: Text(
-                  m.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodyLarge?.copyWith(
-                    color: isCurrent ? cs.primary : cs.onSurface,
-                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                subtitle: Text(
-                  m.artist,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodyMedium?.copyWith(
-                    color: isCurrent
-                        ? cs.primary.withValues(alpha: 0.8)
-                        : cs.onSurfaceVariant,
-                  ),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  onPressed: () => mp.removeFromQueue(index),
-                  color: cs.onSurfaceVariant,
-                  tooltip: '从队列移除',
-                ),
-                selected: isCurrent,
-                onTap: () => mp.playByIndex(index),
               );
             },
           ),
@@ -578,7 +630,9 @@ class _QueueSheet extends StatelessWidget {
     );
   }
 
-  /// 历史快照列表构件（集成美化卡片、队列名称、预览曲目与侧滑/按钮删除）
+  // ────────────────────────────────────────────────
+  // 历史快照
+  // ────────────────────────────────────────────────
   Widget _buildQueueHistory(
     BuildContext context,
     MusicProvider mp,
@@ -589,7 +643,7 @@ class _QueueSheet extends StatelessWidget {
     if (history.isEmpty) {
       return Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.history_rounded, size: 48, color: cs.outlineVariant),
             const SizedBox(height: 12),
@@ -604,16 +658,15 @@ class _QueueSheet extends StatelessWidget {
 
     return Column(
       children: [
-        // 历史栏顶部操作栏
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          padding: const EdgeInsets.fromLTRB(20, 4, 12, 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '包含自动保存的播放快照',
+                '自动保存的播放快照',
                 style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant),
               ),
+              const Spacer(),
               TextButton.icon(
                 onPressed: () async {
                   final confirm = await showDialog<bool>(
@@ -647,20 +700,18 @@ class _QueueSheet extends StatelessWidget {
             ],
           ),
         ),
-        const Divider(height: 1, thickness: 0.5),
+        const Divider(height: 1),
 
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             itemCount: history.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final snapshot = history[index];
-              final titleName = snapshot.name; // 👈 显式展示 queue 的名字
+              final titleName = snapshot.name;
               final songCount = snapshot.songs.length;
               final timeStr = _formatDateTime(snapshot.createdAt);
-
-              // 提取前两首歌曲标题作为卡片预览
               final previewSongs = snapshot.songs
                   .take(2)
                   .map((m) => m.title)
@@ -682,7 +733,6 @@ class _QueueSheet extends StatelessWidget {
                   ),
                 ),
                 onDismissed: (_) {
-                  // 👈 侧滑删除调用
                   mp.deleteQueueSnapshot(snapshot.id);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -698,16 +748,16 @@ class _QueueSheet extends StatelessWidget {
                   margin: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
                     side: BorderSide(
-                      color: cs.outlineVariant.withValues(alpha: 0.4),
+                      color: cs.outlineVariant.withValues(alpha: 0.35),
                     ),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 卡片 Header：快照图标、队列名字、时间和独立删除按钮
+                        // Header
                         Row(
                           children: [
                             Icon(
@@ -718,11 +768,11 @@ class _QueueSheet extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                titleName, // 👈 Queue 名字展示
+                                titleName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: tt.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                   color: cs.onSurface,
                                 ),
                               ),
@@ -733,8 +783,7 @@ class _QueueSheet extends StatelessWidget {
                                 color: cs.onSurfaceVariant,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            // 👈 卡片内部独立的删除按钮
+                            const SizedBox(width: 2),
                             IconButton(
                               icon: const Icon(Icons.close_rounded, size: 16),
                               padding: EdgeInsets.zero,
@@ -744,16 +793,14 @@ class _QueueSheet extends StatelessWidget {
                               ),
                               color: cs.onSurfaceVariant,
                               tooltip: '删除此记录',
-                              onPressed: () {
-                                mp.deleteQueueSnapshot(snapshot.id);
-                              },
+                              onPressed: () =>
+                                  mp.deleteQueueSnapshot(snapshot.id),
                             ),
                           ],
                         ),
 
                         if (previewSongs.isNotEmpty) ...[
                           const SizedBox(height: 6),
-                          // 曲目预览列表
                           Text(
                             previewSongs,
                             maxLines: 1,
@@ -766,13 +813,13 @@ class _QueueSheet extends StatelessWidget {
 
                         const SizedBox(height: 10),
 
-                        // 卡片 Footer：总首数 Chip 与恢复播放按钮
+                        // Footer
                         Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
-                                vertical: 2,
+                                vertical: 3,
                               ),
                               decoration: BoxDecoration(
                                 color: cs.surfaceContainerHighest,

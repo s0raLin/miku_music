@@ -673,8 +673,9 @@ class _SongSearchTabState extends State<_SongSearchTab>
     }
   }
 
-  void _openDetail(NeteaseSong song) {
-    _play(song);
+  Future<void> _openDetail(NeteaseSong song) async {
+    await _play(song);
+    if (!mounted) return;
     context.push('/music-detail');
   }
 
@@ -1107,9 +1108,10 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     }
   }
 
-  void _openDetailPage(NeteasePlaylistSong song) {
+  Future<void> _openDetailPage(NeteasePlaylistSong song) async {
     final idx = _detail!.songs.indexOf(song);
-    _playPlaylistFrom(idx);
+    await _playPlaylistFrom(idx);
+    if (!mounted) return;
     context.push('/music-detail');
   }
 
@@ -1482,8 +1484,8 @@ class _PlaylistCover extends StatelessWidget {
                   'Referer': 'https://music.163.com/',
                   'User-Agent': 'Mozilla/5.0',
                 },
+
                 // 关键点：使用缓存 Key 避免重新解密/下载
-                
                 placeholder: (_, __) =>
                     Container(color: cs.surfaceContainerHighest),
                 errorWidget: (_, __, ___) => Icon(

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 /// M3 风格主题色预设选项
 const List<({Color color, String label})> kM3PresetColors = [
-  (color: Color(0xFFC49B8A), label: '玫瑰'), // Dusty rose (default)
-  (color: Color(0xFF4169E1), label: '皇家蓝'), // Sapphire blue
-  (color: Color(0xFF00A86B), label: '翡翠绿'), // Emerald green
-  (color: Color(0xFF7B1FA2), label: '紫罗兰'), // Deep purple
-  (color: Color(0xFFDC143C), label: '胭脂红'), // Crimson red
-  (color: Color(0xFFFF8F00), label: '琥珀'), // Amber
-  (color: Color(0xFF00897B), label: '青碧'), // Teal
-  (color: Color(0xFF546E7A), label: '岩灰'), // Blue-grey slate
+  (color: Color(0xFFC49B8A), label: '豆沙'),     // 原来的玫瑰
+  (color: Color(0xFF4169E1), label: '克莱因'),   // 原来的皇家蓝
+  (color: Color(0xFF00A86B), label: '森绿'),     // 原来的翡翠绿
+  (color: Color(0xFF7B1FA2), label: '葡萄'),     // 原来的紫罗兰
+  (color: Color(0xFFDC143C), label: '朱红'),     // 原来的胭脂红
+  (color: Color(0xFFFF8F00), label: '落日'),     // 原来的琥珀
+  (color: Color(0xFF00897B), label: '青瓷'),     // 原来的青碧
+  (color: Color(0xFF546E7A), label: '雾灰'),     // 原来的岩灰
 ];
 
 /// M3 风格主题颜色选择器

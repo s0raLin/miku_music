@@ -657,22 +657,19 @@ class _SongSearchTabState extends State<_SongSearchTab>
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
 
+      // 文件夹名 = 歌曲名（做安全处理，去掉非法字符）
       final safeTitle = song.title
           .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
           .trim();
-      final safeArtist = song.author
-          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
-          .trim();
-      final songDir = Directory(
-        p.join(m3MusicDir.path, '$safeTitle - $safeArtist'),
-      );
+      final songDir = Directory(p.join(m3MusicDir.path, safeTitle));
       if (!await songDir.exists()) await songDir.create(recursive: true);
 
       String ext = p.url.extension(downloadUrl);
       if (ext.contains('?')) ext = ext.split('?').first;
       if (ext.isEmpty || ext.length > 5) ext = '.mp3';
 
-      final audioPath = p.join(songDir.path, '$safeTitle - $safeArtist$ext');
+      // 文件夹内的文件名统一用 song，方便识别
+      final audioPath = p.join(songDir.path, 'song$ext');
       final audioResult = await NeteaseApi.downloadSong(downloadUrl, audioPath);
 
       String? lrcPath;
@@ -680,7 +677,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
         final lyricMap = await NeteaseApi.getLyric(song.id);
         final lc = lyricMap['lyric'];
         if (lc != null && lc.isNotEmpty) {
-          lrcPath = p.join(songDir.path, '$safeTitle - $safeArtist.lrc');
+          lrcPath = p.join(songDir.path, 'lyric.lrc');
           await File(lrcPath).writeAsString(lc);
         }
       } catch (_) {}
@@ -715,8 +712,9 @@ class _SongSearchTabState extends State<_SongSearchTab>
           Uint8List? coverBytes;
           if (coverPath != null) {
             final coverFile = File(coverPath);
-            if (await coverFile.exists())
+            if (await coverFile.exists()) {
               coverBytes = await coverFile.readAsBytes();
+            }
           }
           String? lyrics;
           if (lrcPath != null) {
@@ -1079,30 +1077,105 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
 
   Future<void> _downloadPlaylistSong(NeteasePlaylistSong song) async {
     try {
+      String? downloadUrl = song.url;
+      if (downloadUrl.isEmpty) {
+        downloadUrl = await NeteaseApi.getRealUrl(song.id);
+      }
+      if (downloadUrl == null || downloadUrl.isEmpty) {
+        if (!mounted) return;
+        AppToast.error(
+          context,
+          message: '无法获取下载链接（可能无版权或需VIP账号）',
+          title: '下载失败',
+        );
+        return;
+      }
+
       final m3MusicDir = await FileService.getM3MusicDir();
       if (!await m3MusicDir.exists()) await m3MusicDir.create(recursive: true);
 
       final safeTitle = song.title
           .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
           .trim();
-      final safeArtist = song.author
-          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
-          .trim();
-      final songDir = Directory(
-        p.join(m3MusicDir.path, '$safeTitle - $safeArtist'),
-      );
+      final songDir = Directory(p.join(m3MusicDir.path, safeTitle));
       if (!await songDir.exists()) await songDir.create(recursive: true);
 
-      String ext = p.url.extension(song.url);
+      String ext = p.url.extension(downloadUrl);
       if (ext.contains('?')) ext = ext.split('?').first;
       if (ext.isEmpty || ext.length > 5) ext = '.mp3';
 
-      final audioPath = p.join(songDir.path, '$safeTitle - $safeArtist$ext');
-      final audioResult = await NeteaseApi.downloadSong(song.url, audioPath);
+      final audioPath = p.join(songDir.path, 'song$ext');
+      final audioResult = await NeteaseApi.downloadSong(downloadUrl, audioPath);
+
+      // 歌词
+      String? lrcPath;
+      try {
+        final lyricMap = await NeteaseApi.getLyric(song.id);
+        final lc = lyricMap['lyric'];
+        if (lc != null && lc.isNotEmpty) {
+          lrcPath = p.join(songDir.path, 'lyric.lrc');
+          await File(lrcPath).writeAsString(lc);
+        }
+      } catch (_) {}
+
+      // 封面
+      String? coverPath;
+      try {
+        if (song.pic.isNotEmpty) {
+          coverPath = p.join(songDir.path, 'cover.jpg');
+          await NeteaseApi.downloadCover(song.pic, coverPath);
+        }
+      } catch (_) {}
+
+      try {
+        final meta = {
+          'id': song.id,
+          'title': song.title,
+          'author': song.author,
+          'source': song.source,
+          if (audioResult != null) 'audio_path': audioResult,
+          if (lrcPath != null) 'lyric_path': lrcPath,
+          if (coverPath != null) 'cover_path': coverPath,
+        };
+        await File(
+          p.join(songDir.path, 'metadata.json'),
+        ).writeAsString(const JsonEncoder.withIndent('  ').convert(meta));
+      } catch (_) {}
 
       if (!mounted) return;
       if (audioResult != null) {
-        AppToast.success(context, message: '已保存到: $audioPath', title: '下载完成');
+        try {
+          final mp = context.read<MusicProvider>();
+          Uint8List? coverBytes;
+          if (coverPath != null) {
+            final coverFile = File(coverPath);
+            if (await coverFile.exists()) {
+              coverBytes = await coverFile.readAsBytes();
+            }
+          }
+          String? lyrics;
+          if (lrcPath != null) {
+            final lrcFile = File(lrcPath);
+            if (await lrcFile.exists()) lyrics = await lrcFile.readAsString();
+          }
+          mp.addToLibrary(
+            Music(
+              id: audioPath,
+              title: song.title,
+              artist: song.author,
+              duration: Duration.zero,
+              coverBytes: coverBytes,
+              lyrics: lyrics,
+              album: null,
+              source: MusicSource.local,
+            ),
+          );
+        } catch (_) {}
+
+        final buf = StringBuffer('已保存到: $audioPath');
+        if (lrcPath != null) buf.write('\n歌词: $lrcPath');
+        if (coverPath != null) buf.write('\n封面: $coverPath');
+        AppToast.success(context, message: buf.toString(), title: '下载完成');
       } else {
         AppToast.error(context, message: '下载失败', title: '错误');
       }

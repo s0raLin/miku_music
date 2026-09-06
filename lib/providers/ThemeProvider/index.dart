@@ -1,9 +1,11 @@
-// 桌面端无动画切换逻辑
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:material_color_utilities/blend/blend.dart';
 import 'package:myapp/service/Settings/index.dart';
 
+// ============================================================================
+// 1. 桌面端无动画 PageTransition
+// ============================================================================
 class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
   const NoAnimationPageTransitionsBuilder();
 
@@ -21,7 +23,10 @@ class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
 
 enum SliderStyle { straight, wave }
 
-/// 颜色调整配置（便于未来扩展不同风格）
+// ============================================================================
+// 2. 颜色微调参数配置 (可根据明暗模式自动匹配/覆盖)
+// ============================================================================
+@immutable
 class ColorAdjustments {
   final double primaryDesat;
   final double containerDesat;
@@ -40,25 +45,80 @@ class ColorAdjustments {
     this.neutralBaseLight = const Color(0xFF4A4341),
     this.neutralBaseDark = const Color(0xFFE5DDD9),
   });
+
+  /// 快速获取当前亮暗对应的目标颜色 Record
+  ({Color desatTarget, Color neutralBase}) targetsFor(Brightness brightness) {
+    return brightness == Brightness.light
+        ? (desatTarget: desatTargetLight, neutralBase: neutralBaseLight)
+        : (desatTarget: desatTargetDark, neutralBase: neutralBaseDark);
+  }
 }
 
+// ============================================================================
+// 3. 颜色柔化与 Surface 生成引擎
+// ============================================================================
+abstract class SoftThemeEngine {
+  static Color lerp(Color a, Color b, double t) => Color.lerp(a, b, t)!;
+
+  /// 生成柔化后的 ColorScheme
+  static ColorScheme buildSoftColorScheme(
+    ColorScheme raw,
+    Brightness brightness,
+    ColorAdjustments adj,
+  ) {
+    final (:desatTarget, :neutralBase) = adj.targetsFor(brightness);
+
+    return raw.copyWith(
+      primary: lerp(raw.primary, desatTarget, adj.primaryDesat),
+      primaryContainer: lerp(
+        raw.primaryContainer,
+        desatTarget,
+        adj.containerDesat,
+      ),
+      onPrimaryContainer: lerp(raw.onPrimaryContainer, neutralBase, 0.10),
+      secondary: lerp(raw.secondary, desatTarget, 0.18),
+      secondaryContainer: lerp(raw.secondaryContainer, desatTarget, 0.35),
+      tertiary: lerp(raw.tertiary, desatTarget, 0.20),
+      tertiaryContainer: lerp(raw.tertiaryContainer, desatTarget, 0.35),
+    );
+  }
+
+  /// 计算容器阶梯色
+  static ({Color lowest, Color low, Color medium, Color high, Color highest})
+  buildSurfaceContainers(Color baseSurface, Color desatTarget) {
+    return (
+      lowest: lerp(baseSurface, desatTarget, 0.20),
+      low: lerp(baseSurface, desatTarget, 0.30),
+      medium: lerp(baseSurface, desatTarget, 0.45),
+      high: lerp(baseSurface, desatTarget, 0.60),
+      highest: lerp(baseSurface, desatTarget, 0.75),
+    );
+  }
+}
+
+// ============================================================================
+// 4. ThemeProvider 主控制器
+// ============================================================================
 class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   Color _seedColor = const Color(0xFFC49B8A);
   SliderStyle _sliderStyle = SliderStyle.wave;
-  String _listDensity = "normal";
+  String _listDensity = 'normal';
 
-  final ColorAdjustments _adjustments = const ColorAdjustments();
+  final ColorAdjustments adjustments;
 
-  ThemeProvider();
+  ThemeProvider({this.adjustments = const ColorAdjustments()});
 
-  // ==================== Getters ====================
+  // ---------------- Getters ----------------
   ThemeMode get themeMode => _themeMode;
   Color get seedColor => _seedColor;
   SliderStyle get sliderStyle => _sliderStyle;
   String get listDensity => _listDensity;
 
-  // ==================== 更新方法 ====================
+  ThemeData get lightTheme => _buildTheme(Brightness.light);
+  ThemeData get darkTheme => _buildTheme(Brightness.dark);
+
+  // ---------------- Setters & Handlers ----------------
   void updateFromMap(Map<String, dynamic> data) {
     _seedColor = data['seedColor'] ?? _seedColor;
     _themeMode = data['themeMode'] ?? _themeMode;
@@ -68,94 +128,113 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ==================== Setters ====================
   void setThemeMode(ThemeMode mode) {
+    if (_themeMode == mode) return;
     _themeMode = mode;
     notifyListeners();
     SettingService.setThemeMode(mode);
   }
 
   void setSeedColor(Color color) {
+    if (_seedColor == color) return;
     _seedColor = color;
     notifyListeners();
     SettingService.setColor(color);
   }
 
-  void setSliderStyle(SliderStyle s) {
-    _sliderStyle = s;
+  void setSliderStyle(SliderStyle style) {
+    if (_sliderStyle == style) return;
+    _sliderStyle = style;
     notifyListeners();
-    SettingService.setSliderStyle(s.name);
+    SettingService.setSliderStyle(style.name);
   }
 
-  void setListDensity(String v) {
-    _listDensity = v;
+  void setListDensity(String density) {
+    if (_listDensity == density) return;
+    _listDensity = density;
     notifyListeners();
-    SettingService.setListDensity(v);
+    SettingService.setListDensity(density);
   }
 
-  Color blend(Color c) =>
-      Color(Blend.harmonize(c.toARGB32(), _seedColor.toARGB32()));
+  /// 颜色调和 (Harmonization)
+  Color blend(Color color) {
+    return Color(Blend.harmonize(color.toARGB32(), _seedColor.toARGB32()));
+  }
 
-  // ==================== 核心主题构建 ====================
+  // ---------------- 核心主题构建方法 ----------------
   ThemeData _buildTheme(Brightness brightness) {
     final isLight = brightness == Brightness.light;
-    final base = ThemeData(
-      useMaterial3: true,
+    final (:desatTarget, :neutralBase) = adjustments.targetsFor(brightness);
+
+    // 1. 生成 M3 种子 Scheme
+    final rawScheme = ColorScheme.fromSeed(
+      seedColor: _seedColor,
       brightness: brightness,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _seedColor,
-        brightness: brightness,
-        dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
-      ),
+      dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
     );
 
-    final raw = base.colorScheme;
-    final adj = _adjustments;
+    // 2. 二次莫兰迪/柔化处理
+    final softScheme = SoftThemeEngine.buildSoftColorScheme(
+      rawScheme,
+      brightness,
+      adjustments,
+    );
 
-    final desatTarget = isLight ? adj.desatTargetLight : adj.desatTargetDark;
-    final neutralBase = isLight ? adj.neutralBaseLight : adj.neutralBaseDark;
-
-    // 柔化颜色
-    final soft = _createSoftColorScheme(raw, desatTarget, neutralBase, adj);
-
+    // 3. 背景色与文本色精细微调
     final finalSurface = isLight
         ? const Color(0xFFFDFDFB)
         : const Color(0xFF141211);
+    final surfaceContainers = SoftThemeEngine.buildSurfaceContainers(
+      softScheme.surface,
+      desatTarget,
+    );
 
-    final surfaceColors = _createSurfaceColors(soft.surface, desatTarget);
-
-    final softOnSurface = _lerp(soft.onSurface, neutralBase, 0.15);
-    final softOnSurfaceVariant = _lerp(
-      soft.onSurfaceVariant,
+    final softOnSurface = SoftThemeEngine.lerp(
+      softScheme.onSurface,
+      neutralBase,
+      0.15,
+    );
+    final softOnSurfaceVariant = SoftThemeEngine.lerp(
+      softScheme.onSurfaceVariant,
       neutralBase,
       0.35,
     );
-    final softOutline = _lerp(soft.outline, desatTarget, 0.25);
+    final softOutline = SoftThemeEngine.lerp(
+      softScheme.outline,
+      desatTarget,
+      0.25,
+    );
 
-    final s = soft.copyWith(
+    final finalColorScheme = softScheme.copyWith(
       surface: finalSurface,
       onSurface: softOnSurface,
       onSurfaceVariant: softOnSurfaceVariant,
       outline: softOutline,
-      surfaceContainerLowest: surfaceColors.lowest,
-      surfaceContainerLow: surfaceColors.low,
-      surfaceContainer: surfaceColors.medium,
-      surfaceContainerHigh: surfaceColors.high,
-      surfaceContainerHighest: surfaceColors.highest,
+      surfaceContainerLowest: surfaceContainers.lowest,
+      surfaceContainerLow: surfaceContainers.low,
+      surfaceContainer: surfaceContainers.medium,
+      surfaceContainerHigh: surfaceContainers.high,
+      surfaceContainerHighest: surfaceContainers.highest,
     );
 
-    final pill = RoundedRectangleBorder(
+    // 4. 通用 Shape 定义
+    final pillShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(999),
     );
     final cardShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(28),
     );
 
-    return base.copyWith(
-      colorScheme: s,
+    // 5. 基础 Theme 构建
+    final baseTheme = ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: finalColorScheme,
       scaffoldBackgroundColor: finalSurface,
+    );
 
-      // Page Transitions
+    return baseTheme.copyWith(
+      // 路由切换动画配置
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
@@ -166,8 +245,8 @@ class ThemeProvider extends ChangeNotifier {
         },
       ),
 
-      // Typography - 使用安全的样式构建（已移除强行指定的 Noto Sans SC，避免字体加载失败变透明）
-      textTheme: base.textTheme.copyWith(
+      // Text Theme
+      textTheme: baseTheme.textTheme.copyWith(
         headlineLarge: TextStyle(
           letterSpacing: -0.8,
           fontWeight: FontWeight.w600,
@@ -200,7 +279,7 @@ class ThemeProvider extends ChangeNotifier {
         labelSmall: TextStyle(letterSpacing: 0.3, color: softOnSurfaceVariant),
       ),
 
-      // AppBar
+      // AppBar Theme
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
         toolbarHeight: 48,
@@ -218,18 +297,18 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
 
-      // TabBar Theme (完整适配 M3 动画与文本继承)
+      // TabBar Theme
       tabBarTheme: TabBarThemeData(
-        labelColor: s.primary,
+        labelColor: finalColorScheme.primary,
         unselectedLabelColor: softOnSurfaceVariant,
-        indicatorColor: s.primary,
+        indicatorColor: finalColorScheme.primary,
         overlayColor: WidgetStateProperty.all(
-          s.primary.withValues(alpha: 0.08),
+          finalColorScheme.primary.withValues(alpha: 0.08),
         ),
         labelStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: s.primary,
+          color: finalColorScheme.primary,
         ),
         unselectedLabelStyle: TextStyle(
           fontSize: 14,
@@ -238,77 +317,80 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
 
-      // Card
+      // Card Theme
       cardTheme: CardThemeData(
         elevation: 0,
-        color: surfaceColors.low,
+        color: surfaceContainers.low,
         surfaceTintColor: Colors.transparent,
         shape: cardShape,
         clipBehavior: Clip.antiAlias,
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+        margin: EdgeInsets.zero,
       ),
 
-      // NavigationBar
+      // NavigationBar Theme
       navigationBarTheme: NavigationBarThemeData(
         height: 64,
         backgroundColor: finalSurface,
-        indicatorColor: s.secondaryContainer,
-        indicatorShape: pill,
+        indicatorColor: finalColorScheme.secondaryContainer,
+        indicatorShape: pillShape,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         iconTheme: WidgetStateProperty.resolveWith((states) {
-          return states.contains(WidgetState.selected)
-              ? IconThemeData(color: s.onSecondaryContainer, size: 22)
-              : IconThemeData(color: softOnSurfaceVariant, size: 22);
+          final isSelected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            color: isSelected
+                ? finalColorScheme.onSecondaryContainer
+                : softOnSurfaceVariant,
+            size: 22,
+          );
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          return states.contains(WidgetState.selected)
-              ? TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: softOnSurface,
-                )
-              : TextStyle(fontSize: 11, color: softOnSurfaceVariant);
+          final isSelected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected ? softOnSurface : softOnSurfaceVariant,
+          );
         }),
       ),
 
-      // Buttons
+      // Button Themes
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          foregroundColor: s.onPrimary,
-          backgroundColor: s.primary,
+          foregroundColor: finalColorScheme.onPrimary,
+          backgroundColor: finalColorScheme.primary,
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-          shape: pill,
+          shape: pillShape,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           foregroundColor: softOnSurface,
-          backgroundColor: surfaceColors.low,
+          backgroundColor: surfaceContainers.low,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-          shape: pill,
+          shape: pillShape,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: s.primary,
+          foregroundColor: finalColorScheme.primary,
           side: BorderSide(color: softOutline, width: 1),
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-          shape: pill,
+          shape: pillShape,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: s.primary,
+          foregroundColor: finalColorScheme.primary,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          shape: pill,
+          shape: pillShape,
         ),
       ),
 
-      // Input
+      // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: s.surfaceContainerHighest,
+        fillColor: finalColorScheme.surfaceContainerHighest,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 22,
           vertical: 16,
@@ -319,7 +401,7 @@ class ThemeProvider extends ChangeNotifier {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: s.primary, width: 1.5),
+          borderSide: BorderSide(color: finalColorScheme.primary, width: 1.5),
         ),
         labelStyle: TextStyle(color: softOnSurfaceVariant),
         hintStyle: TextStyle(
@@ -327,36 +409,37 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
 
-      // Slider
+      // Slider Theme
       sliderTheme: SliderThemeData(
-        activeTrackColor: s.primary,
-        inactiveTrackColor: s.surfaceContainerHighest,
-        thumbColor: s.primary,
-        overlayColor: s.primary.withValues(alpha: 0.1),
+        activeTrackColor: finalColorScheme.primary,
+        inactiveTrackColor: finalColorScheme.surfaceContainerHighest,
+        thumbColor: finalColorScheme.primary,
+        overlayColor: finalColorScheme.primary.withValues(alpha: 0.1),
         trackHeight: 3,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
       ),
 
-      // Switch
+      // Switch Theme
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? s.primary : softOutline,
+          (states) => states.contains(WidgetState.selected)
+              ? finalColorScheme.primary
+              : softOutline,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? s.primary.withValues(alpha: 0.25)
-              : s.surfaceContainerHighest,
+              ? finalColorScheme.primary.withValues(alpha: 0.25)
+              : finalColorScheme.surfaceContainerHighest,
         ),
       ),
 
-      // ListTile
+      // ListTile Theme
       listTileTheme: ListTileThemeData(
-        dense: _listDensity == "compact",
-        contentPadding: _listDensity == "compact"
-            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 0)
+        dense: _listDensity == 'compact',
+        contentPadding: _listDensity == 'compact'
+            ? const EdgeInsets.symmetric(horizontal: 12)
             : const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        visualDensity: _listDensity == "compact"
+        visualDensity: _listDensity == 'compact'
             ? const VisualDensity(horizontal: -2, vertical: -2)
             : VisualDensity.standard,
         titleTextStyle: TextStyle(color: softOnSurface),
@@ -364,55 +447,18 @@ class ThemeProvider extends ChangeNotifier {
         iconColor: softOnSurfaceVariant,
       ),
 
+      // Dialog & BottomSheet
       dialogTheme: DialogThemeData(
-        backgroundColor: s.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        backgroundColor: finalColorScheme.surfaceContainerHigh,
+        shape: cardShape,
         elevation: isLight ? 4 : 0,
       ),
-
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: s.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: const Radius.circular(28)),
+        backgroundColor: finalColorScheme.surfaceContainerHigh,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
     );
   }
-
-  ColorScheme _createSoftColorScheme(
-    ColorScheme raw,
-    Color desatTarget,
-    Color neutralBase,
-    ColorAdjustments adj,
-  ) {
-    return raw.copyWith(
-      primary: _lerp(raw.primary, desatTarget, adj.primaryDesat),
-      primaryContainer: _lerp(
-        raw.primaryContainer,
-        desatTarget,
-        adj.containerDesat,
-      ),
-      onPrimaryContainer: _lerp(raw.onPrimaryContainer, neutralBase, 0.10),
-      secondary: _lerp(raw.secondary, desatTarget, 0.18),
-      secondaryContainer: _lerp(raw.secondaryContainer, desatTarget, 0.35),
-      tertiary: _lerp(raw.tertiary, desatTarget, 0.20),
-      tertiaryContainer: _lerp(raw.tertiaryContainer, desatTarget, 0.35),
-    );
-  }
-
-  ({Color lowest, Color low, Color medium, Color high, Color highest})
-  _createSurfaceColors(Color baseSurface, Color desatTarget) {
-    return (
-      lowest: _lerp(baseSurface, desatTarget, 0.20),
-      low: _lerp(baseSurface, desatTarget, 0.30),
-      medium: _lerp(baseSurface, desatTarget, 0.45),
-      high: _lerp(baseSurface, desatTarget, 0.60),
-      highest: _lerp(baseSurface, desatTarget, 0.75),
-    );
-  }
-
-  Color _lerp(Color a, Color b, double t) => Color.lerp(a, b, t)!;
-
-  ThemeData get lightTheme => _buildTheme(Brightness.light);
-  ThemeData get darkTheme => _buildTheme(Brightness.dark);
 }

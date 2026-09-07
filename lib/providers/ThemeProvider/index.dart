@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:material_color_utilities/blend/blend.dart';
+import 'package:myapp/providers/ThemeProvider/organic_splash.dart';
 import 'package:myapp/service/Settings/index.dart';
 
 // ============================================================================
@@ -302,9 +303,16 @@ class ThemeProvider extends ChangeNotifier {
         labelColor: finalColorScheme.primary,
         unselectedLabelColor: softOnSurfaceVariant,
         indicatorColor: finalColorScheme.primary,
-        overlayColor: WidgetStateProperty.all(
-          finalColorScheme.primary.withValues(alpha: 0.08),
-        ),
+
+        // 使用自定义水波纹
+        splashFactory: OrganicSplashFactory.splashFactory,
+
+        // ★★★ 关键：彻底去掉那层浅色矩形背景 ★★★
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          // 按下、悬停、聚焦全部透明
+          return Colors.transparent;
+        }),
+
         labelStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -316,7 +324,6 @@ class ThemeProvider extends ChangeNotifier {
           color: softOnSurfaceVariant,
         ),
       ),
-
       // Card Theme
       cardTheme: CardThemeData(
         elevation: 0,

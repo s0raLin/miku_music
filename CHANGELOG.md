@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.62.0](https://github.com/s0raLin/miku_music/compare/v1.61.0...v1.62.0) (2026-09-07)
+
+
+### Features
+
+* **music:** 优化歌词加载策略，支持通过元数据文件检索 ([12cfaf2](https://github.com/s0raLin/miku_music/commit/12cfaf2d727728e7e5510911cedfe54862a678d3))
+* **music:** 增强网络歌曲的队列管理与播放交互功能 ([059575a](https://github.com/s0raLin/miku_music/commit/059575a8bd2d6c4bad8f9afd1e13b8cae2a99607))
+* **ui:** 增强专辑详情页的歌曲匹配与过滤逻辑 ([33f2d05](https://github.com/s0raLin/miku_music/commit/33f2d05f959ff565ce3f72ad08f8b59d55deaeec))
+
+
+### Performance Improvements
+
+* **files:** 优化文件列表的数据分组与渲染性能 ([32530ec](https://github.com/s0raLin/miku_music/commit/32530ec0e9b42faa153df8cbd215cde8f68fe864))
+
 ## [1.61.0](https://github.com/s0raLin/miku_music/compare/v1.60.0...v1.61.0) (2026-09-06)
 
 

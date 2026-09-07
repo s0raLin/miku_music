@@ -26,28 +26,20 @@ enum PlayTrigger {
 
 /// 播放队列的历史快照实体类
 class QueueSnapshot {
-  /// 快照唯一标识（通常使用时间戳）
   final String id;
-
-  /// 队列名称（例如："来自歌单：周杰伦精选" 或 "历史播放队列"）
   final String name;
-
-  /// 该队列包含的歌曲列表
   final List<Music> songs;
-
-  /// 生成快照时正在播放的歌曲索引位置
   final int currentIndex;
-
-  /// 快照创建时间
   final DateTime createdAt;
 
   QueueSnapshot({
     required this.id,
     required this.name,
-    required this.songs,
+    required List<Music> songs, // 改为深度拷贝，防止外部引用修改
     required this.currentIndex,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  }) : songs = List.unmodifiable(List.from(songs)), // 强制只读防污染
+       createdAt = createdAt ?? DateTime.now();
 }
 
 /// 音乐播放队列管理核心类
@@ -104,16 +96,16 @@ class MusicQueue {
   /// 根据歌曲 ID 检查当前队列中是否存在该歌曲
   bool contains(String id) => _queueIndexMap.containsKey(id);
 
-
   /// 将当前队列作为快照保存到历史记录中
-  /// 返回创建的 QueueSnapshot 对象，若队列为空或与最新快照重复则返回 null
   QueueSnapshot? saveCurrentToHistory({String? queueName}) {
+    // 核心防御 1：当前队列为空，或者所有歌曲无效，直接拦截，绝对不存历史
     if (_queue.isEmpty) return null;
 
-    // 防重校验：与最新快照完全一致则不重复保存
+    // 防重校验：如果最新快照的歌曲列表 ID 与当前一致，且当前播放索引也一致，则不重复保存
     if (_history.isNotEmpty) {
       final lastSnapshot = _history.first;
-      if (_isQueueSame(lastSnapshot.songs, _queue)) {
+      if (_isQueueSame(lastSnapshot.songs, _queue) &&
+          lastSnapshot.currentIndex == _currentIndex) {
         return null;
       }
     }
@@ -130,7 +122,56 @@ class MusicQueue {
       _history.removeLast();
     }
 
-    return snapshot; // 关键点：将快照返回给 Provider/Repository
+    return snapshot;
+  }
+
+  /// 使用新的歌曲列表替换当前播放队列
+  List<Music> replace(
+    List<Music> songs, {
+    String? queueName,
+    bool saveToHistory = true,
+  }) {
+    // 核心防御 2：如果打算用一个“空歌单”来替换当前队列，
+    // 通常意味着播放被重置或加载失败，不应该将旧队列归档为历史快照
+    if (songs.isEmpty) {
+      _queue.clear();
+      _queueIndexMap.clear();
+      _currentIndex = -1;
+      return _queue;
+    }
+
+    // 只有当待替换的新歌曲列表不为空、且旧队列也不为空时，才保存旧队列到历史
+    if (saveToHistory && _queue.isNotEmpty) {
+      saveCurrentToHistory(queueName: queueName);
+    }
+
+    _queue
+      ..clear()
+      ..addAll(songs);
+    _refreshIndexMap();
+    _currentIndex = -1;
+    return _queue;
+  }
+
+  /// 从历史快照恢复队列
+  int restoreFromSnapshot(QueueSnapshot snapshot) {
+    _queue
+      ..clear()
+      ..addAll(snapshot.songs); // 从快照深拷贝恢复内存队列
+    _refreshIndexMap();
+
+    _currentIndex =
+        (snapshot.currentIndex >= 0 && snapshot.currentIndex < _queue.length)
+        ? snapshot.currentIndex
+        : 0;
+
+    // 移除旧的重复快照记录，并将当前状态作为最新记录置顶
+    _history.removeWhere((s) => s.id == snapshot.id);
+
+    // 重新为当前状态生成一个新的 snapshot 置顶，确保 currentIndex 准确
+    saveCurrentToHistory(queueName: snapshot.name);
+
+    return _currentIndex;
   }
 
   /// 批量载入数据库历史快照（通常在 App 启动或初始化时调用）
@@ -190,7 +231,6 @@ class MusicQueue {
   void removeHistoryById(String id) {
     _history.removeWhere((snapshot) => snapshot.id == id);
   }
-
 
   /// 计算上一首歌曲的索引位置
   int computePrevIndex() {
@@ -264,48 +304,6 @@ class MusicQueue {
     _queue.clear();
     _queueIndexMap.clear();
     _currentIndex = -1;
-  }
-
-  /// 使用新的歌曲列表替换当前播放队列
-  ///
-  /// [queueName] 可选参数，指定旧队列归档到历史时的名称
-  /// [saveToHistory] 为 true 时会自动把替换前的旧队列保存到历史记录中
-  List<Music> replace(
-    List<Music> songs, {
-    String? queueName,
-    bool saveToHistory = true,
-  }) {
-    if (saveToHistory && _queue.isNotEmpty) {
-      saveCurrentToHistory(queueName: queueName);
-    }
-
-    _queue
-      ..clear()
-      ..addAll(songs);
-    _refreshIndexMap();
-    _currentIndex = -1;
-    return _queue;
-  }
-
-  /// 从历史快照恢复队列
-  /// 返回恢复后应播放的歌曲索引
-  int restoreFromSnapshot(QueueSnapshot snapshot) {
-    _queue
-      ..clear()
-      ..addAll(snapshot.songs);
-    _refreshIndexMap();
-    _currentIndex =
-        (snapshot.currentIndex >= 0 && snapshot.currentIndex < _queue.length)
-        ? snapshot.currentIndex
-        : 0;
-
-    // 将恢复的目标快照置顶，避免历史记录中出现重复的条目
-    _history.removeWhere(
-      (s) => s.id == snapshot.id || _isQueueSame(s.songs, snapshot.songs),
-    );
-    _history.insert(0, snapshot);
-
-    return _currentIndex;
   }
 
   /// 循环切换播放模式（顺序 -> 随机 -> 单曲循环 -> 顺序）

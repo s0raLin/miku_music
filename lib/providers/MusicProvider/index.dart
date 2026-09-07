@@ -332,7 +332,6 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
-  /// 替换当前播放队列（可选标记队列名称 [queueName]，并控制是否保存快照到历史记录）
   Future<void> replaceQueue(
     List<Music> songs, {
     int startIndex = 0,
@@ -340,18 +339,31 @@ class MusicProvider extends ChangeNotifier {
     String? queueName,
     bool saveToHistory = true,
   }) async {
-    if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) return;
-
-    // 1. 在替换前，先将当前旧队列自动存入历史快照
-    if (saveToHistory && queue.isNotEmpty) {
-      saveCurrentQueueToHistory();
+    // 核心防御 3：待替换的歌单歌曲数为 0 时，直接不进行快照和播放
+    if (songs.isEmpty) {
+      _playbackQueue.clear();
+      await player.stop();
+      _safeNotifyListeners();
+      return;
     }
+
+    if (startIndex < 0 || startIndex >= songs.length) return;
 
     _playbackQueue.replace(
       songs,
       queueName: queueName,
       saveToHistory: saveToHistory,
     );
+
+    // 只有真正成功保存了有效快照，才触发数据库持久化
+    if (saveToHistory && _playbackQueue.history.isNotEmpty) {
+      final latestSnapshot = _playbackQueue.history.first;
+      // 再次确认快照里的歌曲列表不为空才落盘
+      if (latestSnapshot.songs.isNotEmpty) {
+        _repository.saveQueueSnapshot(latestSnapshot);
+      }
+    }
+
     await player.stop();
     await playByIndex(startIndex, autoPlay: autoPlay);
   }

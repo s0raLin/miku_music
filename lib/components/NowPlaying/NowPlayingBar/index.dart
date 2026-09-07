@@ -307,10 +307,7 @@ class _CapsuleProgressBar extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  播放队列 & 历史快照 Bottom Sheet（美化版 & 支持单项删除）
-// ════════════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════════════
-//  播放队列 & 历史快照 Bottom Sheet（优化版）
+//  播放队列 & 历史快照 Bottom Sheet
 // ════════════════════════════════════════════════════════════════
 class _QueueSheet extends StatelessWidget {
   const _QueueSheet();
@@ -631,7 +628,7 @@ class _QueueSheet extends StatelessWidget {
   }
 
   // ────────────────────────────────────────────────
-  // 历史快照
+  // 历史快照（提升名称视觉层级，优先透传展示 snapshot.name）
   // ────────────────────────────────────────────────
   Widget _buildQueueHistory(
     BuildContext context,
@@ -709,11 +706,14 @@ class _QueueSheet extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final snapshot = history[index];
-              final titleName = snapshot.name;
+              // 若无自定义名称则保底显示，保证标题永远不为空字符串
+              final titleName = snapshot.name.isNotEmpty
+                  ? snapshot.name
+                  : '历史播放队列 (${snapshot.songs.length}首)';
               final songCount = snapshot.songs.length;
               final timeStr = _formatDateTime(snapshot.createdAt);
               final previewSongs = snapshot.songs
-                  .take(2)
+                  .take(3)
                   .map((m) => m.title)
                   .join(' / ');
 
@@ -757,13 +757,20 @@ class _QueueSheet extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header
+                        // Header: 采用 Icon 徽章 + 加粗标题提升快照名称的视觉层级
                         Row(
                           children: [
-                            Icon(
-                              Icons.playlist_play_rounded,
-                              size: 20,
-                              color: cs.primary,
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: cs.primaryContainer,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.playlist_play_rounded,
+                                size: 16,
+                                color: cs.onPrimaryContainer,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -772,15 +779,19 @@ class _QueueSheet extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: tt.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
                                   color: cs.onSurface,
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 6),
                             Text(
                               timeStr,
                               style: tt.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
+                                color: cs.onSurfaceVariant.withValues(
+                                  alpha: 0.8,
+                                ),
+                                fontSize: 11,
                               ),
                             ),
                             const SizedBox(width: 2),
@@ -799,14 +810,17 @@ class _QueueSheet extends StatelessWidget {
                           ],
                         ),
 
+                        // 曲目预览区：降低字号与明度，突出上方标题
                         if (previewSongs.isNotEmpty) ...[
                           const SizedBox(height: 6),
                           Text(
-                            previewSongs,
+                            '包含: $previewSongs',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: tt.bodyMedium?.copyWith(
-                              color: cs.onSurfaceVariant,
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant.withValues(
+                                alpha: 0.85,
+                              ),
                             ),
                           ),
                         ],

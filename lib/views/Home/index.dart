@@ -418,6 +418,7 @@ class _MusicSection extends StatelessWidget {
                             await musicProvider.replaceQueue(
                               songs,
                               startIndex: index,
+
                             );
                             if (context.mounted &&
                                 musicProvider.currentMusic != null) {
@@ -468,6 +469,7 @@ class _MusicSection extends StatelessWidget {
 // Playlist History Section — 按歌单展示播放历史
 // ═══════════════════════════════════════════════════════════
 class _PlaylistHistorySection extends StatelessWidget {
+  final String title;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
   final List<Music> historySongs;
@@ -478,7 +480,7 @@ class _PlaylistHistorySection extends StatelessWidget {
     required this.textTheme,
     required this.historySongs,
     required this.onViewAll,
-  });
+  }) : title = '播放历史';
 
   @override
   Widget build(BuildContext context) {
@@ -555,7 +557,7 @@ class _PlaylistHistorySection extends StatelessWidget {
             : SizedBox(
                 width: cardSize,
                 child: PlaylistListCard(
-                  playlistName: '最近播放',
+                  playlistName: title,
                   songCount: historySongs.length,
                   coverBytes: historySongs.isNotEmpty
                       ? historySongs.first.coverBytes

@@ -143,7 +143,6 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
     final filteredSongs = _filterAndSort(rawSongs);
     final displayTitle = _cleanMediaName(widget.albumName);
 
-    // 干净且高质的首选封面提取（无 try-catch）
     final coverSong =
         rawSongs.firstWhereOrNull(
           (s) => s.coverBytes != null && s.coverBytes!.isNotEmpty,
@@ -155,7 +154,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
       child: Scaffold(
         body: CustomScrollView(
           slivers: [
-            // 顶部弹性 Header
+            // 顶部弹性 Header (修复：向下滚动时出现标题)
             _AlbumDetailHeader(
               displayTitle: displayTitle,
               coverSong: coverSong,
@@ -317,100 +316,137 @@ class _AlbumDetailHeader extends StatelessWidget {
       (prev, s) => prev + s.duration,
     );
 
+    const double expandedHeight = 220.0;
+
     return SliverAppBar(
-      expandedHeight: 220,
+      expandedHeight: expandedHeight,
       pinned: true,
       stretch: true,
       scrolledUnderElevation: 3,
       leading: const BackButton(),
-      // 移除 title 属性，彻底去掉 AppBar 收起时的顶部标题
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.primaryContainer.withValues(alpha: 0.5),
-                    colorScheme.surface,
-                  ],
+      // 使用 LayoutBuilder 动态获取当前的实际高度，判断是否显示折叠标题
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final topPadding = MediaQuery.of(context).padding.top;
+          final collapsedHeight = kToolbarHeight + topPadding;
+
+          // 计算折叠比例：当接近完全折叠时 (进度 > 0.8)，标题才开始渐隐出现
+          final currentHeight = constraints.biggest.height;
+          final delta = expandedHeight - collapsedHeight;
+          final collapseProgress = ((expandedHeight - currentHeight) / delta)
+              .clamp(0.0, 1.0);
+          final titleOpacity = collapseProgress > 0.8
+              ? (collapseProgress - 0.8) / 0.2
+              : 0.0;
+
+          return FlexibleSpaceBar(
+            titlePadding: const EdgeInsets.only(
+              left: 56,
+              bottom: 16,
+              right: 16,
+            ),
+            // 使用 Opacity 控制：展开时完全透明(不占位不重复)，折叠时才显现
+            title: Opacity(
+              opacity: titleOpacity,
+              child: Text(
+                displayTitle,
+                style: textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 48, 20, 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _AlbumCoverCard(coverSong: coverSong),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 仅保留弹性空间中的标题
-                          Text(
-                            displayTitle,
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${songs.length} 首歌曲 · ${_formatDuration(totalDuration)}",
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 12),
-                          FilledButton.icon(
-                            onPressed: songs.isNotEmpty
-                                ? () {
-                                    musicProvider.replaceQueue(
-                                      songs,
-                                      startIndex: 0,
-                                    );
-                                    context.push(
-                                      "/music-detail",
-                                      extra: songs.first,
-                                    );
-                                  }
-                                : null,
-                            icon: const Icon(
-                              Icons.play_arrow_rounded,
-                              size: 20,
-                            ),
-                            label: const Text("播放全部"),
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+            expandedTitleScale: 1.0,
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        colorScheme.surface,
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 36, 20, 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _AlbumCoverCard(coverSong: coverSong),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 展开状态下的主标题
+                              Text(
+                                displayTitle,
+                                style: textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.2,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${songs.length} 首歌曲 · ${_formatDuration(totalDuration)}",
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 12),
+                              FilledButton.icon(
+                                onPressed: songs.isNotEmpty
+                                    ? () {
+                                        musicProvider.replaceQueue(
+                                          songs,
+                                          startIndex: 0,
+                                        );
+                                        context.push(
+                                          "/music-detail",
+                                          extra: songs.first,
+                                        );
+                                      }
+                                    : null,
+                                icon: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 20,
+                                ),
+                                label: const Text("播放全部"),
+                                style: FilledButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

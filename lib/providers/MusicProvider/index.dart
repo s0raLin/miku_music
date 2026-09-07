@@ -667,6 +667,35 @@ class MusicProvider extends ChangeNotifier {
     });
   }
 
+  /// 将单首网络歌曲插入为「下一首播放」
+  /// 不打断当前正在播放的歌曲
+  Future<void> addNetworkSongNext({
+    required Map<String, String?> songMap,
+  }) async {
+    final (musicList, _) = _repository.importNetworkSearchResults([songMap]);
+    if (musicList.isEmpty) return;
+
+    final music = musicList.first;
+    _playbackQueue.insertNext(music);
+    _safeNotifyListeners();
+  }
+
+  /// 将单首网络歌曲追加到队尾
+  Future<void> addNetworkSongToEnd({
+    required Map<String, String?> songMap,
+  }) async {
+    final (musicList, _) = _repository.importNetworkSearchResults([songMap]);
+    if (musicList.isEmpty) return;
+
+    final music = musicList.first;
+    if (_playbackQueue.contains(music.id)) {
+      // 已在队列中则不再重复添加（也可改成移动到末尾）
+      return;
+    }
+    _playbackQueue.add(music);
+    _safeNotifyListeners();
+  }
+
   /// 加载本地存储的历史网络歌曲缓存
   Future<void> loadPersistedNetworkSongs() async {
     await _repository.loadPersistedNetworkSongs();

@@ -213,6 +213,20 @@ class MusicQueue {
     _queueIndexMap[music.id] = _queue.length - 1;
   }
 
+  /// 将歌曲插入到「当前播放曲的下一首」位置
+  /// 若当前无播放项，则等同于 add（追加到末尾）
+  /// 返回插入后的索引
+  int insertNext(Music music) {
+    if (_queue.isEmpty || _currentIndex < 0) {
+      add(music);
+      return _queue.length - 1;
+    }
+    final insertIndex = _currentIndex + 1;
+    _queue.insert(insertIndex, music);
+    _refreshIndexMap();
+    return insertIndex;
+  }
+
   /// 移除指定索引位置 [index] 的歌曲
   /// 若移除的索引位于当前播放歌曲之前，会自动修正 [_currentIndex] 避免错位
   void removeAt(int index) {

@@ -634,6 +634,90 @@ class _SongSearchTabState extends State<_SongSearchTab>
     }
   }
 
+  /// 立即播放（不进入详情）
+  Future<void> _playNow(NeteaseSong song) async {
+    await _play(song);
+  }
+
+  /// 播放并进入详情页
+  Future<void> _playAndOpenDetail(NeteaseSong song) async {
+    await _play(song);
+    if (!mounted) return;
+    context.push('/music-detail');
+  }
+
+  /// 下一首播放
+  Future<void> _addNext(NeteaseSong song) async {
+    try {
+      AppToast.neutral(context, message: '正在加入下一首...', title: '请稍候');
+
+      String? playUrl = song.url;
+      if (playUrl.isEmpty) {
+        final cookie = context.read<UserProvider>().neteaseCookie;
+        playUrl = await NeteaseApi.getRealUrl(song.id, cookie: cookie);
+      }
+      if (playUrl == null || playUrl.isEmpty) {
+        if (!mounted) return;
+        AppToast.error(context, message: '无法获取播放地址（可能无版权或需VIP）', title: '添加失败');
+        return;
+      }
+
+      final mp = context.read<MusicProvider>();
+      await mp.addNetworkSongNext(
+        songMap: {
+          'id': song.id,
+          'title': song.title,
+          'artist': song.author,
+          'url': playUrl,
+          'coverUrl': song.pic,
+          'lyrics': mp.getCachedLyrics('net_${song.id}'),
+        },
+      );
+
+      if (!mounted) return;
+      AppToast.success(context, message: '已加入下一首播放', title: '成功');
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(context, message: '添加失败: $e', title: '错误');
+    }
+  }
+
+  /// 添加到队尾
+  Future<void> _addToEnd(NeteaseSong song) async {
+    try {
+      AppToast.neutral(context, message: '正在加入队列...', title: '请稍候');
+
+      String? playUrl = song.url;
+      if (playUrl.isEmpty) {
+        final cookie = context.read<UserProvider>().neteaseCookie;
+        playUrl = await NeteaseApi.getRealUrl(song.id, cookie: cookie);
+      }
+      if (playUrl == null || playUrl.isEmpty) {
+        if (!mounted) return;
+        AppToast.error(context, message: '无法获取播放地址（可能无版权或需VIP）', title: '添加失败');
+        return;
+      }
+
+      final mp = context.read<MusicProvider>();
+      await mp.addNetworkSongToEnd(
+        songMap: {
+          'id': song.id,
+          'title': song.title,
+          'artist': song.author,
+          'url': playUrl,
+          'coverUrl': song.pic,
+          'lyrics': mp.getCachedLyrics('net_${song.id}'),
+        },
+      );
+
+      if (!mounted) return;
+      AppToast.success(context, message: '已添加到队尾', title: '成功');
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(context, message: '添加失败: $e', title: '错误');
+    }
+  }
+
   Future<void> _openDetail(NeteaseSong song) async {
     await _play(song);
     if (!mounted) return;
@@ -835,33 +919,62 @@ class _SongSearchTabState extends State<_SongSearchTab>
             color: cs.onSurfaceVariant,
           ),
           onSelected: (v) {
-            if (v == 'play') {
-              _play(s);
-            } else if (v == 'detail') {
-              _openDetail(s);
-            } else if (v == 'download') {
-              _download(s);
+            switch (v) {
+              case 'play_now':
+                _playNow(s);
+                break;
+              case 'play_detail':
+                _playAndOpenDetail(s);
+                break;
+              case 'add_next':
+                _addNext(s);
+                break;
+              case 'add_end':
+                _addToEnd(s);
+                break;
+              case 'download':
+                _download(s);
+                break;
             }
           },
           itemBuilder: (_) => [
             PopupMenuItem(
-              value: 'play',
+              value: 'play_now',
               child: ListTile(
                 leading: Icon(Icons.play_arrow_rounded, color: cs.primary),
-                title: const Text('在线收听'),
+                title: const Text('立即播放'),
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),
             ),
             PopupMenuItem(
-              value: 'detail',
+              value: 'play_detail',
               child: ListTile(
                 leading: Icon(Icons.album_rounded, color: cs.secondary),
-                title: const Text('查看详情'),
+                title: const Text('播放并查看'),
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),
             ),
+            PopupMenuItem(
+              value: 'add_next',
+              child: ListTile(
+                leading: Icon(Icons.playlist_play_rounded, color: cs.tertiary),
+                title: const Text('下一首播放'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'add_end',
+              child: ListTile(
+                leading: Icon(Icons.queue_rounded, color: cs.onSurfaceVariant),
+                title: const Text('添加到队尾'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            const PopupMenuDivider(),
             PopupMenuItem(
               value: 'download',
               child: ListTile(
@@ -873,7 +986,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
             ),
           ],
         ),
-        onTap: () => _openDetail(s),
+        onTap: () => _playNow(s), // 整行点击 = 立即播放，不进详情
       );
     }).toList();
 
@@ -1068,11 +1181,100 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     }
   }
 
-  Future<void> _openDetailPage(NeteasePlaylistSong song) async {
-    final idx = _detail!.songs.indexOf(song);
+  /// 立即播放（不进入详情）
+  Future<void> _playNow(NeteasePlaylistSong song) async {
+    final idx = _detail?.songs.indexOf(song) ?? -1;
+    if (idx < 0) return;
+    await _playPlaylistFrom(idx);
+  }
+
+  /// 播放并进入详情页
+  Future<void> _playAndOpenDetail(NeteasePlaylistSong song) async {
+    final idx = _detail?.songs.indexOf(song) ?? -1;
+    if (idx < 0) return;
     await _playPlaylistFrom(idx);
     if (!mounted) return;
     context.push('/music-detail');
+  }
+
+  /// 下一首播放
+  Future<void> _addNext(NeteasePlaylistSong song) async {
+    try {
+      AppToast.neutral(context, message: '正在加入下一首...', title: '请稍候');
+
+      String? playUrl = song.url;
+      if (playUrl.isEmpty) {
+        final cookie = context.read<UserProvider>().neteaseCookie;
+        playUrl = await NeteaseApi.getRealUrl(song.id, cookie: cookie);
+      }
+      if (playUrl == null || playUrl.isEmpty) {
+        if (!mounted) return;
+        AppToast.error(
+          context,
+          message: '无法获取播放地址（可能无版权或需VIP）',
+          title: '添加失败',
+        );
+        return;
+      }
+
+      final mp = context.read<MusicProvider>();
+      await mp.addNetworkSongNext(
+        songMap: {
+          'id': song.id,
+          'title': song.title,
+          'artist': song.author,
+          'url': playUrl,
+          'coverUrl': song.pic,
+          'lyrics': mp.getCachedLyrics('net_${song.id}'),
+        },
+      );
+
+      if (!mounted) return;
+      AppToast.success(context, message: '已加入下一首播放', title: '成功');
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(context, message: '添加失败: $e', title: '错误');
+    }
+  }
+
+  /// 添加到队尾
+  Future<void> _addToEnd(NeteasePlaylistSong song) async {
+    try {
+      AppToast.neutral(context, message: '正在加入队列...', title: '请稍候');
+
+      String? playUrl = song.url;
+      if (playUrl.isEmpty) {
+        final cookie = context.read<UserProvider>().neteaseCookie;
+        playUrl = await NeteaseApi.getRealUrl(song.id, cookie: cookie);
+      }
+      if (playUrl == null || playUrl.isEmpty) {
+        if (!mounted) return;
+        AppToast.error(
+          context,
+          message: '无法获取播放地址（可能无版权或需VIP）',
+          title: '添加失败',
+        );
+        return;
+      }
+
+      final mp = context.read<MusicProvider>();
+      await mp.addNetworkSongToEnd(
+        songMap: {
+          'id': song.id,
+          'title': song.title,
+          'artist': song.author,
+          'url': playUrl,
+          'coverUrl': song.pic,
+          'lyrics': mp.getCachedLyrics('net_${song.id}'),
+        },
+      );
+
+      if (!mounted) return;
+      AppToast.success(context, message: '已添加到队尾', title: '成功');
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(context, message: '添加失败: $e', title: '错误');
+    }
   }
 
   Future<void> _downloadPlaylistSong(NeteasePlaylistSong song) async {
@@ -1107,7 +1309,6 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       final audioPath = p.join(songDir.path, 'song$ext');
       final audioResult = await NeteaseApi.downloadSong(downloadUrl, audioPath);
 
-      // 歌词
       String? lrcPath;
       try {
         final lyricMap = await NeteaseApi.getLyric(song.id);
@@ -1118,7 +1319,6 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         }
       } catch (_) {}
 
-      // 封面
       String? coverPath;
       try {
         if (song.pic.isNotEmpty) {
@@ -1190,9 +1390,8 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     super.build(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final displayList = _sortedPlaylists.isNotEmpty
-        ? _sortedPlaylists
-        : _playlists;
+    final displayList =
+        _sortedPlaylists.isNotEmpty ? _sortedPlaylists : _playlists;
     final showEmpty =
         _lastQueried.isEmpty && _playlists.isEmpty && !_isSearching;
 
@@ -1280,9 +1479,10 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
                   detailError: isOpen ? _detailError : null,
                   currentMusic: context.watch<MusicProvider>().currentMusic,
                   onTap: () => _openPlaylist(item),
-                  onPlaySong: (song) =>
-                      _playPlaylistFrom(_detail!.songs.indexOf(song)),
-                  onOpenDetail: _openDetailPage,
+                  onPlayNow: _playNow,
+                  onPlayAndDetail: _playAndOpenDetail,
+                  onAddNext: _addNext,
+                  onAddToEnd: _addToEnd,
                   onDownload: _downloadPlaylistSong,
                 ),
               );
@@ -1305,8 +1505,10 @@ class _PlaylistCard extends StatelessWidget {
   final String? detailError;
   final dynamic currentMusic;
   final VoidCallback onTap;
-  final void Function(NeteasePlaylistSong) onPlaySong;
-  final void Function(NeteasePlaylistSong) onOpenDetail;
+  final void Function(NeteasePlaylistSong) onPlayNow;
+  final void Function(NeteasePlaylistSong) onPlayAndDetail;
+  final void Function(NeteasePlaylistSong) onAddNext;
+  final void Function(NeteasePlaylistSong) onAddToEnd;
   final void Function(NeteasePlaylistSong)? onDownload;
 
   const _PlaylistCard({
@@ -1317,8 +1519,10 @@ class _PlaylistCard extends StatelessWidget {
     required this.detailError,
     required this.currentMusic,
     required this.onTap,
-    required this.onPlaySong,
-    required this.onOpenDetail,
+    required this.onPlayNow,
+    required this.onPlayAndDetail,
+    required this.onAddNext,
+    required this.onAddToEnd,
     this.onDownload,
   });
 
@@ -1476,8 +1680,10 @@ class _PlaylistCard extends StatelessWidget {
                         _PlaylistDetailPanel(
                           detail: detail!,
                           currentMusic: currentMusic,
-                          onPlaySong: onPlaySong,
-                          onOpenDetail: onOpenDetail,
+                          onPlayNow: onPlayNow,
+                          onPlayAndDetail: onPlayAndDetail,
+                          onAddNext: onAddNext,
+                          onAddToEnd: onAddToEnd,
                           onDownload: onDownload,
                         ),
                     ],
@@ -1575,15 +1781,19 @@ class _StatChip extends StatelessWidget {
 class _PlaylistDetailPanel extends StatefulWidget {
   final NeteasePlaylistDetail detail;
   final dynamic currentMusic;
-  final void Function(NeteasePlaylistSong) onPlaySong;
-  final void Function(NeteasePlaylistSong) onOpenDetail;
+  final void Function(NeteasePlaylistSong) onPlayNow;
+  final void Function(NeteasePlaylistSong) onPlayAndDetail;
+  final void Function(NeteasePlaylistSong) onAddNext;
+  final void Function(NeteasePlaylistSong) onAddToEnd;
   final void Function(NeteasePlaylistSong)? onDownload;
 
   const _PlaylistDetailPanel({
     required this.detail,
     required this.currentMusic,
-    required this.onPlaySong,
-    required this.onOpenDetail,
+    required this.onPlayNow,
+    required this.onPlayAndDetail,
+    required this.onAddNext,
+    required this.onAddToEnd,
     this.onDownload,
   });
 
@@ -1638,7 +1848,7 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
               ),
               const Spacer(),
               FilledButton.tonalIcon(
-                onPressed: () => widget.onPlaySong(songs.first),
+                onPressed: () => widget.onPlayNow(songs.first),
                 icon: const Icon(Icons.play_arrow_rounded, size: 16),
                 label: const Text('播放全部'),
                 style: FilledButton.styleFrom(
@@ -1673,40 +1883,78 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
                   color: cs.onSurfaceVariant,
                 ),
                 onSelected: (v) {
-                  if (v == 'play') {
-                    widget.onPlaySong(song);
-                  } else if (v == 'detail') {
-                    widget.onOpenDetail(song);
-                  } else if (v == 'download' && widget.onDownload != null) {
-                    widget.onDownload!(song);
+                  switch (v) {
+                    case 'play_now':
+                      widget.onPlayNow(song);
+                      break;
+                    case 'play_detail':
+                      widget.onPlayAndDetail(song);
+                      break;
+                    case 'add_next':
+                      widget.onAddNext(song);
+                      break;
+                    case 'add_end':
+                      widget.onAddToEnd(song);
+                      break;
+                    case 'download':
+                      widget.onDownload?.call(song);
+                      break;
                   }
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(
-                    value: 'play',
+                    value: 'play_now',
                     child: ListTile(
                       leading: Icon(
                         Icons.play_arrow_rounded,
                         color: cs.primary,
                       ),
-                      title: const Text('在线收听'),
+                      title: const Text('立即播放'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
                   PopupMenuItem(
-                    value: 'detail',
+                    value: 'play_detail',
                     child: ListTile(
                       leading: Icon(Icons.album_rounded, color: cs.secondary),
-                      title: const Text('查看详情'),
+                      title: const Text('播放并查看'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
+                  PopupMenuItem(
+                    value: 'add_next',
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.playlist_play_rounded,
+                        color: cs.tertiary,
+                      ),
+                      title: const Text('下一首播放'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'add_end',
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.queue_rounded,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      title: const Text('添加到队尾'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
                   PopupMenuItem(
                     value: 'download',
                     child: ListTile(
-                      leading: Icon(Icons.download_rounded, color: cs.tertiary),
+                      leading: Icon(
+                        Icons.download_rounded,
+                        color: cs.tertiary,
+                      ),
                       title: const Text('下载到本地'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
@@ -1714,7 +1962,7 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
                   ),
                 ],
               ),
-              onTap: () => widget.onOpenDetail(song),
+              onTap: () => widget.onPlayNow(song),
             );
           }).toList(),
           isScrollable: false,

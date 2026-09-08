@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:myapp/model/Music/index.dart';
 
 /// 播放模式枚举
@@ -62,6 +64,10 @@ class MusicQueue {
   /// 最多允许保留的历史队列数量
   static const int maxHistorySize = 20;
 
+  // ── 当前队列元信息（用于历史命名） ──
+  String? _currentQueueName;
+  String? _currentSourceId;
+
   // ── 只读属性访问器 (Read-only accessors) ──
 
   /// 获取当前播放队列（只读列表）
@@ -91,30 +97,73 @@ class MusicQueue {
   /// 获取当前队列的歌曲总数
   int get length => _queue.length;
 
+  /// 当前队列名称
+  String? get currentQueueName => _currentQueueName;
+
+  /// 当前队列来源 ID
+  String? get currentSourceId => _currentSourceId;
+
   // ── O(1) 高效查找 ──
 
   /// 根据歌曲 ID 检查当前队列中是否存在该歌曲
   bool contains(String id) => _queueIndexMap.containsKey(id);
 
-  /// 将当前队列作为快照保存到历史记录中
-  QueueSnapshot? saveCurrentToHistory({String? queueName}) {
-    // 核心防御 1：当前队列为空，或者所有歌曲无效，直接拦截，绝对不存历史
+  /// 基于 歌单标识/名称 + 歌曲 ID 列表 生成确定的唯一 ID
+  String _generateQueueId(
+    List<Music> songs, {
+    String? sourceId,
+    String? queueName,
+  }) {
+    if (songs.isEmpty) return '';
+
+    final songsKey = songs.map((s) => s.id).join('_');
+
+    // 优先使用确定的歌单 ID，无 ID 时使用歌单名称作为区别因子
+    final domainKey = sourceId ?? queueName ?? 'default';
+
+    final rawKey = '$domainKey:$songsKey';
+
+    return md5.convert(utf8.encode(rawKey)).toString();
+  }
+
+  /// 保存历史快照逻辑
+  ///
+  /// [queueName] / [sourceId] 仅在需要**强制覆盖**当前名字时传入。
+  /// 正常情况下应依赖已记录的 [_currentQueueName] / [_currentSourceId]。
+  QueueSnapshot? saveCurrentToHistory({String? queueName, String? sourceId}) {
     if (_queue.isEmpty) return null;
 
-    // 防重校验：如果最新快照的歌曲列表 ID 与当前一致，且当前播放索引也一致，则不重复保存
-    if (_history.isNotEmpty) {
-      final lastSnapshot = _history.first;
-      if (_isQueueSame(lastSnapshot.songs, _queue) &&
-          lastSnapshot.currentIndex == _currentIndex) {
+    // 优先使用传入值，否则使用当前队列已记录的名字
+    final name = queueName ?? _currentQueueName ?? '历史播放队列 (${_queue.length}首)';
+    final effectiveSourceId = sourceId ?? _currentSourceId;
+
+    // 生成包含来源特征的 ID
+    final String snapshotId = _generateQueueId(
+      _queue,
+      sourceId: effectiveSourceId,
+      queueName: name,
+    );
+
+    // 检查历史中是否已经存在相同 ID 的快照
+    final existingIndex = _history.indexWhere((s) => s.id == snapshotId);
+
+    if (existingIndex != -1) {
+      final existingSnapshot = _history[existingIndex];
+      // 处于栈顶且播放进度未变，不重复处理
+      if (existingIndex == 0 &&
+          existingSnapshot.currentIndex == _currentIndex) {
         return null;
       }
+      // 已经存在该歌单的历史，移除旧位置以便下面置顶更新
+      _history.removeAt(existingIndex);
     }
 
     final snapshot = QueueSnapshot(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: queueName ?? '历史播放队列 (${_queue.length}首)',
+      id: snapshotId,
+      name: name,
       songs: List.from(_queue),
       currentIndex: _currentIndex >= 0 ? _currentIndex : 0,
+      createdAt: DateTime.now(),
     );
 
     _history.insert(0, snapshot);
@@ -125,24 +174,30 @@ class MusicQueue {
     return snapshot;
   }
 
-  /// 使用新的歌曲列表替换当前播放队列
-  List<Music> replace(
+  /// 替换队列时同步透传 sourceId/queueName
+  ///
+  /// 关键修复：保存旧队列时使用旧名字，然后再更新为新名字。
+  /// 替换队列。
+  /// 返回这次写入历史的旧队列快照（若未保存则为 null）。
+  QueueSnapshot? replace(
     List<Music> songs, {
     String? queueName,
+    String? sourceId,
     bool saveToHistory = true,
   }) {
-    // 核心防御 2：如果打算用一个“空歌单”来替换当前队列，
-    // 通常意味着播放被重置或加载失败，不应该将旧队列归档为历史快照
     if (songs.isEmpty) {
       _queue.clear();
       _queueIndexMap.clear();
       _currentIndex = -1;
-      return _queue;
+      _currentQueueName = null;
+      _currentSourceId = null;
+      return null;
     }
 
-    // 只有当待替换的新歌曲列表不为空、且旧队列也不为空时，才保存旧队列到历史
+    QueueSnapshot? saved;
+    // 关键：先用旧名字保存旧队列，不要把新 queueName 传进去
     if (saveToHistory && _queue.isNotEmpty) {
-      saveCurrentToHistory(queueName: queueName);
+      saved = saveCurrentToHistory(); // 使用 _currentQueueName / _currentSourceId
     }
 
     _queue
@@ -150,7 +205,12 @@ class MusicQueue {
       ..addAll(songs);
     _refreshIndexMap();
     _currentIndex = -1;
-    return _queue;
+
+    // 再把新名字赋给当前队列
+    _currentQueueName = queueName;
+    _currentSourceId = sourceId;
+
+    return saved;
   }
 
   /// 从历史快照恢复队列
@@ -164,6 +224,10 @@ class MusicQueue {
         (snapshot.currentIndex >= 0 && snapshot.currentIndex < _queue.length)
         ? snapshot.currentIndex
         : 0;
+
+    // 恢复名字
+    _currentQueueName = snapshot.name;
+    _currentSourceId = null;
 
     // 移除旧的重复快照记录，并将当前状态作为最新记录置顶
     _history.removeWhere((s) => s.id == snapshot.id);
@@ -182,15 +246,6 @@ class MusicQueue {
     if (_history.length > maxHistorySize) {
       _history.removeRange(maxHistorySize, _history.length);
     }
-  }
-
-  /// 内部比对辅助方法：判断两个歌曲列表的 ID 序列是否一致
-  bool _isQueueSame(List<Music> listA, List<Music> listB) {
-    if (listA.length != listB.length) return false;
-    for (int i = 0; i < listA.length; i++) {
-      if (listA[i].id != listB[i].id) return false;
-    }
-    return true;
   }
 
   /// 清空所有历史队列记录
@@ -304,6 +359,8 @@ class MusicQueue {
     _queue.clear();
     _queueIndexMap.clear();
     _currentIndex = -1;
+    _currentQueueName = null;
+    _currentSourceId = null;
   }
 
   /// 循环切换播放模式（顺序 -> 随机 -> 单曲循环 -> 顺序）

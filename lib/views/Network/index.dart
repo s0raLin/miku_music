@@ -620,7 +620,12 @@ class _SongSearchTabState extends State<_SongSearchTab>
         };
       }).toList();
 
-      await mp.playNetworkSearchResults(songs: songMaps, startIndex: idx);
+      await mp.playNetworkSearchResults(
+        songs: songMaps,
+        startIndex: idx,
+        queueName: '搜索「${widget.searchCtrl.text.trim()}」 ',
+        sourceId: 'netease',
+      );
 
       final lr = await NeteaseApi.getLyric(song.id);
       if ((lr['lyric']?.isNotEmpty ?? false) && mounted) {
@@ -716,12 +721,6 @@ class _SongSearchTabState extends State<_SongSearchTab>
       if (!mounted) return;
       AppToast.error(context, message: '添加失败: $e', title: '错误');
     }
-  }
-
-  Future<void> _openDetail(NeteaseSong song) async {
-    await _play(song);
-    if (!mounted) return;
-    context.push('/music-detail');
   }
 
   Future<void> _download(NeteaseSong song) async {
@@ -1167,6 +1166,8 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       await mp.playNetworkSearchResults(
         songs: songMaps,
         startIndex: startIndex,
+        queueName: '歌单「${_detail?.playlistName ?? '未命名歌单'}」 ',
+        sourceId: 'netease',
       );
 
       final lr = await NeteaseApi.getLyric(songs[startIndex].id);
@@ -1209,11 +1210,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       }
       if (playUrl == null || playUrl.isEmpty) {
         if (!mounted) return;
-        AppToast.error(
-          context,
-          message: '无法获取播放地址（可能无版权或需VIP）',
-          title: '添加失败',
-        );
+        AppToast.error(context, message: '无法获取播放地址（可能无版权或需VIP）', title: '添加失败');
         return;
       }
 
@@ -1249,11 +1246,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
       }
       if (playUrl == null || playUrl.isEmpty) {
         if (!mounted) return;
-        AppToast.error(
-          context,
-          message: '无法获取播放地址（可能无版权或需VIP）',
-          title: '添加失败',
-        );
+        AppToast.error(context, message: '无法获取播放地址（可能无版权或需VIP）', title: '添加失败');
         return;
       }
 
@@ -1390,8 +1383,9 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
     super.build(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final displayList =
-        _sortedPlaylists.isNotEmpty ? _sortedPlaylists : _playlists;
+    final displayList = _sortedPlaylists.isNotEmpty
+        ? _sortedPlaylists
+        : _playlists;
     final showEmpty =
         _lastQueried.isEmpty && _playlists.isEmpty && !_isSearching;
 
@@ -1951,10 +1945,7 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
                   PopupMenuItem(
                     value: 'download',
                     child: ListTile(
-                      leading: Icon(
-                        Icons.download_rounded,
-                        color: cs.tertiary,
-                      ),
+                      leading: Icon(Icons.download_rounded, color: cs.tertiary),
                       title: const Text('下载到本地'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,

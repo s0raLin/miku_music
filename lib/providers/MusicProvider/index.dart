@@ -58,10 +58,12 @@ class MusicProvider extends ChangeNotifier {
 
   // ── 播放队列与历史访问器（透传至 MusicQueue） ──
   List<Music> get queue => _playbackQueue.queue;
-  List<QueueSnapshot> get history => _playbackQueue.history; // 暴露播放队列历史记录
+  List<QueueSnapshot> get history => _playbackQueue.history;
   Music? get currentMusic => _playbackQueue.currentMusic;
   bool isInQueue(String id) => _playbackQueue.contains(id);
   PlayMode get playMode => _playbackQueue.playMode;
+  String? get currentQueueName => _playbackQueue.currentQueueName;
+  String? get currentSourceId => _playbackQueue.currentSourceId;
 
   // ── 歌词数据 ──
   List<LyricLine> _currentLyrics = [];
@@ -302,9 +304,12 @@ class MusicProvider extends ChangeNotifier {
   }
 
   /// 替换或保存当前播放队列并持久化
-  void saveCurrentQueueToHistory({String? queueName}) {
+  void saveCurrentQueueToHistory({String? queueName, String? sourceId}) {
     // 1. 更新内存状态，获取最新快照
-    final snapshot = _playbackQueue.saveCurrentToHistory(queueName: queueName);
+    final snapshot = _playbackQueue.saveCurrentToHistory(
+      queueName: queueName,
+      sourceId: sourceId,
+    );
 
     if (snapshot != null) {
       _safeNotifyListeners();
@@ -312,8 +317,6 @@ class MusicProvider extends ChangeNotifier {
       _repository.saveQueueSnapshot(snapshot);
     }
   }
-
-  // music_provider.dart
 
   /// 启动时从 SQLite 数据库恢复历史播放队列列表
   Future<void> loadQueueHistory() async {
@@ -332,14 +335,19 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
+  /// 替换当前播放队列
+  ///
+  /// [queueName] / [sourceId] 表示**即将加载的新队列**的名字与来源。
+  /// 旧队列会用它自己之前记录的名字存入历史，不会被新名字污染。
   Future<void> replaceQueue(
     List<Music> songs, {
     int startIndex = 0,
     bool autoPlay = true,
     String? queueName,
+    String? sourceId,
     bool saveToHistory = true,
   }) async {
-    // 核心防御 3：待替换的歌单歌曲数为 0 时，直接不进行快照和播放
+    // 核心防御：待替换的歌单歌曲数为 0 时，直接不进行快照和播放
     if (songs.isEmpty) {
       _playbackQueue.clear();
       await player.stop();
@@ -349,19 +357,17 @@ class MusicProvider extends ChangeNotifier {
 
     if (startIndex < 0 || startIndex >= songs.length) return;
 
-    _playbackQueue.replace(
+    // replace 内部：先用旧名字把旧队列存进历史，再把新名字赋给当前队列
+    final savedSnapshot = _playbackQueue.replace(
       songs,
       queueName: queueName,
+      sourceId: sourceId,
       saveToHistory: saveToHistory,
     );
 
-    // 只有真正成功保存了有效快照，才触发数据库持久化
-    if (saveToHistory && _playbackQueue.history.isNotEmpty) {
-      final latestSnapshot = _playbackQueue.history.first;
-      // 再次确认快照里的歌曲列表不为空才落盘
-      if (latestSnapshot.songs.isNotEmpty) {
-        _repository.saveQueueSnapshot(latestSnapshot);
-      }
+    // 只持久化「这次真正新写入历史」的旧队列快照
+    if (savedSnapshot != null && savedSnapshot.songs.isNotEmpty) {
+      _repository.saveQueueSnapshot(savedSnapshot);
     }
 
     await player.stop();
@@ -578,6 +584,7 @@ class MusicProvider extends ChangeNotifier {
     required int startIndex,
     bool autoPlay = true,
     String? queueName,
+    String? sourceId,
   }) async {
     if (songs.isEmpty) return;
 
@@ -587,6 +594,7 @@ class MusicProvider extends ChangeNotifier {
       startIndex: startIndex,
       autoPlay: autoPlay,
       queueName: queueName ?? '搜索结果队列',
+      sourceId: sourceId ?? 'netease_search',
     );
   }
 

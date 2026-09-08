@@ -30,20 +30,20 @@ func NewAuthHandler(cfg config.SMTPConfig) *AuthHandler {
 // ──────────────────────────── 请求/响应结构体 ────────────────────────────
 
 type SendCodeReq struct {
-	Email   string `json:"email" binding:"required,email"`            // 目标邮箱
+	Email   string `json:"email" binding:"required,email"`                  // 目标邮箱
 	Purpose string `json:"purpose" binding:"required,oneof=register login"` // 用途: register 或 login
 }
 
 type RegisterReq struct {
-	Email    string `json:"email" binding:"required,email"`   // 邮箱
-	Code     string `json:"code" binding:"required,len=6"`    // 6位验证码
+	Email    string `json:"email" binding:"required,email"`    // 邮箱
+	Code     string `json:"code" binding:"required,len=6"`     // 6位验证码
 	Username string `json:"username" binding:"required,min=1"` // 用户名
 	Password string `json:"password" binding:"required,min=6"` // 密码(至少6位)
 }
 
 type LoginByCodeReq struct {
-	Email string `json:"email" binding:"required,email"`  // 邮箱
-	Code  string `json:"code" binding:"required,len=6"`   // 6位验证码
+	Email string `json:"email" binding:"required,email"` // 邮箱
+	Code  string `json:"code" binding:"required,len=6"`  // 6位验证码
 }
 
 type LoginByPasswordReq struct {
@@ -51,11 +51,14 @@ type LoginByPasswordReq struct {
 	Password string `json:"password" binding:"required,min=6"` // 密码
 }
 
+type RefreshTokenReq struct {
+	RefreshToken string `json:"refresh_token" binding:"required"` // 刷新 Token
+}
+
 // ──────────────────────────── 发送验证码 ────────────────────────────
 
 // SendVerificationCode 发送邮箱验证码
 // POST /api/auth/send-code
-// 根据 purpose 字段判断是用于注册还是登录
 func (h *AuthHandler) SendVerificationCode(c *gin.Context) {
 	var req SendCodeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -125,7 +128,6 @@ func (h *AuthHandler) SendVerificationCode(c *gin.Context) {
 // ──────────────────────────── 验证验证码 ────────────────────────────
 
 // verifyCode 验证邮箱验证码是否有效（内部辅助函数）
-// 返回 true 表示验证通过，会同时标记验证码为已使用
 func verifyCode(email, code, purpose string) bool {
 	var verification model.EmailVerification
 	result := repository.DB.Where(
@@ -146,7 +148,6 @@ func verifyCode(email, code, purpose string) bool {
 
 // Register 邮箱注册
 // POST /api/auth/register
-// 需要先通过 /api/auth/send-code 获取验证码
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -161,7 +162,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// 再次检查邮箱是否已被注册（防止并发）
-	// 同时检查是否已注销（软删除），允许重新注册
 	var existing model.User
 	if result := repository.DB.Unscoped().Where("email = ?", req.Email).First(&existing); result.Error == nil {
 		if existing.DeletedAt.Valid {
@@ -200,8 +200,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		existing = user
 	}
 
-	// 生成 JWT
-	token, err := utils.GenerateToken(existing.ID, existing.Username)
+	// 生成双 Token
+	accessToken, refreshToken, err := utils.GenerateTokenPair(existing.ID, existing.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "令牌生成失败"})
 		return
@@ -211,8 +211,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"code": 0,
 		"msg":  "注册成功",
 		"data": gin.H{
-			"token": token,
-			"user":  existing,
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+			"user":          existing,
 		},
 	})
 }
@@ -241,8 +242,8 @@ func (h *AuthHandler) LoginByCode(c *gin.Context) {
 		return
 	}
 
-	// 生成 JWT
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	// 生成双 Token
+	accessToken, refreshToken, err := utils.GenerateTokenPair(user.ID, user.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "令牌生成失败"})
 		return
@@ -252,8 +253,9 @@ func (h *AuthHandler) LoginByCode(c *gin.Context) {
 		"code": 0,
 		"msg":  "登录成功",
 		"data": gin.H{
-			"token": token,
-			"user":  user,
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+			"user":          user,
 		},
 	})
 }
@@ -282,8 +284,8 @@ func (h *AuthHandler) LoginByPassword(c *gin.Context) {
 		return
 	}
 
-	// 生成 JWT
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	// 生成双 Token
+	accessToken, refreshToken, err := utils.GenerateTokenPair(user.ID, user.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "令牌生成失败"})
 		return
@@ -293,8 +295,51 @@ func (h *AuthHandler) LoginByPassword(c *gin.Context) {
 		"code": 0,
 		"msg":  "登录成功",
 		"data": gin.H{
-			"token": token,
-			"user":  user,
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+			"user":          user,
+		},
+	})
+}
+
+// ──────────────────────────── 刷新令牌 ────────────────────────────
+
+// RefreshToken 用 Refresh Token 换取新的 Access Token 与 Refresh Token
+// POST /api/auth/refresh
+func (h *AuthHandler) RefreshToken(c *gin.Context) {
+	var req RefreshTokenReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误: " + err.Error()})
+		return
+	}
+
+	// 1. 校验 Refresh Token 是否有效
+	claims, err := utils.ParseRefreshToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "刷新令牌已失效，请重新登录"})
+		return
+	}
+
+	// 2. 检查用户状态（防止已被注销或删除）
+	var user model.User
+	if err := repository.DB.Where("id = ?", claims.UserID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "用户不存在或已被禁用"})
+		return
+	}
+
+	// 3. 重新签发双 Token
+	newAccessToken, newRefreshToken, err := utils.GenerateTokenPair(user.ID, user.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "令牌生成失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "刷新成功",
+		"data": gin.H{
+			"access_token":  newAccessToken,
+			"refresh_token": newRefreshToken,
 		},
 	})
 }
@@ -319,26 +364,22 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 先尝试按用户名查找
 	var user model.User
 	if err := repository.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		// 再尝试按邮箱查找
 		if err2 := repository.DB.Where("email = ?", req.Username).First(&user).Error; err2 != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "用户名或密码错误"})
 			return
 		}
 	}
 
-	// 验证密码（支持纯文本密码的向后兼容）
 	if user.PasswordHash != "" {
 		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "用户名或密码错误"})
 			return
 		}
 	}
-	// 注意：新用户密码全部使用 bcrypt 哈希，不再存储明文
 
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	accessToken, refreshToken, err := utils.GenerateTokenPair(user.ID, user.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "生成令牌失败"})
 		return
@@ -347,7 +388,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "登录成功",
-		"data": gin.H{"token": token, "user": user},
+		"data": gin.H{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+			"user":          user,
+		},
 	})
 }
 
@@ -356,7 +401,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // UploadAvatar 上传用户头像到OSS
 // POST /api/auth/avatar
 func (h *AuthHandler) UploadAvatar(c *gin.Context) {
-	// 从JWT中获取用户ID
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "未登录"})
@@ -369,14 +413,12 @@ func (h *AuthHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// 上传到OSS，路径格式: avatar/user_{id}_{timestamp}.jpg
 	avatarURL, err := utils.UploadFileToOSS(avatar, fmt.Sprintf("avatar/user_%v_%d", userID, time.Now().Unix()))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "头像上传失败"})
 		return
 	}
 
-	// 更新数据库
 	uid := userID.(uint)
 	if err := repository.DB.Model(&model.User{}).Where("id = ?", uid).Update("avatar_url", avatarURL).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "头像保存失败"})
@@ -393,7 +435,7 @@ func (h *AuthHandler) UploadAvatar(c *gin.Context) {
 // ──────────────────────────── 修改密码 ────────────────────────────
 
 type ChangePasswordReq struct {
-	OldPassword string `json:"old_password" binding:"required"` // 旧密码
+	OldPassword string `json:"old_password" binding:"required"`       // 旧密码
 	NewPassword string `json:"new_password" binding:"required,min=6"` // 新密码(至少6位)
 }
 
@@ -418,20 +460,18 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	// 验证旧密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "旧密码错误"})
 		return
 	}
 
-	// 哈希新密码
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "密码加密失败"})
 		return
 	}
 
-	if err := repository.DB.Model(&user).Update("password", string(hashedPassword)).Error; err != nil {
+	if err := repository.DB.Model(&user).Update("password_hash", string(hashedPassword)).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "密码更新失败"})
 		return
 	}
@@ -450,7 +490,6 @@ func (h *AuthHandler) DeleteAccount(c *gin.Context) {
 		return
 	}
 
-	// 删除用户（软删除由 gorm.Model 的 DeletedAt 处理）
 	if err := repository.DB.Delete(&model.User{}, userID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "账号注销失败"})
 		return

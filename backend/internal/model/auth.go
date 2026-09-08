@@ -32,3 +32,4 @@ type EmailVerification struct {
 	ExpiresAt time.Time `gorm:"comment:过期时间" json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
 }
+

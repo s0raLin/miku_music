@@ -123,20 +123,47 @@ class UserApi {
 
   // ─────────────────── 内部辅助：处理认证响应 ───────────────────
 
-  /// 从认证接口响应中提取 user + token 并持久化
+  /// 从认证接口响应中提取 user + 双 Token 并持久化
   static Future<User> _handleAuthResponse(ApiResponse result) async {
     final user = User.fromJson(result.data?["user"]);
-    final token = result.data?["token"] as String?;
-    user.token = token;
+    final accessToken = result.data?["access_token"] as String?;
+    final refreshToken = result.data?["refresh_token"] as String?;
 
-    // 加密保存到本地
-    if (token != null) {
-      await _localAuth.saveToken(token);
+    user.token = accessToken; // 如果 User Model 维护了主 token
+
+    // 保存 Token 对
+    if (accessToken != null && refreshToken != null) {
+      await _localAuth.saveToken(accessToken);
+      await _localAuth.saveRefreshToken(refreshToken);
     }
-    debugPrint("[用户头像]: ${user.avatarURL}");
-    await _localAuth.saveUser(user.toJson());
 
+    await _localAuth.saveUser(user.toJson());
     return user;
+  }
+
+  // ─────────────────── 刷新 Token 接口 ───────────────────
+
+  /// 使用 refreshToken 换取新的 access_token 与 refresh_token
+  static Future<Map<String, String>> refreshToken(String refreshToken) async {
+    // 使用新的 Dio 实例发起请求，规避原单例拦截器的死循环
+    final dio = Dio();
+    final response = await dio.post(
+      "$base/refresh",
+      data: {"refresh_token": refreshToken},
+    );
+
+    final result = ApiResponse.fromJson(response.data);
+    if (result.code != 0) {
+      throw Exception("刷新令牌失效");
+    }
+
+    final newAccessToken = result.data?["access_token"] as String;
+    final newRefreshToken = result.data?["refresh_token"] as String;
+
+    await _localAuth.saveToken(newAccessToken);
+    await _localAuth.saveRefreshToken(newRefreshToken);
+
+    return {"access_token": newAccessToken, "refresh_token": newRefreshToken};
   }
 
   // ─────────────────── 头像上传 ───────────────────
@@ -248,19 +275,20 @@ class UserApi {
   // ─────────────────── 更新个性签名 ───────────────────
 
   /// 更新个性签名（需要已登录）
-  static Future<void> updateSignature({
-    required String signature,
-  }) async {
+  static Future<void> updateSignature({required String signature}) async {
     final response = await HttpUtils().post(
       "$base/update-signature",
       data: {"signature": signature},
     );
 
     final result = ApiResponse.fromJson(response.data);
+    // 修改 UserApi 内抛出异常的通用包装逻辑
     if (result.code != 0) {
       throw DioException(
         requestOptions: response.requestOptions,
-        message: result.msg,
+        response: response, // 必须传入 response，避免 error.response 为 null
+        type: DioExceptionType.badResponse,
+        message: result.msg.isNotEmpty ? result.msg : "业务处理失败 (${result.code})",
       );
     }
   }

@@ -160,14 +160,14 @@ class _RecentlyPlayedAppBar extends StatelessWidget {
       stretch: true,
       scrolledUnderElevation: 2,
       leading: const BackButton(),
+      actionsPadding: const EdgeInsets.only(right: 12),
       actions: [
         IconButton(
           tooltip: "清空历史记录",
           onPressed: () async =>
               await playlistProvider.clearHistory(musicProvider: musicProvider),
-          icon: const Icon(Icons.auto_delete_rounded),
+          icon: const Icon(Icons.auto_delete_rounded, size: 22),
         ),
-        const Padding(padding: EdgeInsets.only(right: 8)),
       ],
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.only(

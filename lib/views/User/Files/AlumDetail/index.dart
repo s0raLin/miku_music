@@ -509,7 +509,8 @@ class _AlbumSearchHeader extends StatelessWidget {
 
     return Container(
       color: colorScheme.surface,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      // 将右侧 padding 调整为 8，使 PopupMenuButton 与下方的 ListTile 尾部图标对其
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       child: Row(
         children: [
           Expanded(
@@ -538,11 +539,13 @@ class _AlbumSearchHeader extends StatelessWidget {
               onChanged: onSearchChanged,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4), // 间距微调
           PopupMenuButton<AlbumDetailSortType>(
             icon: const Icon(Icons.sort_rounded),
             tooltip: "排序方式",
             initialValue: sortType,
+            // 消除 PopupMenuButton 自身的默认内边距补偿，精准右对齐
+            padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

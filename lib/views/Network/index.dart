@@ -101,6 +101,7 @@ class _NetworkSongPageState extends State<NetworkSongPage> {
           ),
         ),
         centerTitle: true,
+        actionsPadding: const EdgeInsets.only(right: 12),
         actions: [
           IconButton(
             icon: AnimatedSwitcher(
@@ -916,6 +917,12 @@ class _SongSearchTabState extends State<_SongSearchTab>
             Icons.more_vert_rounded,
             size: 18,
             color: cs.onSurfaceVariant,
+          ),
+          padding: EdgeInsets.zero, // 去掉默认 padding
+          constraints: const BoxConstraints(
+            // 强制正方形点击区域
+            minWidth: 36,
+            minHeight: 36,
           ),
           onSelected: (v) {
             switch (v) {
@@ -1875,6 +1882,12 @@ class _PlaylistDetailPanelState extends State<_PlaylistDetailPanel> {
                   Icons.more_vert_rounded,
                   size: 18,
                   color: cs.onSurfaceVariant,
+                ),
+                padding: EdgeInsets.zero, // 去掉默认 padding
+                constraints: const BoxConstraints(
+                  // 强制正方形点击区域
+                  minWidth: 36,
+                  minHeight: 36,
                 ),
                 onSelected: (v) {
                   switch (v) {

@@ -49,6 +49,7 @@ class M3SongEntry {
 class M3SongList extends StatelessWidget {
   final List<M3SongEntry> songs;
   final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry itemPadding; // 新增：每一行内部的 padding
   final String? emptyTitle;
   final String? emptySubtitle;
   final MusicProvider? coverLoader;
@@ -58,6 +59,7 @@ class M3SongList extends StatelessWidget {
     super.key,
     required this.songs,
     this.padding = const EdgeInsets.all(12),
+    this.itemPadding = const EdgeInsets.fromLTRB(10, 5, 4, 5),
     this.emptyTitle,
     this.emptySubtitle,
     this.coverLoader,
@@ -114,11 +116,11 @@ class M3SongList extends StatelessWidget {
           : const NeverScrollableScrollPhysics(),
       padding: padding,
       itemCount: songs.length,
-      separatorBuilder: (_, __) => const Divider(
-        height: 1, // 精致紧凑的极细分割线
+      separatorBuilder: (_, __) => Divider(
+        height: 1,
         thickness: 0.5,
-        indent: 74.0, // 对齐：10px padding + 48px 封面 + 16px 间距
-        endIndent: 12.0,
+        indent: 74.0,
+        endIndent: itemPadding.resolve(TextDirection.ltr).right + 2, // 跟着右边距走
       ),
       itemBuilder: (context, index) {
         final isFirst = index == 0;
@@ -128,6 +130,7 @@ class M3SongList extends StatelessWidget {
           isFirst: isFirst,
           isLast: isLast,
           coverLoader: coverLoader,
+          itemPadding: itemPadding, // 传下去
         );
       },
     );
@@ -141,6 +144,7 @@ class M3SongList extends StatelessWidget {
 class SliverM3SongList extends StatelessWidget {
   final List<M3SongEntry> songs;
   final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry itemPadding; // 新增：每一行内部的 padding
   final Widget? emptyWidget;
   final MusicProvider? coverLoader;
 
@@ -148,6 +152,7 @@ class SliverM3SongList extends StatelessWidget {
     super.key,
     required this.songs,
     this.padding = const EdgeInsets.all(12),
+    this.itemPadding = const EdgeInsets.fromLTRB(10, 5, 4, 5),
     this.emptyWidget,
     this.coverLoader,
   });
@@ -166,11 +171,12 @@ class SliverM3SongList extends StatelessWidget {
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index.isOdd) {
-            return const Divider(
+            return Divider(
               height: 1,
               thickness: 0.5,
               indent: 74.0,
-              endIndent: 12.0,
+              endIndent:
+                  itemPadding.resolve(TextDirection.ltr).right + 2, // 跟着右边距走
             );
           }
           final songIndex = index ~/ 2;
@@ -181,6 +187,7 @@ class SliverM3SongList extends StatelessWidget {
             isFirst: isFirst,
             isLast: isLast,
             coverLoader: coverLoader,
+            itemPadding: itemPadding,
           );
         }, childCount: songs.length * 2 - 1),
       ),
@@ -197,12 +204,14 @@ class _M3SongRow extends StatelessWidget {
   final bool isFirst;
   final bool isLast;
   final MusicProvider? coverLoader;
+  final EdgeInsetsGeometry itemPadding;
 
   const _M3SongRow({
     required this.entry,
     this.isFirst = false,
     this.isLast = false,
     this.coverLoader,
+    this.itemPadding = const EdgeInsets.fromLTRB(10, 5, 4, 5),
   });
 
   static const double _cornerRadius = 16;
@@ -287,6 +296,7 @@ class _M3SongRow extends StatelessWidget {
     // 适配精致比例的尺寸与内边距配置
     const hPadding = 10.0;
     const vPadding = 5.0; // 黄金比例内边距：既不挤压文字，也不拉得太宽
+    const rightPadding = 4.0;
     const highlightRadius = BorderRadius.all(Radius.circular(12));
 
     final effectiveRadius = entry.isHighlighted ? highlightRadius : clipRadius;
@@ -295,7 +305,12 @@ class _M3SongRow extends StatelessWidget {
         : Colors.transparent;
 
     final rowContent = Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: vPadding),
+      padding: const EdgeInsets.fromLTRB(
+        hPadding,
+        vPadding,
+        rightPadding,
+        vPadding,
+      ),
       child: Row(
         children: [
           // ---- 封面 / 图标 ----
@@ -368,7 +383,7 @@ class _M3SongRow extends StatelessWidget {
           ),
           // ---- trailing ----
           if (entry.trailing != null) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             entry.trailing!,
           ],
         ],

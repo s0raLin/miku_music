@@ -183,48 +183,75 @@ class _PlaylistAppBar extends StatelessWidget {
       stretch: true,
       scrolledUnderElevation: 2,
       leading: const BackButton(),
+      actionsPadding: const EdgeInsets.only(right: 12),
       actions: [
         IconButton(
           tooltip: "上传歌单",
           onPressed: () => _showConfirmSyncDialog(context),
-          icon: const Icon(Icons.upload_rounded),
+          icon: const Icon(Icons.upload_rounded, size: 22),
         ),
         if (!playlist.isSystem)
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (details) {
-              AdaptiveMenu.show(
-                context,
-                details: details,
-                title: playlist.name,
-                items: [
-                  AdaptiveMenuItem(
-                    icon: Icons.add_rounded,
-                    title: "添加歌曲",
-                    onTap: () => _showAddSongsSideSheet(
-                      context,
-                      musicProvider.library,
-                      playlistId,
-                    ),
-                  ),
-                  AdaptiveMenuItem(
-                    icon: Icons.edit_note_rounded,
-                    title: "编辑歌单信息",
-                    onTap: () => context.push("/playlist-edit/$playlistId"),
-                  ),
-                  AdaptiveMenuItem(
-                    icon: Icons.delete_sweep_rounded,
-                    title: "删除歌单",
-                    isDestructive: true,
-                    onTap: () => _showDeleteConfirmDialog(context, playlist),
-                  ),
-                ],
-              );
-            },
-            child: const Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Icon(Icons.more_vert_rounded),
+          PopupMenuButton<String>(
+            tooltip: "更多选项",
+            icon: const Icon(Icons.more_vert_rounded, size: 22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
+            onSelected: (value) {
+              switch (value) {
+                case 'add':
+                  _showAddSongsSideSheet(
+                    context,
+                    musicProvider.library,
+                    playlistId,
+                  );
+                  break;
+                case 'edit':
+                  context.push("/playlist-edit/$playlistId");
+                  break;
+                case 'delete':
+                  _showDeleteConfirmDialog(context, playlist);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'add',
+                child: Row(
+                  children: [
+                    Icon(Icons.add_rounded),
+                    SizedBox(width: 12),
+                    Text("添加歌曲"),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded),
+                    SizedBox(width: 12),
+                    Text("编辑歌单信息"),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_sweep_rounded,
+                      color: theme.colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "删除歌单",
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
       ],
       flexibleSpace: FlexibleSpaceBar(

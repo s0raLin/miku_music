@@ -42,6 +42,7 @@ pub struct PlaylistInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueueSnapshot {
     pub id: String,
+    pub name: String,
     pub songs: Vec<String>,
     pub current_index: i64,
     pub created_at: i64,

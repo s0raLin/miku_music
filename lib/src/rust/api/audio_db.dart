@@ -90,15 +90,18 @@ abstract class DbManager implements RustOpaqueInterface {
 
   /// 保存一个队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）。
   ///
-  /// 关键修复：前端会传入该“逻辑队列”的稳定唯一 ID（[snapshot_id]）。
-  /// - 当 [snapshot_id] 非空时，按该 ID 做 upsert：同一队列被反复保存时
-  ///   只更新同一条记录，而不会因为歌曲顺序变化/新增歌曲而重复插入历史。
-  /// - 当 [snapshot_id] 为空时，才生成一个全新的 UUID（兼容旧的调用方）。
+  /// 关键修复：
+  /// 1. 前端传入该“逻辑队列”的稳定唯一 ID（[snapshot_id]）做 upsert，避免重复插入。
+  /// 2. 增加 [name] 字段持久化，解决重启后名字丢失的问题。
+  ///
+  /// - 当 [snapshot_id] 非空时，按该 ID 做 upsert。
+  /// - 当 [snapshot_id] 为空时，生成一个全新的 UUID（兼容旧调用方）。
   Future<String> saveQueueSnapshot({
     required List<String> songs,
     required PlatformInt64 currentIndex,
     required PlatformInt64 maxLimit,
     required String snapshotId,
+    required String name,
   });
 
   /// 2. 切换收藏状态 (Toggle 逻辑)
@@ -211,12 +214,14 @@ class PlaylistInfo {
 /// 队列快照模型
 class QueueSnapshot {
   final String id;
+  final String name;
   final List<String> songs;
   final PlatformInt64 currentIndex;
   final PlatformInt64 createdAt;
 
   const QueueSnapshot({
     required this.id,
+    required this.name,
     required this.songs,
     required this.currentIndex,
     required this.createdAt,
@@ -224,7 +229,11 @@ class QueueSnapshot {
 
   @override
   int get hashCode =>
-      id.hashCode ^ songs.hashCode ^ currentIndex.hashCode ^ createdAt.hashCode;
+      id.hashCode ^
+      name.hashCode ^
+      songs.hashCode ^
+      currentIndex.hashCode ^
+      createdAt.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -232,6 +241,7 @@ class QueueSnapshot {
       other is QueueSnapshot &&
           runtimeType == other.runtimeType &&
           id == other.id &&
+          name == other.name &&
           songs == other.songs &&
           currentIndex == other.currentIndex &&
           createdAt == other.createdAt;

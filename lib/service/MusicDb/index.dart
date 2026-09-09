@@ -44,7 +44,8 @@ class MusicDbService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// 保存当前播放队列快照到数据库
-  Future<String> saveQueueSnapshot(QueueSnapshot snapshot, {
+  Future<String> saveQueueSnapshot(
+    QueueSnapshot snapshot, {
     required List<String> songIds,
     required int currentIndex,
     int maxLimit = 20,
@@ -60,6 +61,7 @@ class MusicDbService {
         // 关键修复：把逻辑队列的稳定唯一 ID 传给 Rust 侧做 upsert，
         // 保证同一队列反复保存时只更新同一条记录，不再重复插入历史。
         snapshotId: snapshot.id,
+        name: snapshot.name,
       );
 
       _queueHistoryUpdateController.add(null);
@@ -86,10 +88,15 @@ class MusicDbService {
       for (var raw in rawSnapshots) {
         final List<Music> songs = await songsFetcher(raw.songs);
 
+        // 优先用数据库存的 name，空则兜底
+        final displayName = (raw.name.trim().isNotEmpty)
+            ? raw.name
+            : "历史播放队列 (${songs.length}首)";
+
         result.add(
           QueueSnapshot(
             id: raw.id,
-            name: "历史播放队列 (${songs.length}首)",
+            name: displayName,
             songs: songs,
             // 修复：BigInt 转为 int
             currentIndex: raw.currentIndex.toInt(),

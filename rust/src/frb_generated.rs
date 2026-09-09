@@ -1151,6 +1151,7 @@ fn wire__crate__api__audio_db__DbManager_save_queue_snapshot_impl(
             let api_current_index = <i64>::sse_decode(&mut deserializer);
             let api_max_limit = <i64>::sse_decode(&mut deserializer);
             let api_snapshot_id = <String>::sse_decode(&mut deserializer);
+            let api_name = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -1175,6 +1176,7 @@ fn wire__crate__api__audio_db__DbManager_save_queue_snapshot_impl(
                             api_current_index,
                             api_max_limit,
                             api_snapshot_id,
+                            api_name,
                         )?;
                         Ok(output_ok)
                     })(),
@@ -1987,11 +1989,13 @@ impl SseDecode for crate::api::audio_db::QueueSnapshot {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
         let mut var_songs = <Vec<String>>::sse_decode(deserializer);
         let mut var_currentIndex = <i64>::sse_decode(deserializer);
         let mut var_createdAt = <i64>::sse_decode(deserializer);
         return crate::api::audio_db::QueueSnapshot {
             id: var_id,
+            name: var_name,
             songs: var_songs,
             current_index: var_currentIndex,
             created_at: var_createdAt,
@@ -2421,6 +2425,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::audio_db::QueueSnapshot {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.id.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
             self.songs.into_into_dart().into_dart(),
             self.current_index.into_into_dart().into_dart(),
             self.created_at.into_into_dart().into_dart(),
@@ -2726,6 +2731,7 @@ impl SseEncode for crate::api::audio_db::QueueSnapshot {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.name, serializer);
         <Vec<String>>::sse_encode(self.songs, serializer);
         <i64>::sse_encode(self.current_index, serializer);
         <i64>::sse_encode(self.created_at, serializer);

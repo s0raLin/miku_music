@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.63.0](https://github.com/s0raLin/miku_music/compare/v1.62.0...v1.63.0) (2026-09-09)
+
+
+### Features
+
+* **auth:** 实现双 Token 认证机制与无感刷新功能 ([eaf2ffe](https://github.com/s0raLin/miku_music/commit/eaf2ffe6793301978d1a63d912b5cd5b9c864746))
+* **music:** 完善播放队列管理逻辑与历史快照视觉表现 ([d64e8bf](https://github.com/s0raLin/miku_music/commit/d64e8bf1936fbe0e86b85e34d1ec6ed3e524fd0b))
+* **music:** 实现基于逻辑身份的播放队列持久化机制 ([f0b5ad7](https://github.com/s0raLin/miku_music/commit/f0b5ad7f45b6ec883481fb8ed56e7e6dabf125ea))
+* **ui:** 为下载管理页面添加搜索与排序功能 ([b6243c7](https://github.com/s0raLin/miku_music/commit/b6243c7c046db59fedfe9477ed2acf744d3177b8))
+* **ui:** 升级音乐操作菜单为 Material 3 风格侧边抽屉 ([8d07f14](https://github.com/s0raLin/miku_music/commit/8d07f144611af9a6b8033f8b10642ca300d0efa0))
+* **ui:** 实现文件页视图模式持久化并优化数据源筛选 ([8858410](https://github.com/s0raLin/miku_music/commit/8858410c987947638983f1f5c7896bc0fa1ec4df))
+
+
+### Bug Fixes
+
+* **music:** 修复播放队列时间戳解析异常并重构首页历史展示布局 ([cdc12bc](https://github.com/s0raLin/miku_music/commit/cdc12bcbedc35aa0649eac6713b1bc8dd0745005))
+
 ## [1.62.0](https://github.com/s0raLin/miku_music/compare/v1.61.0...v1.62.0) (2026-09-07)
 
 

@@ -11,6 +11,7 @@ import 'package:myapp/service/Music/index.dart';
 
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
@@ -21,13 +22,15 @@ class FilesPage extends StatefulWidget {
 
 class _FilesPageState extends State<FilesPage>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+  static const String _prefCompactKey = 'files_page_is_compact';
+
   List<String> _paths = [];
   bool _isPathsLoading = true;
   bool _isScanning = false;
   List<Music> _scannedSongs = [];
   StreamSubscription? _scanSubscription;
 
-  // 本地密集/宽松视图状态，不持久化
+  // 本地密集/宽松视图状态，持久化存储
   bool _isCompact = false;
 
   // 缓存分组数据及上一次处理的歌单引用，避免频繁在 build() 内部跑循环
@@ -39,6 +42,7 @@ class _FilesPageState extends State<FilesPage>
   @override
   void initState() {
     super.initState();
+    _loadPreferences();
     _initPaths();
   }
 
@@ -50,6 +54,26 @@ class _FilesPageState extends State<FilesPage>
 
   @override
   bool get wantKeepAlive => true;
+
+  /// 读取持久化的视图配置
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _isCompact = prefs.getBool(_prefCompactKey) ?? false;
+      });
+    }
+  }
+
+  /// 切换并保存视图配置
+  Future<void> _toggleCompactMode() async {
+    final nextState = !_isCompact;
+    setState(() {
+      _isCompact = nextState;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefCompactKey, nextState);
+  }
 
   Future<void> _initPaths() async {
     final loadedPaths = await FileService.loadPaths();
@@ -92,7 +116,7 @@ class _FilesPageState extends State<FilesPage>
         if (_scannedSongs.isNotEmpty) {
           AppToast.success(
             context,
-            message: '扫描完成，共 ${_scannedSongs.length} 首歌曲',
+            message: '扫描完成，共 ${_scannedSongs.length} 首本地歌曲',
           );
         } else {
           AppToast.neutral(context, message: '未发现音频文件');
@@ -160,7 +184,10 @@ class _FilesPageState extends State<FilesPage>
   Widget build(BuildContext context) {
     super.build(context);
 
-    final songs = context.select<MusicProvider, List<Music>>((p) => p.library);
+    // 仅选择 Provider 中的 localLibrary
+    final songs = context.select<MusicProvider, List<Music>>(
+      (p) => p.localLibrary,
+    );
 
     // 仅在数据发生真正变更时才计算分组
     _updateGroupsIfNeeded(songs);
@@ -180,9 +207,8 @@ class _FilesPageState extends State<FilesPage>
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverAppBar(
               pinned: true,
-              title: const Text("文件"),
+              title: const Text("本地文件"),
               actions: [
-                // 取消桌面端限制，移动端与桌面端统一显示显示密度切换按钮
                 Tooltip(
                   message: _isCompact ? "切换到大图模式" : "切换到紧凑模式",
                   child: IconButton(
@@ -198,9 +224,7 @@ class _FilesPageState extends State<FilesPage>
                         color: cs.onSurfaceVariant,
                       ),
                     ),
-                    onPressed: () {
-                      setState(() => _isCompact = !_isCompact);
-                    },
+                    onPressed: _toggleCompactMode,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -221,21 +245,21 @@ class _FilesPageState extends State<FilesPage>
               _buildTabContent(
                 groups: _folderGroups,
                 emptyIcon: Icons.folder_open_rounded,
-                emptySubtitle: "添加目录后，这里会展示扫描到的内容",
+                emptySubtitle: "添加目录后，这里会展示扫描到的本地内容",
                 titleBuilder: (entry) => _buildFolderTitle(entry.key),
                 isCompact: _isCompact,
               ),
               _buildTabContent(
                 groups: _albumGroups,
                 emptyIcon: Icons.album_rounded,
-                emptySubtitle: "添加目录后，这里会自动整理出专辑内容",
+                emptySubtitle: "添加目录后，这里会自动整理出本地专辑内容",
                 titleBuilder: (entry) => entry.key,
                 isCompact: _isCompact,
               ),
               _buildTabContent(
                 groups: _artistGroups,
                 emptyIcon: Icons.person_rounded,
-                emptySubtitle: "添加目录后，这里会自动整理出艺术家内容",
+                emptySubtitle: "添加目录后，这里会自动整理出本地艺术家内容",
                 titleBuilder: (entry) => entry.key,
                 isCompact: _isCompact,
               ),
@@ -266,7 +290,6 @@ class _FilesPageState extends State<FilesPage>
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
 
-        // 根据屏幕宽度与当前模式动态计算单元格的最大宽度限制
         final double maxExtent = isCompact
             ? (width > 1200 ? 130.0 : (width > 600 ? 140.0 : 145.0))
             : (width > 1200 ? 180.0 : (width > 600 ? 190.0 : 200.0));
@@ -292,8 +315,8 @@ class _FilesPageState extends State<FilesPage>
                           )
                         : const AppEmptyState(
                             icon: Icons.audio_file_rounded,
-                            title: "没有找到音频文件",
-                            subtitle: "当前范围内没有可显示的音频文件",
+                            title: "没有找到本地音频文件",
+                            subtitle: "当前选择的目录下没有发现本地歌曲",
                             compact: true,
                           ),
                   ),

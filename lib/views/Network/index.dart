@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/api/Client/Netease/index.dart';
 import 'package:myapp/api/Model/NeteasePlaylist/index.dart';
@@ -1465,6 +1466,7 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.4)),
         Expanded(
           child: ListView.builder(
+            scrollCacheExtent: const ScrollCacheExtent.pixels(800),
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
             itemCount: displayList.length,
             itemBuilder: (ctx, i) {
@@ -1705,6 +1707,11 @@ class _PlaylistCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
+    // 物理像素尺寸，避免内存里存过大图
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheSize = (size * dpr).round();
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
@@ -1713,11 +1720,22 @@ class _PlaylistCover extends StatelessWidget {
         child: pic.isNotEmpty
             ? CachedNetworkImage(
                 imageUrl: pic,
-                fit: BoxFit.cover,
+                // 关键：用稳定 key，避免因为 header 导致缓存 miss
+                cacheKey: pic,
                 httpHeaders: const {
                   'Referer': 'https://music.163.com/',
                   'User-Agent': 'Mozilla/5.0',
                 },
+                fit: BoxFit.cover,
+                // 关键：限制内存缓存尺寸，既省内存又加快二次显示
+                memCacheWidth: cacheSize,
+                memCacheHeight: cacheSize,
+                // 关键：关掉淡入淡出，避免“刷新感”
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                placeholderFadeInDuration: Duration.zero,
+                useOldImageOnUrlChange: true, // 关键
+                filterQuality: FilterQuality.low,
                 placeholder: (_, _) =>
                     Container(color: cs.surfaceContainerHighest),
                 errorWidget: (_, _, _) => Icon(

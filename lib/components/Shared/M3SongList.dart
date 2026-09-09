@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 
@@ -49,7 +51,7 @@ class M3SongEntry {
 class M3SongList extends StatelessWidget {
   final List<M3SongEntry> songs;
   final EdgeInsetsGeometry padding;
-  final EdgeInsetsGeometry itemPadding; // 新增：每一行内部的 padding
+  final EdgeInsetsGeometry itemPadding;
   final String? emptyTitle;
   final String? emptySubtitle;
   final MusicProvider? coverLoader;
@@ -110,17 +112,21 @@ class M3SongList extends StatelessWidget {
     }
 
     return ListView.separated(
-      shrinkWrap: isScrollable ? false : true,
+      shrinkWrap: !isScrollable,
       physics: isScrollable
           ? const AlwaysScrollableScrollPhysics()
           : const NeverScrollableScrollPhysics(),
+      // 新 API：使用 scrollCacheExtent 替代已弃用的 cacheExtent
+      scrollCacheExtent: isScrollable
+          ? const ScrollCacheExtent.pixels(800)
+          : const ScrollCacheExtent.pixels(250),
       padding: padding,
       itemCount: songs.length,
-      separatorBuilder: (_, _) => Divider(
+      separatorBuilder: (_, __) => Divider(
         height: 1,
         thickness: 0.5,
         indent: 74.0,
-        endIndent: itemPadding.resolve(TextDirection.ltr).right + 2, // 跟着右边距走
+        endIndent: itemPadding.resolve(TextDirection.ltr).right + 2,
       ),
       itemBuilder: (context, index) {
         final isFirst = index == 0;
@@ -130,7 +136,7 @@ class M3SongList extends StatelessWidget {
           isFirst: isFirst,
           isLast: isLast,
           coverLoader: coverLoader,
-          itemPadding: itemPadding, // 传下去
+          itemPadding: itemPadding,
         );
       },
     );
@@ -144,7 +150,7 @@ class M3SongList extends StatelessWidget {
 class SliverM3SongList extends StatelessWidget {
   final List<M3SongEntry> songs;
   final EdgeInsetsGeometry padding;
-  final EdgeInsetsGeometry itemPadding; // 新增：每一行内部的 padding
+  final EdgeInsetsGeometry itemPadding;
   final Widget? emptyWidget;
   final MusicProvider? coverLoader;
 
@@ -169,14 +175,16 @@ class SliverM3SongList extends StatelessWidget {
     return SliverPadding(
       padding: padding,
       sliver: SliverList(
+        // Sliver 的预加载由外层 CustomScrollView 的 scrollCacheExtent 控制
+        // 建议在使用处设置：
+        // CustomScrollView(scrollCacheExtent: 800, ...)
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index.isOdd) {
             return Divider(
               height: 1,
               thickness: 0.5,
               indent: 74.0,
-              endIndent:
-                  itemPadding.resolve(TextDirection.ltr).right + 2, // 跟着右边距走
+              endIndent: itemPadding.resolve(TextDirection.ltr).right + 2,
             );
           }
           final songIndex = index ~/ 2;
@@ -215,6 +223,7 @@ class _M3SongRow extends StatelessWidget {
   });
 
   static const double _cornerRadius = 16;
+  static const double _coverSize = 48;
 
   BorderRadius _clipRadius() {
     if (isFirst && isLast) return BorderRadius.circular(_cornerRadius);
@@ -229,34 +238,69 @@ class _M3SongRow extends StatelessWidget {
     return BorderRadius.zero;
   }
 
-  Widget _buildCoverImage(ColorScheme colorScheme) {
+  Widget _buildCoverImage(BuildContext context, ColorScheme colorScheme) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheSize = (_coverSize * dpr).round().clamp(48, 144);
+
+    // ---------- 本地字节 ----------
     if (entry.coverBytes != null && entry.coverBytes!.isNotEmpty) {
-      return Image.memory(entry.coverBytes!, fit: BoxFit.cover);
+      return Image.memory(
+        entry.coverBytes!,
+        key: ValueKey('bytes_${entry.id}'),
+        fit: BoxFit.cover,
+        cacheWidth: cacheSize,
+        cacheHeight: cacheSize,
+        filterQuality: FilterQuality.low,
+        gaplessPlayback: true, // 关键：切换时不闪
+      );
     }
 
+    // ---------- 本地文件 ----------
     if (entry.coverPath != null && entry.coverPath!.isNotEmpty) {
       final file = File(entry.coverPath!);
       if (file.existsSync()) {
-        return Image.file(file, fit: BoxFit.cover);
+        return Image.file(
+          file,
+          key: ValueKey('file_${entry.coverPath}'),
+          fit: BoxFit.cover,
+          cacheWidth: cacheSize,
+          cacheHeight: cacheSize,
+          filterQuality: FilterQuality.low,
+          gaplessPlayback: true, // 关键
+        );
       }
     }
 
+    // ---------- 网络封面 ----------
     if (entry.coverUrl != null && entry.coverUrl!.isNotEmpty) {
       final Map<String, String> finalHeaders = {
         'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+            '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         ...?entry.coverHeaders,
       };
 
       return CachedNetworkImage(
+        // 稳定 Key，切换 Tab 时尽量复用 Element
+        key: ValueKey(entry.coverUrl),
         imageUrl: entry.coverUrl!,
+        cacheKey: entry.coverUrl,
         fit: BoxFit.cover,
         httpHeaders: finalHeaders,
+        memCacheWidth: cacheSize,
+        memCacheHeight: cacheSize,
+        // 关键：关掉所有淡入淡出
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        placeholderFadeInDuration: Duration.zero,
+        // 关键：url 不变时继续显示旧图，不闪 placeholder
+        useOldImageOnUrlChange: true,
+        filterQuality: FilterQuality.low,
         placeholder: (context, url) => ColoredBox(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           child: const SizedBox.expand(),
         ),
-        errorWidget: (_, __, ___) => _buildFallbackIcon(colorScheme),
+        errorWidget: (_, _, _) => _buildFallbackIcon(colorScheme),
       );
     }
 
@@ -282,6 +326,7 @@ class _M3SongRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final clipRadius = _clipRadius();
 
+    // 懒加载封面（仅本地音乐需要）
     if ((entry.coverBytes == null || entry.coverBytes!.isEmpty) &&
         entry.coverUrl == null &&
         coverLoader != null) {
@@ -293,9 +338,8 @@ class _M3SongRow extends StatelessWidget {
       });
     }
 
-    // 适配精致比例的尺寸与内边距配置
     const hPadding = 10.0;
-    const vPadding = 5.0; // 黄金比例内边距：既不挤压文字，也不拉得太宽
+    const vPadding = 5.0;
     const rightPadding = 4.0;
     const highlightRadius = BorderRadius.all(Radius.circular(12));
 
@@ -317,12 +361,12 @@ class _M3SongRow extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: SizedBox(
-              width: 48, // 标准 M3 歌曲封面比例
-              height: 48,
+              width: _coverSize,
+              height: _coverSize,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _buildCoverImage(colorScheme),
+                  _buildCoverImage(context, colorScheme),
                   if (entry.isNetworkSource)
                     Positioned(
                       right: 0,
@@ -367,7 +411,7 @@ class _M3SongRow extends StatelessWidget {
                         : colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2), // 微调间距
+                const SizedBox(height: 2),
                 Text(
                   entry.subtitle,
                   maxLines: 1,

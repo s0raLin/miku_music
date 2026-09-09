@@ -12,6 +12,8 @@ import 'package:myapp/views/MusicDetail/widgets/music_action_menu.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
+enum SortOption { title, artist, dateAdded }
+
 class DownloadManagementPage extends StatefulWidget {
   const DownloadManagementPage({super.key});
 
@@ -24,6 +26,13 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
   List<Music> _songs = [];
   StreamSubscription? _scanSubscription;
 
+  // 搜索与排序控制状态
+  bool _showSearch = false;
+  String _searchQuery = '';
+  SortOption _sortOption = SortOption.dateAdded;
+  bool _sortAscending = true;
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +42,7 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
   @override
   void dispose() {
     _scanSubscription?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -46,7 +56,6 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
           _isScanning = false;
           _songs = [];
         });
-        // 同步更新至 MusicProvider 避免状态残留
         context.read<MusicProvider>().setDownloadedSongs([]);
       }
       return;
@@ -67,13 +76,10 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
       },
       onDone: () async {
         if (!mounted) return;
-        // 封面图并行加速加载
         await _loadCovers();
         if (!mounted) return;
 
         setState(() => _isScanning = false);
-
-        // 同步扫描结果到 MusicProvider 的 downloadedLibrary 列表
         context.read<MusicProvider>().setDownloadedSongs(_songs);
       },
       onError: (err) {
@@ -83,7 +89,6 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     );
   }
 
-  /// 并行异步读取封面，避免阻塞界面与串行 IO 性能损耗
   Future<void> _loadCovers() async {
     final updatedSongs = await Future.wait(
       _songs.map((song) async {
@@ -99,9 +104,7 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
               return song.copyWith(coverBytes: bytes);
             }
           }
-        } catch (_) {
-          // 忽略单文件读取异常
-        }
+        } catch (_) {}
         return song;
       }),
     );
@@ -110,6 +113,41 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     setState(() {
       _songs = updatedSongs;
     });
+  }
+
+  /// 计算经过过滤与排序后的歌曲列表
+  List<Music> get _processedSongs {
+    List<Music> list = List.from(_songs);
+
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((s) {
+        final title = s.title.toLowerCase();
+        final artist = (s.artist).toLowerCase();
+        return title.contains(q) || artist.contains(q);
+      }).toList();
+    }
+
+    list.sort((a, b) {
+      int cmp = 0;
+      switch (_sortOption) {
+        case SortOption.title:
+          cmp = a.title.compareTo(b.title);
+          break;
+        case SortOption.artist:
+          cmp = (a.artist).compareTo(b.artist);
+          break;
+        case SortOption.dateAdded:
+          // id 为文件路径，使用文件修改时间排序
+          final aTime = File(a.id).lastModifiedSync();
+          final bTime = File(b.id).lastModifiedSync();
+          cmp = aTime.compareTo(bTime);
+          break;
+      }
+      return _sortAscending ? cmp : -cmp;
+    });
+
+    return list;
   }
 
   @override
@@ -122,17 +160,27 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("下载管理"),
+        actionsPadding: const EdgeInsets.only(right: 12),
         actions: [
           IconButton(
-            icon: _isScanning
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh_rounded),
-            tooltip: '刷新',
-            onPressed: _isScanning ? null : _scanDownloads,
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+                key: ValueKey(_showSearch),
+                size: 22,
+              ),
+            ),
+            tooltip: _showSearch ? '关闭搜索' : '搜索与排序',
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                }
+              });
+            },
           ),
         ],
       ),
@@ -186,7 +234,9 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
       );
     }
 
-    final entries = _songs.map((song) {
+    final displaySongs = _processedSongs;
+
+    final entries = displaySongs.map((song) {
       final isCurrent = currentMusic?.id == song.id;
       final isPlaying = isCurrent && musicProvider.player.playing;
 
@@ -204,9 +254,16 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
                 isCurrent && isPlaying
                     ? Icons.pause_rounded
                     : Icons.play_arrow_rounded,
+                size: 22,
                 color: colorScheme.primary,
               ),
               tooltip: isCurrent && isPlaying ? '暂停' : '播放',
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
+              padding: EdgeInsets.zero,
               onPressed: () {
                 if (!isCurrent) {
                   musicProvider.playFromLibrary(song);
@@ -216,7 +273,16 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
               },
             ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded, size: 20),
+              icon: Icon(
+                Icons.more_vert_rounded,
+                size: 18,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
               onSelected: (v) {
                 switch (v) {
                   case 'add_to_playlist':
@@ -285,6 +351,86 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 可展开的搜索与排序控制栏 — 参照 NetworkSongPage 的 _SearchBar
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            child: _showSearch
+                ? Container(
+                    color: colorScheme.surface,
+                    padding: const EdgeInsets.fromLTRB(16, 6, 12, 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: TextField(
+                              controller: _searchController,
+                              style: textTheme.bodyLarge,
+                              decoration: InputDecoration(
+                                hintText: "搜索已下载歌曲...",
+                                hintStyle: textTheme.bodyLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search_rounded,
+                                  color: colorScheme.onSurfaceVariant,
+                                  size: 20,
+                                ),
+                                prefixIconConstraints:
+                                    const BoxConstraints(minWidth: 42),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(
+                                          Icons.close_rounded,
+                                          size: 18,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() => _searchQuery = '');
+                                        },
+                                        visualDensity: VisualDensity.compact,
+                                      )
+                                    : null,
+                                filled: true,
+                                fillColor: colorScheme.surfaceContainerHigh,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: colorScheme.primary,
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                              onChanged: (val) {
+                                setState(() => _searchQuery = val);
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // 排序按钮：与 NetworkSongPage 一致，并与下方 more 按钮对齐
+                        IconButton(
+                          icon: const Icon(Icons.sort_rounded, size: 22),
+                          tooltip: '排序',
+                          onPressed: () => _showSortSheet(context),
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+
+          // 数量与信息展示
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
             child: Row(
@@ -296,7 +442,9 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  "已下载 ${_songs.length} 首歌曲",
+                  _searchQuery.isNotEmpty
+                      ? "匹配到 ${displaySongs.length} / ${_songs.length} 首歌曲"
+                      : "已下载 ${_songs.length} 首歌曲",
                   style: textTheme.labelLarge?.copyWith(
                     color: colorScheme.primary,
                   ),
@@ -305,19 +453,118 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
             ),
           ),
           const Divider(height: 1),
+
           Expanded(
-            child: M3SongList(
-              songs: entries,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              isScrollable: true,
-            ),
+            child: displaySongs.isEmpty
+                ? Center(
+                    child: Text(
+                      "未匹配到相关歌曲",
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : M3SongList(
+                    songs: entries,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    isScrollable: true,
+                  ),
           ),
         ],
       ),
     );
   }
 
-  /// 检查歌曲是否被收藏
+  void _showSortSheet(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '排序方式',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ),
+              _SortOptionTile(
+                icon: Icons.access_time_rounded,
+                color: cs.primary,
+                label: '下载时间',
+                isSelected: _sortOption == SortOption.dateAdded,
+                ascending: _sortAscending,
+                onTap: () {
+                  setState(() {
+                    if (_sortOption == SortOption.dateAdded) {
+                      _sortAscending = !_sortAscending;
+                    } else {
+                      _sortOption = SortOption.dateAdded;
+                      _sortAscending = true;
+                    }
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+              _SortOptionTile(
+                icon: Icons.sort_by_alpha_rounded,
+                color: cs.secondary,
+                label: '歌曲名称',
+                isSelected: _sortOption == SortOption.title,
+                ascending: _sortAscending,
+                onTap: () {
+                  setState(() {
+                    if (_sortOption == SortOption.title) {
+                      _sortAscending = !_sortAscending;
+                    } else {
+                      _sortOption = SortOption.title;
+                      _sortAscending = true;
+                    }
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+              _SortOptionTile(
+                icon: Icons.person_outline_rounded,
+                color: cs.tertiary,
+                label: '歌手',
+                isSelected: _sortOption == SortOption.artist,
+                ascending: _sortAscending,
+                onTap: () {
+                  setState(() {
+                    if (_sortOption == SortOption.artist) {
+                      _sortAscending = !_sortAscending;
+                    } else {
+                      _sortOption = SortOption.artist;
+                      _sortAscending = true;
+                    }
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   bool _isFavorited(BuildContext ctx, Music song) {
     final playlistProvider = ctx.read<PlaylistProvider>();
     final musicProvider = ctx.read<MusicProvider>();
@@ -330,7 +577,6 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
         .any((m) => m.id == song.id);
   }
 
-  /// 切换歌曲收藏状态
   Future<void> _toggleFavorite(Music song) async {
     final musicProvider = context.read<MusicProvider>();
     final playlistProvider = context.read<PlaylistProvider>();
@@ -357,7 +603,6 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     );
   }
 
-  /// 物理删除音频文件，并同步同步状态至全局 MusicProvider
   Future<void> _deleteSong(Music song) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -385,7 +630,6 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     try {
       final musicProvider = context.read<MusicProvider>();
 
-      // 如果当前正在播放待删除的歌曲，停止播放
       if (musicProvider.currentMusic?.id == song.id) {
         await musicProvider.player.stop();
       }
@@ -394,7 +638,6 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
       final parentDir = file.parent;
       final dirName = p.basename(parentDir.path);
 
-      // 删除包含特定名称的专属下载文件夹，否则单文件删除
       if (parentDir.path.contains('M3Music') &&
           dirName.contains(' - ') &&
           await parentDir.exists()) {
@@ -403,12 +646,10 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
         await file.delete();
       }
 
-      // 1. 从本页面本地视图中移除
       setState(() {
         _songs.removeWhere((s) => s.id == song.id);
       });
 
-      // 2. 调用重构后的 MusicProvider 方法从全局下载库移除，触发全局数据流同步
       musicProvider.removeFromDownloadedLibrary(song.id);
 
       if (mounted) {
@@ -423,5 +664,56 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
         ).showSnackBar(SnackBar(content: Text("删除失败: $e")));
       }
     }
+  }
+}
+
+// 排序选项（与 NetworkSongPage 的 _SortOption 风格一致）
+class _SortOptionTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final bool isSelected;
+  final bool ascending;
+  final VoidCallback onTap;
+
+  const _SortOptionTile({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.isSelected,
+    required this.ascending,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(icon, color: color, size: 22),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? cs.primary : null,
+          fontWeight: isSelected ? FontWeight.w600 : null,
+        ),
+      ),
+      trailing: isSelected
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  ascending
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
+                  size: 16,
+                  color: cs.primary,
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.check_rounded, color: cs.primary, size: 20),
+              ],
+            )
+          : null,
+      onTap: onTap,
+    );
   }
 }

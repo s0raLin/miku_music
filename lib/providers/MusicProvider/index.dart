@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -6,10 +7,12 @@ import 'package:flutter/scheduler.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/service/Audio/index.dart';
+import 'package:myapp/service/Files/index.dart';
 import 'package:myapp/service/Hotkeys/index.dart';
 import 'package:myapp/service/Music/index.dart';
 import 'package:myapp/src/rust/api/audio_info.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path/path.dart' as p;
 import 'package:rxdart/rxdart.dart';
 
 import 'music_library.dart';
@@ -17,7 +20,7 @@ import 'music_queue.dart';
 import 'music_repository.dart';
 
 // ── 重新导出类型，方便外部直接引用（无须修改原有的 import 路径） ──
-export 'music_library.dart' show SongSortType, AlbumSortType;
+export 'music_library.dart' show AlbumSortType, SongSortType;
 export 'music_queue.dart' show PlayMode, PlayTrigger, QueueSnapshot;
 
 /// 播放进度数据结构体（用于流式同步当前播放位置、缓冲位置及总时长）
@@ -42,12 +45,34 @@ class MusicProvider extends ChangeNotifier {
 
   // ── 内部委托服务对象 (Delegates) ──
   final MusicQueue _playbackQueue = MusicQueue(); // 管理播放队列与历史记录
-  final MusicLibrary _libraryService = MusicLibrary(); // 管理本地/在线媒体库的排序与合并
+  final MusicLibrary _libraryService = MusicLibrary(); // 管理媒体库的排序与合并
   final MusicRepository _repository = MusicRepository(); // 管理持久化数据、网络元数据与网络请求缓存
 
-  // ── 媒体库 ──
-  List<Music> _library = [];
-  List<Music> get library => _library;
+  // ── 媒体库（已解耦分离） ──
+  List<Music> _localLibrary = []; // 本地扫描歌曲列表
+  List<Music> _downloadedLibrary = []; // 已下载歌曲列表
+
+  /// 仅获取用户主动扫描的本地歌曲列表
+  List<Music> get localLibrary => List.unmodifiable(_localLibrary);
+
+  /// 仅获取下载目录中的歌曲列表
+  List<Music> get downloadedLibrary => List.unmodifiable(_downloadedLibrary);
+
+  /// 计算属性：全量媒体库（用于播放器索引、匹配歌单等需求）
+  List<Music> get allLibrary {
+    final Map<String, Music> map = {};
+    for (final song in _localLibrary) {
+      map[song.id] = song;
+    }
+    // 若有路径冲突，优先使用下载列表中包含完整元数据的对象
+    for (final song in _downloadedLibrary) {
+      map[song.id] = song;
+    }
+    return map.values.toList();
+  }
+
+  /// 兼容旧的 _library 引用，保证底层播放器与旧组件正常协同
+  List<Music> get library => allLibrary;
 
   // ── 排序偏好配置 ──
   SongSortType _songSortType = SongSortType.auto;
@@ -134,53 +159,126 @@ class MusicProvider extends ChangeNotifier {
   //  初始化与媒体库管理 (Bootstrap & Library Management)
   // ═══════════════════════════════════════════════════════════
 
-  /// 应用启动引导流程：初始化快捷键、恢复本地媒体库及获取应用信息
+  /// 应用启动引导流程：初始化快捷键、恢复本地及下载媒体库、获取应用信息
   Future<void> bootstrap({
     required List<Music> scannedSongs,
     void Function(String module, String detail)? onProgress,
   }) async {
-    // 初始化全局快捷键监听
+    // 1. 初始化全局快捷键监听
     HotkeyService().init(
       onNextTrack: () => playNext(),
       onTogglePlay: () => togglePlay(),
       onPrevTrack: () => playPrev(),
     );
 
-    onProgress?.call('恢复媒体库', '已载入 ${scannedSongs.length} 首歌曲');
-    _library = List.from(scannedSongs);
+    // 2. 存入本地扫描音频
+    onProgress?.call('恢复本地媒体库', '已载入 ${scannedSongs.length} 首本地歌曲');
+    _localLibrary = List.from(scannedSongs);
+
+    // 3. 扫描已下载音乐目录
+    onProgress?.call('扫描下载音乐', '正在加载已下载歌曲...');
+    _downloadedLibrary = await _loadDownloadedSongs();
+
     _safeNotifyListeners();
 
+    // 4. 读取应用配置与元信息
     onProgress?.call('读取应用信息', '正在获取版本号');
     await _repository.loadAppInfo();
     _safeNotifyListeners();
 
-    // 4. 恢复历史播放队列快照
+    // 5. 恢复历史播放队列快照
     onProgress?.call('播放历史', '正在恢复历史播放队列...');
     await loadQueueHistory();
   }
 
-  /// 批量合并更新媒体库
+  /// 辅助私有方法：异步扫描并加载下载文件夹下的音频与封面
+  Future<List<Music>> _loadDownloadedSongs() async {
+    final downloadedList = <Music>[];
+    try {
+      final m3MusicDir = await FileService.getM3MusicDir();
+      if (!await m3MusicDir.exists()) return downloadedList;
+
+      // 扫描下载文件夹
+      await for (final progress
+          in MusicService.scanDirectories([m3MusicDir.path])) {
+        if (progress.music != null) {
+          downloadedList.add(progress.music!);
+        }
+      }
+
+      // 读取 cover.jpg 局部封面图片
+      for (int i = 0; i < downloadedList.length; i++) {
+        final song = downloadedList[i];
+        if (song.coverBytes != null && song.coverBytes!.isNotEmpty) continue;
+
+        try {
+          final parentDir = File(song.id).parent.path;
+          final coverFile = File(p.join(parentDir, 'cover.jpg'));
+          if (await coverFile.exists()) {
+            final bytes = await coverFile.readAsBytes();
+            if (bytes.isNotEmpty) {
+              downloadedList[i] = song.copyWith(coverBytes: bytes);
+            }
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Bootstrap 加载已下载音乐失败: $e');
+    }
+    return downloadedList;
+  }
+
+  /// 批量合并更新本地媒体库（专门作用于 _localLibrary）
   void updateLibrary(List<Music> scannedSongs) {
-    _library = _libraryService.mergeLibrary(_library, scannedSongs);
+    _localLibrary = _libraryService.mergeLibrary(_localLibrary, scannedSongs);
     _safeNotifyListeners();
   }
 
-  /// 向媒体库添加单首歌曲（根据 ID 去重更新）
+  /// 向本地媒体库添加单首歌曲（根据 ID 去重更新）
   void addToLibrary(Music music) {
-    final idx = _library.indexWhere((m) => m.id == music.id);
+    final idx = _localLibrary.indexWhere((m) => m.id == music.id);
     if (idx != -1) {
-      // 保留已存在的封面与歌词等缓存信息
-      _library[idx] = _library[idx].copyWith(
+      _localLibrary[idx] = _localLibrary[idx].copyWith(
         title: music.title,
         artist: music.artist,
         album: music.album,
         duration: music.duration,
-        coverBytes: music.coverBytes ?? _library[idx].coverBytes,
-        lyrics: music.lyrics ?? _library[idx].lyrics,
+        coverBytes: music.coverBytes ?? _localLibrary[idx].coverBytes,
+        lyrics: music.lyrics ?? _localLibrary[idx].lyrics,
       );
     } else {
-      _library.add(music);
+      _localLibrary.add(music);
     }
+    _safeNotifyListeners();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  已下载歌曲管理 (Downloaded Songs Management)
+  // ═══════════════════════════════════════════════════════════
+
+  /// 向下载列表中添加或更新歌曲（下载完成时调用）
+  void addOrUpdateDownloadedSong(Music song) {
+    final index = _downloadedLibrary.indexWhere((m) => m.id == song.id);
+    if (index != -1) {
+      _downloadedLibrary[index] = song;
+    } else {
+      _downloadedLibrary.add(song);
+    }
+    _safeNotifyListeners();
+  }
+
+  /// 从下载列表中移除指定 ID 的歌曲（删除文件时调用）
+  void removeFromDownloadedLibrary(String musicId) {
+    final initialLength = _downloadedLibrary.length;
+    _downloadedLibrary.removeWhere((m) => m.id == musicId);
+    if (_downloadedLibrary.length != initialLength) {
+      _safeNotifyListeners();
+    }
+  }
+
+  /// 批量覆盖更新下载列表
+  void setDownloadedSongs(List<Music> songs) {
+    _downloadedLibrary = List.from(songs);
     _safeNotifyListeners();
   }
 
@@ -206,15 +304,16 @@ class MusicProvider extends ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  /// 获取排序后的媒体库列表
+  /// 获取排序后的本地媒体库列表
   List<Music> getSortedLibrary() {
-    return _libraryService.getSortedLibrary(_library, sortType: _songSortType);
+    return _libraryService.getSortedLibrary(_localLibrary,
+        sortType: _songSortType);
   }
 
-  /// 获取排序后的专辑分组列表
+  /// 获取排序后的专辑分组列表（作用于本地库）
   List<MapEntry<String, List<Music>>> getSortedAlbums() {
     return _libraryService.getSortedAlbums(
-      _library,
+      _localLibrary,
       songSortType: _songSortType,
       albumSortType: _albumSortType,
     );
@@ -290,7 +389,6 @@ class MusicProvider extends ChangeNotifier {
     _playbackQueue.removeHistoryById(snapshotId);
     _safeNotifyListeners();
 
-    // 委托给 Repository 处理持久化，不直接操作 DbService
     _repository.deleteQueueSnapshot(snapshotId);
   }
 
@@ -299,13 +397,11 @@ class MusicProvider extends ChangeNotifier {
     _playbackQueue.clearHistory();
     _safeNotifyListeners();
 
-    // 委托给 Repository 处理持久化
     _repository.clearQueueHistory();
   }
 
   /// 替换或保存当前播放队列并持久化
   void saveCurrentQueueToHistory({String? queueName, String? sourceId}) {
-    // 1. 更新内存状态，获取最新快照
     final snapshot = _playbackQueue.saveCurrentToHistory(
       queueName: queueName,
       sourceId: sourceId,
@@ -313,32 +409,24 @@ class MusicProvider extends ChangeNotifier {
 
     if (snapshot != null) {
       _safeNotifyListeners();
-      // 2. 触发异步持久化落盘
       _repository.saveQueueSnapshot(snapshot);
     }
   }
 
   /// 启动时从 SQLite 数据库恢复历史播放队列列表
   Future<void> loadQueueHistory() async {
-    // 1. 调用 repository 拉取 DB 数据并还原成 QueueSnapshot 实体列表
     final snapshots = await _repository.loadQueueHistoryFromDb(
-      library: _library,
+      library: allLibrary,
       currentQueue: _playbackQueue.queue,
     );
 
     if (snapshots.isNotEmpty) {
-      // 2. 将数据灌入内存模型 MusicQueue
       _playbackQueue.loadHistory(snapshots);
-
-      // 3. 通知 UI 刷新（例如 _QueueSheet 页面）
       _safeNotifyListeners();
     }
   }
 
   /// 替换当前播放队列
-  ///
-  /// [queueName] / [sourceId] 表示**即将加载的新队列**的名字与来源。
-  /// 旧队列会用它自己之前记录的名字存入历史，不会被新名字污染。
   Future<void> replaceQueue(
     List<Music> songs, {
     int startIndex = 0,
@@ -347,7 +435,6 @@ class MusicProvider extends ChangeNotifier {
     String? sourceId,
     bool saveToHistory = true,
   }) async {
-    // 核心防御：待替换的歌单歌曲数为 0 时，直接不进行快照和播放
     if (songs.isEmpty) {
       _playbackQueue.clear();
       await player.stop();
@@ -357,7 +444,6 @@ class MusicProvider extends ChangeNotifier {
 
     if (startIndex < 0 || startIndex >= songs.length) return;
 
-    // replace 内部：先用旧名字把旧队列存进历史，再把新名字赋给当前队列
     final savedSnapshot = _playbackQueue.replace(
       songs,
       queueName: queueName,
@@ -365,7 +451,6 @@ class MusicProvider extends ChangeNotifier {
       saveToHistory: saveToHistory,
     );
 
-    // 只持久化「这次真正新写入历史」的旧队列快照
     if (savedSnapshot != null && savedSnapshot.songs.isNotEmpty) {
       _repository.saveQueueSnapshot(savedSnapshot);
     }
@@ -425,7 +510,7 @@ class MusicProvider extends ChangeNotifier {
       _fetchLyricsInBackground(music);
     }
 
-    // 本地歌曲且无封面时，延迟异步加载封面
+    // 本地/下载歌曲且无封面时，延迟异步加载封面
     if (music.source != MusicSource.network &&
         (music.coverBytes == null || music.coverBytes!.isEmpty)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -434,10 +519,8 @@ class MusicProvider extends ChangeNotifier {
     }
 
     if (_repository.isNetworkSong(music.id)) {
-      // 从缓存获取网络音频链接
       String? playUrl = _repository.getNetworkUrl(music.id);
 
-      // 若为网易云歌曲，视情况刷新 URL 链接防失效
       if (music.id.startsWith('net_')) {
         final freshUrl = await _repository.refreshNeteaseUrl(music.id);
         if (freshUrl != null) playUrl = freshUrl;
@@ -447,7 +530,6 @@ class MusicProvider extends ChangeNotifier {
 
       if (autoPlay) onMusicPlayed?.call(music);
 
-      // 优先直接播放音频（暂不带封面，规避图片 403 防盗链阻断音频加载）
       await audioHandler.playFromUrl(
         playUrl,
         id: music.id,
@@ -457,7 +539,6 @@ class MusicProvider extends ChangeNotifier {
         autoPlay: autoPlay,
       );
 
-      // 后台异步获取安全封面代理，成功后热更新通知栏元数据
       final coverUrl = _repository.getCoverUrl(music.id);
       final currentPlayingId = music.id;
       final safePlayUrl = playUrl;
@@ -474,7 +555,7 @@ class MusicProvider extends ChangeNotifier {
             safePlayUrl,
             id: currentPlayingId,
             title: music.title,
-            artist: music.artist,
+            artist: artistFormat(music.artist),
             coverUrl: safeCoverUrl,
             autoPlay: player.playing,
             updateAudioSource: false,
@@ -482,11 +563,13 @@ class MusicProvider extends ChangeNotifier {
         }
       });
     } else {
-      // 本地音频播放
       if (autoPlay) onMusicPlayed?.call(music);
       await audioHandler.playMusic(music, autoPlay: autoPlay);
     }
   }
+
+  /// 辅助方法：保证艺人字段规范
+  String artistFormat(String artist) => artist.isEmpty ? '未知歌手' : artist;
 
   // ═══════════════════════════════════════════════════════════
   //  封面加载 (Cover Loading - 委托给 MusicRepository)
@@ -500,7 +583,7 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
-  /// 内部更新指定歌曲的封面 Data，并同步刷新媒体库与队列
+  /// 内部更新指定歌曲的封面 Data，同步更新本地库、下载库及播放队列
   void _updateCoverBytes(String musicId, Uint8List? coverBytes) {
     if (coverBytes == null || coverBytes.isEmpty) return;
 
@@ -514,7 +597,8 @@ class MusicProvider extends ChangeNotifier {
       }
     }
 
-    patch(_library);
+    patch(_localLibrary);
+    patch(_downloadedLibrary);
     _playbackQueue.updateCoverBytes(musicId, coverBytes);
 
     if (hasChanged) _safeNotifyListeners();
@@ -549,13 +633,11 @@ class MusicProvider extends ChangeNotifier {
 
     if (_playbackQueue.playMode == PlayMode.repeat &&
         trigger == PlayTrigger.auto) {
-      // 单曲循环自动播放完时重置进度
       await player.seek(Duration.zero);
       player.play();
     } else if (_playbackQueue.playMode == PlayMode.sequence &&
         nextIndex == _playbackQueue.currentIndex &&
         trigger == PlayTrigger.auto) {
-      // 顺序播放到列表末尾时停止并重置进度
       await player.seek(Duration.zero);
     } else {
       await playByIndex(nextIndex);
@@ -574,9 +656,9 @@ class MusicProvider extends ChangeNotifier {
   //  网络歌曲处理 (Network Songs)
   // ═══════════════════════════════════════════════════════════
 
-  /// 从媒体库或当前队列中查找特定 ID 的歌曲
+  /// 从媒体库（包含本地与下载歌曲）或当前队列中查找特定 ID 的歌曲
   Music? getSongById(String id) =>
-      _repository.getSongById(id, _library, _playbackQueue.queue);
+      _repository.getSongById(id, allLibrary, _playbackQueue.queue);
 
   /// 将网络搜索结果导入并替换当前队列进行播放
   Future<void> playNetworkSearchResults({
@@ -619,7 +701,6 @@ class MusicProvider extends ChangeNotifier {
       source: MusicSource.network,
     );
 
-    // 注册网络歌曲元数据
     _repository.registerNetworkSong(
       musicId: musicId,
       url: url,
@@ -647,7 +728,6 @@ class MusicProvider extends ChangeNotifier {
     _safeNotifyListeners();
     onMusicPlayed?.call(music);
 
-    // 防抖持久化网络歌曲信息
     _repository.debouncePersistNetworkSong(
       music,
       url,
@@ -655,7 +735,6 @@ class MusicProvider extends ChangeNotifier {
       effectiveLyrics,
     );
 
-    // 优先播放音频（无封面）
     await audioHandler.playFromUrl(
       url,
       id: musicId,
@@ -665,7 +744,6 @@ class MusicProvider extends ChangeNotifier {
       autoPlay: true,
     );
 
-    // 后台获取安全封面代理并更新
     final currentPlayingId = music.id;
     _repository.getSafeArtUri(coverUrl).then((safeCoverUrl) {
       final currentCover = getCoverUrl(currentPlayingId);
@@ -688,7 +766,6 @@ class MusicProvider extends ChangeNotifier {
   }
 
   /// 将单首网络歌曲插入为「下一首播放」
-  /// 不打断当前正在播放的歌曲
   Future<void> addNetworkSongNext({
     required Map<String, String?> songMap,
   }) async {
@@ -709,7 +786,6 @@ class MusicProvider extends ChangeNotifier {
 
     final music = musicList.first;
     if (_playbackQueue.contains(music.id)) {
-      // 已在队列中则不再重复添加（也可改成移动到末尾）
       return;
     }
     _playbackQueue.add(music);
@@ -749,8 +825,8 @@ class MusicProvider extends ChangeNotifier {
         player.positionStream,
         player.bufferedPositionStream,
         player.durationStream,
-        (position, bufferedPosition, duration) =>
-            PositionData(position, bufferedPosition, duration ?? Duration.zero),
+        (position, bufferedPosition, duration) => PositionData(
+            position, bufferedPosition, duration ?? Duration.zero),
       );
 
   // ═══════════════════════════════════════════════════════════

@@ -41,7 +41,14 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
 
     final m3MusicDir = await FileService.getM3MusicDir();
     if (!await m3MusicDir.exists()) {
-      setState(() => _isScanning = false);
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+          _songs = [];
+        });
+        // 同步更新至 MusicProvider 避免状态残留
+        context.read<MusicProvider>().setDownloadedSongs([]);
+      }
       return;
     }
 
@@ -60,10 +67,14 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
       },
       onDone: () async {
         if (!mounted) return;
-        // Load cover images eagerly from cover.jpg in each song's folder
+        // 封面图并行加速加载
         await _loadCovers();
         if (!mounted) return;
+
         setState(() => _isScanning = false);
+
+        // 同步扫描结果到 MusicProvider 的 downloadedLibrary 列表
+        context.read<MusicProvider>().setDownloadedSongs(_songs);
       },
       onError: (err) {
         if (!mounted) return;
@@ -72,26 +83,33 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     );
   }
 
-  /// Load cover.jpg from each song's parent folder and attach to song.coverBytes
+  /// 并行异步读取封面，避免阻塞界面与串行 IO 性能损耗
   Future<void> _loadCovers() async {
-    for (int i = 0; i < _songs.length; i++) {
-      final song = _songs[i];
-      // Only load if no cover bytes yet
-      if (song.coverBytes != null && song.coverBytes!.isNotEmpty) continue;
-
-      try {
-        final parentDir = p.dirname(song.id);
-        final coverFile = File(p.join(parentDir, 'cover.jpg'));
-        if (await coverFile.exists()) {
-          final bytes = await coverFile.readAsBytes();
-          if (bytes.isNotEmpty) {
-            _songs[i] = song.copyWith(coverBytes: bytes);
-          }
+    final updatedSongs = await Future.wait(
+      _songs.map((song) async {
+        if (song.coverBytes != null && song.coverBytes!.isNotEmpty) {
+          return song;
         }
-      } catch (_) {
-        // ignore per-file errors
-      }
-    }
+        try {
+          final parentDir = p.dirname(song.id);
+          final coverFile = File(p.join(parentDir, 'cover.jpg'));
+          if (await coverFile.exists()) {
+            final bytes = await coverFile.readAsBytes();
+            if (bytes.isNotEmpty) {
+              return song.copyWith(coverBytes: bytes);
+            }
+          }
+        } catch (_) {
+          // 忽略单文件读取异常
+        }
+        return song;
+      }),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _songs = updatedSongs;
+    });
   }
 
   @override
@@ -137,8 +155,11 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.download_for_offline_rounded,
-                size: 64, color: colorScheme.outlineVariant),
+            Icon(
+              Icons.download_for_offline_rounded,
+              size: 64,
+              color: colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               "还没有下载的歌曲",
@@ -212,9 +233,9 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
               itemBuilder: (ctx) {
                 final isFav = _isFavorited(ctx, song);
                 return [
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'add_to_playlist',
-                    child: const ListTile(
+                    child: ListTile(
                       leading: Icon(Icons.playlist_add_rounded),
                       title: Text('添加到歌单'),
                       contentPadding: EdgeInsets.zero,
@@ -228,7 +249,7 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
                         isFav
                             ? Icons.favorite_rounded
                             : Icons.favorite_border_rounded,
-                        color: isFav ? null : null,
+                        color: isFav ? colorScheme.primary : null,
                       ),
                       title: Text(isFav ? '取消收藏' : '添加到收藏'),
                       contentPadding: EdgeInsets.zero,
@@ -238,8 +259,10 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
                   const PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
-                      leading: Icon(Icons.delete_outline_rounded,
-                          color: Colors.red),
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.red,
+                      ),
                       title: Text('删除文件'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
@@ -266,8 +289,11 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
             padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
             child: Row(
               children: [
-                Icon(Icons.download_done_rounded,
-                    size: 18, color: colorScheme.primary),
+                Icon(
+                  Icons.download_done_rounded,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   "已下载 ${_songs.length} 首歌曲",
@@ -291,7 +317,7 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     );
   }
 
-  /// Check if a song is currently favorited
+  /// 检查歌曲是否被收藏
   bool _isFavorited(BuildContext ctx, Music song) {
     final playlistProvider = ctx.read<PlaylistProvider>();
     final musicProvider = ctx.read<MusicProvider>();
@@ -304,7 +330,7 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
         .any((m) => m.id == song.id);
   }
 
-  /// Toggle favorite status for a song
+  /// 切换歌曲收藏状态
   Future<void> _toggleFavorite(Music song) async {
     final musicProvider = context.read<MusicProvider>();
     final playlistProvider = context.read<PlaylistProvider>();
@@ -317,7 +343,10 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
         )
         .any((m) => m.id == song.id);
 
-    await playlistProvider.toggleMusicFavorite(song, musicProvider: musicProvider);
+    await playlistProvider.toggleMusicFavorite(
+      song,
+      musicProvider: musicProvider,
+    );
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -328,6 +357,7 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     );
   }
 
+  /// 物理删除音频文件，并同步同步状态至全局 MusicProvider
   Future<void> _deleteSong(Music song) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -353,37 +383,44 @@ class _DownloadManagementPageState extends State<DownloadManagementPage> {
     if (confirmed != true || !mounted) return;
 
     try {
-      // Delete the song file (song.id is the full path for local files)
-      final file = File(song.id);
-      if (await file.exists()) {
-        await file.delete();
+      final musicProvider = context.read<MusicProvider>();
+
+      // 如果当前正在播放待删除的歌曲，停止播放
+      if (musicProvider.currentMusic?.id == song.id) {
+        await musicProvider.player.stop();
       }
 
-      // Also try to delete the parent folder if it was a M3Music download folder
+      final file = File(song.id);
       final parentDir = file.parent;
       final dirName = p.basename(parentDir.path);
-      // Only delete the M3Music subfolder if it matches the download pattern
+
+      // 删除包含特定名称的专属下载文件夹，否则单文件删除
       if (parentDir.path.contains('M3Music') &&
           dirName.contains(' - ') &&
           await parentDir.exists()) {
         await parentDir.delete(recursive: true);
+      } else if (await file.exists()) {
+        await file.delete();
       }
 
-      // Remove from list and re-scan
+      // 1. 从本页面本地视图中移除
       setState(() {
         _songs.removeWhere((s) => s.id == song.id);
       });
 
+      // 2. 调用重构后的 MusicProvider 方法从全局下载库移除，触发全局数据流同步
+      musicProvider.removeFromDownloadedLibrary(song.id);
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("已删除「${song.title}」")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("已删除「${song.title}」")));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("删除失败: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("删除失败: $e")));
       }
     }
   }

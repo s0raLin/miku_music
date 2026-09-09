@@ -116,7 +116,7 @@ class M3SongList extends StatelessWidget {
           : const NeverScrollableScrollPhysics(),
       padding: padding,
       itemCount: songs.length,
-      separatorBuilder: (_, __) => Divider(
+      separatorBuilder: (_, _) => Divider(
         height: 1,
         thickness: 0.5,
         indent: 74.0,

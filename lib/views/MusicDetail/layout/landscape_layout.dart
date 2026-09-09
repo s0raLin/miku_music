@@ -18,9 +18,8 @@ import 'package:provider/provider.dart';
 
 // ─── 手机横屏布局 ──────────────────────────────────────────────────────────
 //  横屏时可用高度有限：左侧紧凑封面 + 信息，右侧歌词 + 底部控制条。
-//  顶部操作栏为沉浸式：空闲数秒后自动隐藏，点击内容任意处重新呼出；
-//  操作栏本身仅由实际按钮构成（与竖屏一致的 ImmersiveTopBar），
-//  不拦截其余区域点击，避免误触。
+//  顶部操作栏为沉浸式：空闲数秒后自动隐藏，点击空白处切换显隐；
+//  优化手势穿透与隔离，防止滑动歌词或拖动进度条时误触。
 
 class LandscapeLayout extends StatefulWidget {
   final Music music;
@@ -53,8 +52,21 @@ class _LandscapeLayoutState extends State<LandscapeLayout> {
     });
   }
 
+  void _toggleOrResetTopBar() {
+    setState(() {
+      _topBarVisible = !_topBarVisible;
+    });
+    if (_topBarVisible) {
+      _scheduleHide();
+    } else {
+      _hideTimer?.cancel();
+    }
+  }
+
   void _revealTopBar() {
-    if (!_topBarVisible) setState(() => _topBarVisible = true);
+    if (!_topBarVisible) {
+      setState(() => _topBarVisible = true);
+    }
     _scheduleHide();
   }
 
@@ -64,89 +76,110 @@ class _LandscapeLayoutState extends State<LandscapeLayout> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      endDrawer: PlaybackQueueDrawer(),
+      endDrawer: const PlaybackQueueDrawer(),
       body: BlurCoverBackground(
         music: widget.music,
         child: SafeArea(
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              // 点击任何空白区域都能呼出操作栏
-              if (!_topBarVisible) {
-                _revealTopBar();
-              }
-            },
-            child: Stack(
-              children: [
-                // 主内容
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final lyricsWidth = (constraints.maxWidth * 0.42).clamp(
-                        240.0,
-                        480.0,
-                      );
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: _CoverAndMeta(
-                              music: widget.music,
-                              topBarVisible: _topBarVisible,
-                              onRevealTopBar: _revealTopBar,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          SizedBox(
-                            width: lyricsWidth,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    clipBehavior: Clip.hardEdge,
-                                    borderRadius: AppRadius.cardBR,
-                                    child: const LyricsSection(),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const _LandscapeControls(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+          child: Stack(
+            children: [
+              // 1. 全屏底层手势捕获层：仅在点击无组件覆盖的纯空白区域时触发
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _toggleOrResetTopBar,
+                  child: const SizedBox.expand(),
                 ),
-                // 顶部操作栏
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: AnimatedOpacity(
-                    opacity: _topBarVisible ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 250),
-                    child: IgnorePointer(
-                      ignoring: !_topBarVisible,
-                      child: ImmersiveTopBar(
-                        onBack: () => context.pop(),
-                        actions: [
-                          ImmersiveIconButton(
-                            onPressed: (_) => _showLyricSourceDialog(context),
-                            icon: Icons.lyrics_rounded,
-                            tooltip: '歌词来源',
-                            color: cs.primary,
+              ),
+
+              // 2. 主内容区域
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final lyricsWidth = (constraints.maxWidth * 0.42).clamp(
+                      240.0,
+                      480.0,
+                    );
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 左侧：封面与元信息
+                        Expanded(
+                          child: _CoverAndMeta(
+                            music: widget.music,
+                            topBarVisible: _topBarVisible,
+                            onRevealTopBar: _revealTopBar,
                           ),
-                          const _MoreMenuButton(),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 右侧：歌词与控制条
+                        SizedBox(
+                          width: lyricsWidth,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  clipBehavior: Clip.hardEdge,
+                                  borderRadius: AppRadius.cardBR,
+                                  child:
+                                      NotificationListener<
+                                        UserScrollNotification
+                                      >(
+                                        // 用户滑动/翻阅歌词时，仅重置倒计时，不切换显示状态
+                                        onNotification: (notification) {
+                                          _scheduleHide();
+                                          return false;
+                                        },
+                                        child: GestureDetector(
+                                          behavior: HitTestBehavior.translucent,
+                                          onTap: _toggleOrResetTopBar,
+                                          child: const LyricsSection(),
+                                        ),
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // 底部控制条：增加 Listener 隔离手势
+                              Listener(
+                                behavior: HitTestBehavior.opaque,
+                                child: const _LandscapeControls(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+
+              // 3. 顶部操作栏
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: AnimatedOpacity(
+                  opacity: _topBarVisible ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 250),
+                  child: IgnorePointer(
+                    ignoring: !_topBarVisible,
+                    child: ImmersiveTopBar(
+                      onBack: () => context.pop(),
+                      actions: [
+                        ImmersiveIconButton(
+                          onPressed: (_) => _showLyricSourceDialog(context),
+                          icon: Icons.lyrics_rounded,
+                          tooltip: '歌词来源',
+                          color: cs.primary,
+                        ),
+                        const _MoreMenuButton(),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -286,6 +319,7 @@ class _CoverAndMeta extends StatefulWidget {
   final Music music;
   final bool topBarVisible;
   final VoidCallback onRevealTopBar;
+
   const _CoverAndMeta({
     required this.music,
     required this.topBarVisible,
@@ -318,16 +352,16 @@ class _CoverAndMetaState extends State<_CoverAndMeta> {
         final coverSize = (constraints.maxHeight * 0.62)
             .clamp(80.0, constraints.maxWidth * 0.9)
             .clamp(80.0, 360.0);
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 封面 + 快捷操作：在进度条上方剩余区域内居中
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 封面：操作栏可见时进入封面轮播；隐藏时点击先呼出操作栏
+                    // 封面：处于不同状态时的切换行为
                     GestureDetector(
                       onTap: () {
                         if (widget.topBarVisible) {
@@ -358,71 +392,78 @@ class _CoverAndMetaState extends State<_CoverAndMeta> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // 快捷操作（队列 / 添加到歌单 / 收藏）
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        IconButton.filledTonal(
-                          onPressed: () => Scaffold.of(context).openEndDrawer(),
-                          visualDensity: VisualDensity.compact,
-                          icon: Icon(
-                            Icons.queue_music_rounded,
-                            color: cs.onSecondaryContainer,
+                    // 快捷操作区：加上 Listener 隔离手势，避免被底层 GestureDetector 截获
+                    Listener(
+                      behavior: HitTestBehavior.opaque,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          IconButton.filledTonal(
+                            onPressed: () =>
+                                Scaffold.of(context).openEndDrawer(),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(
+                              Icons.queue_music_rounded,
+                              color: cs.onSecondaryContainer,
+                            ),
+                            tooltip: '播放队列',
                           ),
-                          tooltip: '播放队列',
-                        ),
-                        IconButton.filledTonal(
-                          onPressed: () =>
-                              MusicActionMenu.showAddToPlaylistSheet(
-                                context,
+                          IconButton.filledTonal(
+                            onPressed: () =>
+                                MusicActionMenu.showAddToPlaylistSheet(
+                                  context,
+                                  widget.music,
+                                ),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(
+                              Icons.add_rounded,
+                              color: cs.onSecondaryContainer,
+                            ),
+                            tooltip: '添加到歌单',
+                          ),
+                          IconButton.filledTonal(
+                            onPressed: () {
+                              final wasLiked = isLiked;
+                              playlistProvider.toggleMusicFavorite(
                                 widget.music,
+                                musicProvider: musicProvider,
+                              );
+                              AppToast.neutral(
+                                context,
+                                message: wasLiked ? '已取消收藏' : '已添加到喜欢',
+                              );
+                            },
+                            visualDensity: VisualDensity.compact,
+                            icon: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              transitionBuilder: (child, anim) =>
+                                  ScaleTransition(scale: anim, child: child),
+                              child: Icon(
+                                isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                key: ValueKey<bool>(isLiked),
+                                color: isLiked
+                                    ? Colors.redAccent
+                                    : cs.onSecondaryContainer,
                               ),
-                          visualDensity: VisualDensity.compact,
-                          icon: Icon(
-                            Icons.add_rounded,
-                            color: cs.onSecondaryContainer,
-                          ),
-                          tooltip: '添加到歌单',
-                        ),
-                        IconButton.filledTonal(
-                          onPressed: () {
-                            final wasLiked = isLiked;
-                            playlistProvider.toggleMusicFavorite(
-                              widget.music,
-                              musicProvider: musicProvider,
-                            );
-                            AppToast.neutral(
-                              context,
-                              message: wasLiked ? '已取消收藏' : '已添加到喜欢',
-                            );
-                          },
-                          visualDensity: VisualDensity.compact,
-                          icon: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            transitionBuilder: (child, anim) =>
-                                ScaleTransition(scale: anim, child: child),
-                            child: Icon(
-                              isLiked
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              key: ValueKey<bool>(isLiked),
-                              color: isLiked
-                                  ? Colors.redAccent
-                                  : cs.onSecondaryContainer,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            // 进度条 + 时长指示器：底部对齐，与右侧控制栏底对齐
-            _LandscapeProgress(music: widget.music, useWave: useWave),
+            // 进度条与时长控制：隔离拖拽手势
+            Listener(
+              behavior: HitTestBehavior.opaque,
+              child: _LandscapeProgress(music: widget.music, useWave: useWave),
+            ),
           ],
         );
       },
@@ -747,7 +788,7 @@ class _MoreMenuButton extends StatelessWidget {
   }
 }
 
-/// 带图标 / 选中态的菜单项，避免纯文字样式
+/// 带图标 / 选中态的菜单项
 class _MenuItem<T> extends PopupMenuItem<T> {
   _MenuItem({
     required IconData icon,
@@ -775,11 +816,11 @@ class _MenuItem<T> extends PopupMenuItem<T> {
                      ),
                    ),
                  ),
-                  if (selected)
-                    Icon(Icons.check_rounded, size: 18, color: cs.primary)
-                  else if (trailing != null) ...[
-                    trailing,
-                  ],
+                 if (selected)
+                   Icon(Icons.check_rounded, size: 18, color: cs.primary)
+                 else if (trailing != null) ...[
+                   trailing,
+                 ],
                ],
              );
            },

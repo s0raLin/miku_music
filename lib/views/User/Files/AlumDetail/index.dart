@@ -413,7 +413,8 @@ class _AlbumDetailHeader extends StatelessWidget {
                                         musicProvider.replaceQueue(
                                           songs,
                                           startIndex: 0,
-                                          queueName: '专辑播放',
+                                          queueName: displayTitle,
+                                          sourceId: 'album:$displayTitle',
                                         );
                                         context.push(
                                           "/music-detail",

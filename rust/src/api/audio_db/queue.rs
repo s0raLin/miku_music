@@ -4,12 +4,18 @@ use super::DbManager;
 use rusqlite::{params, Result};
 
 impl DbManager {
-    /// 保存一个新的队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）
+    /// 保存一个队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）。
+    ///
+    /// 关键修复：前端会传入该“逻辑队列”的稳定唯一 ID（[snapshot_id]）。
+    /// - 当 [snapshot_id] 非空时，按该 ID 做 upsert：同一队列被反复保存时
+    ///   只更新同一条记录，而不会因为歌曲顺序变化/新增歌曲而重复插入历史。
+    /// - 当 [snapshot_id] 为空时，才生成一个全新的 UUID（兼容旧的调用方）。
     pub fn save_queue_snapshot(
         &self,
         songs: &[String],
         current_index: i64,
-        max_limit: i64,    
+        max_limit: i64,
+        snapshot_id: String,
     ) -> Result<String> {
         if songs.is_empty() {
             return Ok(String::new());
@@ -18,16 +24,27 @@ impl DbManager {
         let mut conn = self.conn.lock().unwrap();
         let tx = conn.transaction()?;
 
-        let snapshot_id = uuid::Uuid::new_v4().to_string();
+        // 优先复用前端传入的稳定 ID；为空则生成全新 ID
+        let snapshot_id = if snapshot_id.trim().is_empty() {
+            uuid::Uuid::new_v4().to_string()
+        } else {
+            snapshot_id
+        };
         let now = chrono::Utc::now().timestamp_millis();
 
-        // 1. 插入快照主表 (直接传入 current_index，无需 as i64)
+        // 1. 主表 upsert：同一逻辑队列复用同一 ID，避免重复插入
+        //    （SQLite 的 INSERT OR REPLACE 会先删后插，主表无外键引用，安全）
         tx.execute(
-            "INSERT INTO queue_snapshots (id, current_index, created_at) VALUES (?1, ?2, ?3);",
+            "INSERT OR REPLACE INTO queue_snapshots (id, current_index, created_at) VALUES (?1, ?2, ?3);",
             params![snapshot_id, current_index, now],
         )?;
 
-        // 2. 批量插入队列中的歌曲顺序
+        // 2. 先清空该快照旧的歌曲明细，再重新批量写入
+        //    （保证顺序变化 / 新增 / 删除歌曲都能被正确覆盖，而不是叠加成脏数据）
+        tx.execute(
+            "DELETE FROM queue_snapshot_songs WHERE snapshot_id = ?1;",
+            params![snapshot_id],
+        )?;
         {
             let mut stmt = tx.prepare(
                 "INSERT INTO queue_snapshot_songs (snapshot_id, music_id, sort_order) VALUES (?1, ?2, ?3);",

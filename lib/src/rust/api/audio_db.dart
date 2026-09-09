@@ -88,11 +88,17 @@ abstract class DbManager implements RustOpaqueInterface {
     required String musicId,
   });
 
-  /// 保存一个新的队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）
+  /// 保存一个队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）。
+  ///
+  /// 关键修复：前端会传入该“逻辑队列”的稳定唯一 ID（[snapshot_id]）。
+  /// - 当 [snapshot_id] 非空时，按该 ID 做 upsert：同一队列被反复保存时
+  ///   只更新同一条记录，而不会因为歌曲顺序变化/新增歌曲而重复插入历史。
+  /// - 当 [snapshot_id] 为空时，才生成一个全新的 UUID（兼容旧的调用方）。
   Future<String> saveQueueSnapshot({
     required List<String> songs,
     required PlatformInt64 currentIndex,
     required PlatformInt64 maxLimit,
+    required String snapshotId,
   });
 
   /// 2. 切换收藏状态 (Toggle 逻辑)

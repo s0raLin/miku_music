@@ -321,6 +321,7 @@ class _PlaylistAppBar extends StatelessWidget {
                                     songsToPlay,
                                     startIndex: 0,
                                     queueName: playlist.name,
+                                    sourceId: playlist.id,
                                   );
                                   context.push(
                                     "/music-detail",

@@ -250,6 +250,7 @@ class _RecentlyPlayedAppBar extends StatelessWidget {
                                     songsToPlay,
                                     startIndex: 0,
                                     queueName: '最近播放',
+                                    sourceId: 'recent',
                                   );
                                   context.push(
                                     "/music-detail",

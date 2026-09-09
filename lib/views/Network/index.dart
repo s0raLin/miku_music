@@ -625,7 +625,7 @@ class _SongSearchTabState extends State<_SongSearchTab>
         songs: songMaps,
         startIndex: idx,
         queueName: '搜索「${widget.searchCtrl.text.trim()}」 ',
-        sourceId: 'netease',
+        sourceId: 'netease:${widget.searchCtrl.text.trim()}',
       );
 
       final lr = await NeteaseApi.getLyric(song.id);

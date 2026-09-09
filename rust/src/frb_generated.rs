@@ -1150,6 +1150,7 @@ fn wire__crate__api__audio_db__DbManager_save_queue_snapshot_impl(
             let api_songs = <Vec<String>>::sse_decode(&mut deserializer);
             let api_current_index = <i64>::sse_decode(&mut deserializer);
             let api_max_limit = <i64>::sse_decode(&mut deserializer);
+            let api_snapshot_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -1173,6 +1174,7 @@ fn wire__crate__api__audio_db__DbManager_save_queue_snapshot_impl(
                             &api_songs,
                             api_current_index,
                             api_max_limit,
+                            api_snapshot_id,
                         )?;
                         Ok(output_ok)
                     })(),

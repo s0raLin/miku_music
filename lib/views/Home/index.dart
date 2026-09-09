@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
     final lib = List<Music>.from(musicProvider.library);
     if (lib.isEmpty) return;
     lib.shuffle(Random());
-    await musicProvider.replaceQueue(lib, startIndex: 0);
+    await musicProvider.replaceQueue(lib, startIndex: 0, queueName: '随机播放');
     if (mounted && musicProvider.currentMusic != null) {
       context.push('/music-detail');
     }
@@ -161,6 +161,8 @@ class _HomePageState extends State<HomePage> {
                           await musicProvider.replaceQueue(
                             songs,
                             startIndex: index,
+                            queueName: '播放历史',
+                            sourceId: 'history',
                           );
                           if (mounted && musicProvider.currentMusic != null) {
                             context.push('/music-detail');
@@ -428,6 +430,8 @@ class _MusicSection extends StatelessWidget {
                             await musicProvider.replaceQueue(
                               songs,
                               startIndex: index,
+                              queueName: '我喜欢',
+                              sourceId: PlaylistProvider.favoritesPlaylistId,
                             );
                             if (context.mounted &&
                                 musicProvider.currentMusic != null) {

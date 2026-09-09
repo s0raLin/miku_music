@@ -184,6 +184,7 @@ abstract class RustLibApi extends BaseApi {
     required List<String> songs,
     required PlatformInt64 currentIndex,
     required PlatformInt64 maxLimit,
+    required String snapshotId,
   });
 
   Future<bool> crateApiAudioDbDbManagerToggleSongFavorite({
@@ -1001,6 +1002,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required List<String> songs,
     required PlatformInt64 currentIndex,
     required PlatformInt64 maxLimit,
+    required String snapshotId,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1013,6 +1015,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_list_String(songs, serializer);
           sse_encode_i_64(currentIndex, serializer);
           sse_encode_i_64(maxLimit, serializer);
+          sse_encode_String(snapshotId, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1025,7 +1028,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiAudioDbDbManagerSaveQueueSnapshotConstMeta,
-        argValues: [that, songs, currentIndex, maxLimit],
+        argValues: [that, songs, currentIndex, maxLimit, snapshotId],
         apiImpl: this,
       ),
     );
@@ -1034,7 +1037,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAudioDbDbManagerSaveQueueSnapshotConstMeta =>
       const TaskConstMeta(
         debugName: "DbManager_save_queue_snapshot",
-        argNames: ["that", "songs", "currentIndex", "maxLimit"],
+        argNames: ["that", "songs", "currentIndex", "maxLimit", "snapshotId"],
       );
 
   @override
@@ -2600,16 +2603,23 @@ class DbManagerImpl extends RustOpaque implements DbManager {
     musicId: musicId,
   );
 
-  /// 保存一个新的队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）
+  /// 保存一个队列快照，并在 Rust 侧控制滑动窗口（保存上限 max_limit）。
+  ///
+  /// 关键修复：前端会传入该“逻辑队列”的稳定唯一 ID（[snapshot_id]）。
+  /// - 当 [snapshot_id] 非空时，按该 ID 做 upsert：同一队列被反复保存时
+  ///   只更新同一条记录，而不会因为歌曲顺序变化/新增歌曲而重复插入历史。
+  /// - 当 [snapshot_id] 为空时，才生成一个全新的 UUID（兼容旧的调用方）。
   Future<String> saveQueueSnapshot({
     required List<String> songs,
     required PlatformInt64 currentIndex,
     required PlatformInt64 maxLimit,
+    required String snapshotId,
   }) => RustLib.instance.api.crateApiAudioDbDbManagerSaveQueueSnapshot(
     that: this,
     songs: songs,
     currentIndex: currentIndex,
     maxLimit: maxLimit,
+    snapshotId: snapshotId,
   );
 
   /// 2. 切换收藏状态 (Toggle 逻辑)

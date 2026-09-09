@@ -57,6 +57,9 @@ class MusicDbService {
         songs: songIds,
         currentIndex: currentIndex,
         maxLimit: maxLimit,
+        // 关键修复：把逻辑队列的稳定唯一 ID 传给 Rust 侧做 upsert，
+        // 保证同一队列反复保存时只更新同一条记录，不再重复插入历史。
+        snapshotId: snapshot.id,
       );
 
       _queueHistoryUpdateController.add(null);

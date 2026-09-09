@@ -9,7 +9,6 @@ import 'package:myapp/providers/PlaylistProvider/index.dart';
 import 'package:myapp/service/UpdateCheck/index.dart';
 import 'package:myapp/components/Header/index.dart';
 import 'package:myapp/components/Shared/media_overlay_card.dart';
-import 'package:myapp/views/User/Music/widgets/playlist_list_card.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -140,22 +139,61 @@ class _HomePageState extends State<HomePage> {
                   onShufflePlay: () => _shufflePlayAll(musicProvider),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                // ▲ 播放历史（按歌单展示）
-                _PlaylistHistorySection(
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                  historySongs: history,
-                  onViewAll: () => context.push('/user/recent'),
+                // ▲ 横向无框数据流（播放历史 + 队列历史）
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. 播放历史
+                      _SongHistoryCard(
+                        colorScheme: colorScheme,
+                        textTheme: textTheme,
+                        songs: history,
+                        musicProvider: musicProvider,
+                        maxItems: 4,
+                        onViewAll: () => context.push('/user/recent'),
+                        onSongTap: (songs, index) async {
+                          await musicProvider.replaceQueue(
+                            songs,
+                            startIndex: index,
+                          );
+                          if (mounted && musicProvider.currentMusic != null) {
+                            context.push('/music-detail');
+                          }
+                        },
+                      ),
+
+                      const SizedBox(width: 20),
+
+                      // 2. 队列历史
+                      _QueueHistoryCards(
+                        colorScheme: colorScheme,
+                        textTheme: textTheme,
+                        snapshots: musicProvider.history,
+                        musicProvider: musicProvider,
+                        maxSnapshots: 4,
+                        maxSongsPerSnapshot: 4,
+                        onRestore: (snapshot) async {
+                          await musicProvider.restoreQueueFromHistory(snapshot);
+                          if (mounted && musicProvider.currentMusic != null) {
+                            context.push('/music-detail');
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
                 // ▲ 收藏的音乐
                 _MusicSection(
                   title: '收藏的音乐',
-                  icon: Icons.favorite_rounded,
                   songs: favorites,
                   musicProvider: musicProvider,
                   colorScheme: colorScheme,
@@ -257,6 +295,7 @@ class _ActionChip extends StatelessWidget {
                 Text(
                   label,
                   style: textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: enabled
                         ? colorScheme.onSurface
                         : colorScheme.onSurface.withValues(alpha: 0.3),
@@ -272,11 +311,10 @@ class _ActionChip extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Music Section — 横向滚动歌曲卡片区域（正方形卡片）
+// Music Section — 纯文本标题区域
 // ═══════════════════════════════════════════════════════════
 class _MusicSection extends StatelessWidget {
   final String title;
-  final IconData icon;
   final List<Music> songs;
   final MusicProvider musicProvider;
   final ColorScheme colorScheme;
@@ -287,7 +325,6 @@ class _MusicSection extends StatelessWidget {
 
   const _MusicSection({
     required this.title,
-    required this.icon,
     required this.songs,
     required this.musicProvider,
     required this.colorScheme,
@@ -309,25 +346,10 @@ class _MusicSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header
         Padding(
-          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
+          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 12),
           child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: colorScheme.onSecondaryContainer,
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
@@ -355,14 +377,12 @@ class _MusicSection extends StatelessWidget {
             ],
           ),
         ),
-
-        // Content - 正方形卡片
         songs.isEmpty
             ? Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: AppPanel(
                   child: AppEmptyState(
-                    icon: icon,
+                    icon: Icons.favorite_rounded,
                     title: emptyTitle,
                     subtitle: emptySubtitle,
                     compact: true,
@@ -383,7 +403,7 @@ class _MusicSection extends StatelessWidget {
                         : null;
 
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 10),
                       child: SizedBox(
                         width: cardSize,
                         height: cardSize,
@@ -391,34 +411,23 @@ class _MusicSection extends StatelessWidget {
                           key: ValueKey('song_card_${song.id}'),
                           title: song.title,
                           subtitle: song.artist,
-
-                          // 传入 source 类型
                           source: song.source,
-
-                          // 本地图片仅使用 coverBytes（已移除 coverPath）
                           coverBytes: song.coverBytes,
-
-                          // 网络图片传 URL 和 Headers
                           coverUrl: coverUrl,
                           coverHeaders: isNetwork
                               ? const {'Referer': 'https://music.163.com/'}
                               : null,
-
                           fallbackIcon: Icons.music_note_rounded,
-
-                          // 精准校验 isLoading
                           isLoading: isNetwork
                               ? (coverUrl == null &&
                                     musicProvider.isCoverLoading(song.id))
                               : (song.coverBytes == null &&
                                     musicProvider.isCoverLoading(song.id)),
-
-                          borderRadius: BorderRadius.circular(32),
+                          borderRadius: BorderRadius.circular(20),
                           onTap: () async {
                             await musicProvider.replaceQueue(
                               songs,
                               startIndex: index,
-
                             );
                             if (context.mounted &&
                                 musicProvider.currentMusic != null) {
@@ -428,7 +437,7 @@ class _MusicSection extends StatelessWidget {
                           badge: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
-                              vertical: 4,
+                              vertical: 3,
                             ),
                             decoration: BoxDecoration(
                               color: colorScheme.surfaceContainerHigh
@@ -466,109 +475,346 @@ class _MusicSection extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Playlist History Section — 按歌单展示播放历史
+// Vertical Song List Item
 // ═══════════════════════════════════════════════════════════
-class _PlaylistHistorySection extends StatelessWidget {
-  final String title;
+class _SongListTile extends StatelessWidget {
+  final Music song;
+  final MusicProvider musicProvider;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
-  final List<Music> historySongs;
-  final VoidCallback onViewAll;
+  final VoidCallback? onTap;
 
-  const _PlaylistHistorySection({
+  const _SongListTile({
+    required this.song,
+    required this.musicProvider,
     required this.colorScheme,
     required this.textTheme,
-    required this.historySongs,
-    required this.onViewAll,
-  }) : title = '播放历史';
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final padding = 16.0 * 2;
-    final spacing = 14.0;
-    final cardsPerRow = 3.2;
-    final cardSize = ((screenWidth - padding - spacing * 2) / cardsPerRow)
-        .clamp(80.0, 160.0);
+    final isNetwork = song.source == MusicSource.network;
+    final coverUrl = isNetwork ? musicProvider.getCoverUrl(song.id) : null;
+    final hasCover =
+        (song.coverBytes != null && song.coverBytes!.isNotEmpty) ||
+        (coverUrl != null && coverUrl.isNotEmpty);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section header
-        Padding(
-          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
           child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.history_rounded,
-                  size: 20,
-                  color: colorScheme.onSecondaryContainer,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: hasCover
+                      ? (song.coverBytes != null && song.coverBytes!.isNotEmpty
+                            ? Image.memory(
+                                song.coverBytes!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => _fallbackCover(),
+                              )
+                            : Image.network(
+                                coverUrl!,
+                                fit: BoxFit.cover,
+                                headers: const {
+                                  'Referer': 'https://music.163.com/',
+                                },
+                                errorBuilder: (_, _, _) => _fallbackCover(),
+                              ))
+                      : _fallbackCover(),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  '播放历史',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      song.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      song.artist.isEmpty ? '未知歌手' : song.artist,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              if (historySongs.isNotEmpty)
-                TextButton(
-                  onPressed: onViewAll,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    '查看全部',
-                    style: textTheme.labelMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
+      ),
+    );
+  }
 
-        // Content - 正方形卡片
-        historySongs.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: AppPanel(
-                  child: AppEmptyState(
-                    icon: Icons.history_rounded,
-                    title: '暂无播放历史',
-                    subtitle: '快去听歌吧，这里会显示你听过的歌曲',
-                    compact: true,
-                  ),
-                ),
-              )
-            : SizedBox(
-                width: cardSize,
-                child: PlaylistListCard(
-                  playlistName: title,
-                  songCount: historySongs.length,
-                  coverBytes: historySongs.isNotEmpty
-                      ? historySongs.first.coverBytes
-                      : null,
-                  coverPath: null,
-                  recentSongs: historySongs.take(4).toList(),
-                  showSongList: true,
-                  onTap: onViewAll,
+  Widget _fallbackCover() {
+    return Container(
+      color: colorScheme.surfaceContainerHighest,
+      child: Icon(
+        Icons.music_note_rounded,
+        color: colorScheme.onSurfaceVariant,
+        size: 20,
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 播放历史 — 无框无图标纯净版
+// ═══════════════════════════════════════════════════════════
+class _SongHistoryCard extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final List<Music> songs;
+  final MusicProvider musicProvider;
+  final int maxItems;
+  final VoidCallback onViewAll;
+  final void Function(List<Music> songs, int index) onSongTap;
+
+  const _SongHistoryCard({
+    required this.colorScheme,
+    required this.textTheme,
+    required this.songs,
+    required this.musicProvider,
+    required this.maxItems,
+    required this.onViewAll,
+    required this.onSongTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displaySongs = songs.take(maxItems).toList();
+
+    return SizedBox(
+      width: 280,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 顶部 Header
+          SizedBox(
+            height: 36,
+            child: InkWell(
+              onTap: onViewAll,
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '播放历史',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            songs.isEmpty ? '暂无历史记录' : '最近播放 ${songs.length} 首',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
                 ),
               ),
-      ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 列表内容区域
+          if (songs.isEmpty)
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 180),
+              child: Center(
+                child: AppEmptyState(
+                  icon: Icons.history_rounded,
+                  title: '暂无播放历史',
+                  subtitle: '这里会显示你听过的歌曲',
+                  compact: true,
+                ),
+              ),
+            )
+          else
+            Column(
+              children: List.generate(displaySongs.length, (i) {
+                return _SongListTile(
+                  song: displaySongs[i],
+                  musicProvider: musicProvider,
+                  colorScheme: colorScheme,
+                  textTheme: textTheme,
+                  onTap: () => onSongTap(songs, i),
+                );
+              }),
+            ),
+        ],
+      ),
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 队列历史 — 无框无图标纯净版
+// ═══════════════════════════════════════════════════════════
+class _QueueHistoryCards extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final List<QueueSnapshot> snapshots;
+  final MusicProvider musicProvider;
+  final int maxSnapshots;
+  final int maxSongsPerSnapshot;
+  final void Function(QueueSnapshot snapshot) onRestore;
+
+  const _QueueHistoryCards({
+    required this.colorScheme,
+    required this.textTheme,
+    required this.snapshots,
+    required this.musicProvider,
+    required this.maxSnapshots,
+    required this.maxSongsPerSnapshot,
+    required this.onRestore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displaySnapshots = snapshots.take(maxSnapshots).toList();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(displaySnapshots.length, (index) {
+        final snapshot = displaySnapshots[index];
+        final songs = snapshot.songs.take(maxSongsPerSnapshot).toList();
+
+        return SizedBox(
+          width: 280,
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: index == displaySnapshots.length - 1 ? 0 : 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 顶部 Header
+                SizedBox(
+                  height: 36,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                snapshot.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                '${snapshot.songs.length} 首 · ${_formatTime(snapshot.createdAt)}',
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: IconButton.filledTonal(
+                            style: IconButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: () => onRestore(snapshot),
+                            icon: const Icon(
+                              Icons.play_arrow_rounded,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // 队列内的歌曲列表
+                Column(
+                  children: List.generate(songs.length, (i) {
+                    return _SongListTile(
+                      song: songs[i],
+                      musicProvider: musicProvider,
+                      colorScheme: colorScheme,
+                      textTheme: textTheme,
+                      onTap: () => onRestore(snapshot),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+
+    // 防护：如果计算差值为负数（例如系统时间被回调、或跨时区偏差）
+    if (diff.isNegative) return '刚刚';
+
+    if (diff.inMinutes < 60) return '${diff.inMinutes} 分钟前';
+    if (diff.inHours < 24) return '${diff.inHours} 小时前';
+    if (diff.inDays < 7) return '${diff.inDays} 天前';
+    return '${dt.month}/${dt.day}';
   }
 }

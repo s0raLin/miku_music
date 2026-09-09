@@ -41,7 +41,63 @@ class QueueSnapshot {
     required this.currentIndex,
     DateTime? createdAt,
   }) : songs = List.unmodifiable(List.from(songs)), // 强制只读防污染
-       createdAt = createdAt ?? DateTime.now();
+       // 兜底校验：如果传入的时间戳小于 1971年（即 0 或非法负数），强行更正为当前时间
+       createdAt =
+           (createdAt == null || createdAt.millisecondsSinceEpoch < 31536000000)
+           ? DateTime.now()
+           : createdAt;
+
+  /// 底层反序列化修复：确保从 JSON 或 本地 DB 读取时不会产生 1970 年/负数时间戳
+  factory QueueSnapshot.fromJson(Map<String, dynamic> json) {
+    DateTime parsedDate;
+
+    // 兼容 key 的多种形式 (created_at / createdAt)
+    final rawCreated = json['created_at'] ?? json['createdAt'];
+
+    if (rawCreated is int && rawCreated > 0) {
+      // 10 位为秒级时间戳 (如 1710000000)，13 位及以上为毫秒级
+      if (rawCreated < 10000000000) {
+        parsedDate = DateTime.fromMillisecondsSinceEpoch(rawCreated * 1000);
+      } else {
+        parsedDate = DateTime.fromMillisecondsSinceEpoch(rawCreated);
+      }
+    } else if (rawCreated is String && rawCreated.isNotEmpty) {
+      // 支持 ISO-8601 格式字符串 (如 "2026-04-18T12:00:00Z")
+      parsedDate = DateTime.tryParse(rawCreated) ?? DateTime.now();
+    } else {
+      // 字段为 null、0 或非法格式时，回退到当前时间，彻底阻断 1970 纪元产生的计算溢出
+      parsedDate = DateTime.now();
+    }
+
+    // 第二道防线：如果解析出来的时间点早于 1971 年，重置为当前时间
+    if (parsedDate.millisecondsSinceEpoch < 31536000000) {
+      parsedDate = DateTime.now();
+    }
+
+    return QueueSnapshot(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '历史播放队列',
+      songs:
+          (json['songs'] as List<dynamic>?)
+              ?.map((e) => Music.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      currentIndex: json['currentIndex'] as int? ?? 0,
+      createdAt: parsedDate,
+    );
+  }
+
+  /// 底层序列化方法：统一输出毫秒级 UNIX 时间戳与 ISO 8601 字符串
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'currentIndex': currentIndex,
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'created_at_iso': createdAt.toIso8601String(),
+      'songs': songs.map((e) => e.toJson()).toList(),
+    };
+  }
 }
 
 /// 音乐播放队列管理核心类

@@ -111,18 +111,27 @@ class M3SongList extends StatelessWidget {
       );
     }
 
+    // 只有真正作为独立滚动列表时才避让 NowPlayingBar
+    // 嵌套在卡片里的 shrinkWrap 列表不要加，否则会出现巨大空隙
+    final mediaBottom = isScrollable
+        ? MediaQuery.paddingOf(context).bottom
+        : 0.0;
+    final resolved = padding.resolve(Directionality.of(context));
+    final effectivePadding = resolved.copyWith(
+      bottom: resolved.bottom + mediaBottom,
+    );
+
     return ListView.separated(
       shrinkWrap: !isScrollable,
       physics: isScrollable
           ? const AlwaysScrollableScrollPhysics()
           : const NeverScrollableScrollPhysics(),
-      // 新 API：使用 scrollCacheExtent 替代已弃用的 cacheExtent
       scrollCacheExtent: isScrollable
           ? const ScrollCacheExtent.pixels(800)
           : const ScrollCacheExtent.pixels(250),
-      padding: padding,
+      padding: effectivePadding,
       itemCount: songs.length,
-      separatorBuilder: (_, __) => Divider(
+      separatorBuilder: (_, _) => Divider(
         height: 1,
         thickness: 0.5,
         indent: 74.0,
@@ -172,8 +181,14 @@ class SliverM3SongList extends StatelessWidget {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
+    final mediaBottom = MediaQuery.paddingOf(context).bottom;
+    final resolved = padding.resolve(Directionality.of(context));
+    final effectivePadding = resolved.copyWith(
+      bottom: resolved.bottom + mediaBottom,
+    );
+
     return SliverPadding(
-      padding: padding,
+      padding: effectivePadding,
       sliver: SliverList(
         // Sliver 的预加载由外层 CustomScrollView 的 scrollCacheExtent 控制
         // 建议在使用处设置：

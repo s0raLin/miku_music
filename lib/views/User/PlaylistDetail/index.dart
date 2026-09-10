@@ -134,7 +134,11 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                 isSystem: playlist.isSystem,
               ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 16 + MediaQuery.paddingOf(context).bottom,
+              ),
+            ),
           ],
         ),
       ),

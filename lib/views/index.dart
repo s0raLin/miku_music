@@ -22,6 +22,9 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> with WindowListener {
   late bool showNavigationDrawer;
 
+  /// NowPlayingBar 总高度 = 上下 Padding(6*2) + Capsule(64)
+  static const double _nowPlayingBarHeight = 76.0;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +77,10 @@ class _MainPageState extends State<MainPage> with WindowListener {
         nav.shell?.currentIndex ?? widget.navigationShell.currentIndex;
     final mp = context.watch<MusicProvider>();
     final isMiniMode = mp.isMiniMode;
+    final bool showBar = !isMiniMode && mp.currentMusic != null;
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    // 只加 Bar 自身高度，安全区已在 MediaQuery.padding.bottom 中
+    final double contentBottomInset = showBar ? _nowPlayingBarHeight : 0.0;
 
     return Scaffold(
       key: rootScaffoldKey,
@@ -83,14 +90,23 @@ class _MainPageState extends State<MainPage> with WindowListener {
           SideBar(currentIndex: currentIndex, onTap: onTabChanged),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
-            child: Column(
+            child: Stack(
               children: [
-                Expanded(child: widget.navigationShell),
-                if (!isMiniMode && mp.currentMusic != null)
-                  Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).padding.bottom,
+                MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    padding: MediaQuery.of(context).padding.copyWith(
+                      bottom:
+                          MediaQuery.of(context).padding.bottom +
+                          contentBottomInset,
                     ),
+                  ),
+                  child: widget.navigationShell,
+                ),
+                if (showBar)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: bottomPadding,
                     child: const NowPlayingBar(),
                   ),
               ],
@@ -109,30 +125,39 @@ class _MainPageState extends State<MainPage> with WindowListener {
         nav.shell?.currentIndex ?? widget.navigationShell.currentIndex;
     final isMiniMode = mp.isMiniMode;
     final isRoot = _isRootBranch;
+    final bool showBar = !isMiniMode && mp.currentMusic != null;
 
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
     final double totalBottomBarHeight =
         kBottomNavigationBarHeight + bottomPadding + 8;
+    // 只加 Bar 自身高度，避免与安全区叠加
+    final double contentBottomInset = showBar ? _nowPlayingBarHeight : 0.0;
 
     return Scaffold(
       key: rootScaffoldKey,
       drawer: const MainDrawer(),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(child: widget.navigationShell),
-          if (!isMiniMode && mp.currentMusic != null) ...[
-            const NowPlayingBar(),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              height: isRoot ? 0.0 : bottomPadding,
+          MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              padding: MediaQuery.of(context).padding.copyWith(
+                bottom:
+                    MediaQuery.of(context).padding.bottom + contentBottomInset,
+              ),
             ),
-          ],
+            child: widget.navigationShell,
+          ),
+          if (showBar)
+            Positioned(
+              left: 0,
+              right: 0,
+              // root：贴 body 底；非 root：抬到安全区上方
+              bottom: isRoot ? 0.0 : bottomPadding,
+              child: const NowPlayingBar(),
+            ),
         ],
       ),
       floatingActionButton: isMiniMode ? const NowPlayingMiniFab() : null,
-
-      // 使用 SingleChildScrollView 防裁剪 + 固化子项 RenderBox 高度，防止高度变动时触发子组件抖动重绘
       bottomNavigationBar: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,

@@ -115,7 +115,11 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
             else
               _SongListSection(songs: filteredSongs),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 16 + MediaQuery.paddingOf(context).bottom,
+              ),
+            )
           ],
         ),
       ),

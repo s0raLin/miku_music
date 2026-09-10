@@ -1467,7 +1467,12 @@ class _PlaylistSearchTabState extends State<_PlaylistSearchTab>
         Expanded(
           child: ListView.builder(
             scrollCacheExtent: const ScrollCacheExtent.pixels(800),
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
+            padding: EdgeInsets.fromLTRB(
+              12,
+              10,
+              12,
+              20 + MediaQuery.paddingOf(context).bottom,
+            ),
             itemCount: displayList.length,
             itemBuilder: (ctx, i) {
               final item = displayList[i];

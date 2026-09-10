@@ -211,7 +211,11 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                 colorScheme,
               ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 16 + MediaQuery.paddingOf(context).bottom,
+              ),
+            ),
           ],
         ),
       ),

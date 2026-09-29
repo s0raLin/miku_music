@@ -7,6 +7,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 
 export 'app_radius.dart';
+export 'app_shadow.dart';
 export 'app_toast.dart';
 export 'album_art_image.dart';
 export 'blur_cover_background.dart';

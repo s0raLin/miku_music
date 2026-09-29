@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/components/Shared/M3SongList.dart';
+import 'package:myapp/components/Shared/app_empty_state.dart';
+import 'package:myapp/components/Shared/app_radius.dart';
 import 'package:myapp/model/Music/index.dart';
 import 'package:myapp/providers/MusicProvider/index.dart';
 import 'package:provider/provider.dart';
@@ -159,7 +161,7 @@ class _SearchPageState extends State<SearchPage> {
               backgroundColor: cs.surfaceContainerLow,
               side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.smBR,
               ),
               onSelected: (_) => _handleTagTap(tag),
             );
@@ -176,23 +178,11 @@ class _SearchPageState extends State<SearchPage> {
     TextTheme textTheme,
   ) {
     if (results.isEmpty) {
-      return Center(
+      return AppEmptyState(
         key: const ValueKey("empty_results"),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off_rounded,
-              size: 48,
-              color: cs.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "未找到相关歌曲",
-              style: textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-            ),
-          ],
-        ),
+        icon: Icons.search_off_rounded,
+        title: '未找到相关歌曲',
+        subtitle: '换个关键词试试吧',
       );
     }
 

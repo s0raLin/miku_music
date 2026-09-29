@@ -194,7 +194,7 @@ class _RecentlyPlayedAppBar extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                colorScheme.primaryContainer.withOpacity(0.4),
+                colorScheme.primaryContainer.withValues(alpha: 0.4),
                 colorScheme.surface,
               ],
             ),
@@ -212,7 +212,7 @@ class _RecentlyPlayedAppBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: colorScheme.shadow.withOpacity(0.08),
+                          color: colorScheme.shadow.withValues(alpha: 0.08),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),

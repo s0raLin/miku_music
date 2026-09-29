@@ -54,7 +54,10 @@ class MediaOverlayCard extends StatelessWidget {
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.card),
+            borderRadius: borderRadius ?? AppRadius.cardBR,
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.35),
+            ),
           ),
           child: Stack(
             fit: StackFit.expand,

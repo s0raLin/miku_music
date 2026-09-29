@@ -446,12 +446,13 @@ class _PlaylistQuickCard extends StatelessWidget {
 
     return Material(
       color: colorScheme.surfaceContainerHigh, // M3 容器层级色彩
-      borderRadius: BorderRadius.circular(20), // 提升圆角至 20px，极致圆润
+      borderRadius: AppRadius.lgBR, // 统一圆角节奏
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        splashColor: colorScheme.primary.withOpacity(0.1), // M3 按压水波纹
-        highlightColor: colorScheme.primary.withOpacity(0.05),
+        splashColor: colorScheme.primary.withValues(alpha: 0.1), // M3 按压水波纹
+        highlightColor: colorScheme.primary.withValues(alpha: 0.05),
+        hoverColor: colorScheme.onSurface.withValues(alpha: 0.04),
         child: Container(
           width: 92,
           height: 92,
@@ -460,13 +461,13 @@ class _PlaylistQuickCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 图标容器：使用 14px 圆角，与外层 20px 同心呼应
+              // 图标容器：使用 md 圆角，与外层 lg 同心呼应
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer, // M3 次要容器色
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppRadius.mdBR,
                 ),
                 child: Icon(
                   icon,

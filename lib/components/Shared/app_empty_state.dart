@@ -32,8 +32,20 @@ class AppEmptyState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: compact ? 36 : 48, color: colorScheme.outline),
-              SizedBox(height: compact ? 10 : 14),
+              Container(
+                width: compact ? 72 : 92,
+                height: compact ? 72 : 92,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHigh,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: compact ? 32 : 40,
+                  color: colorScheme.primary,
+                ),
+              ),
+              SizedBox(height: compact ? 12 : 16),
               Text(
                 title,
                 textAlign: TextAlign.center,
